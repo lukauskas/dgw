@@ -11,11 +11,11 @@ class Peak(object):
     _start      = None
     _end        = None
 
-    name       = None
+    _name       = None
     score      = None
     strand     = None
 
-    signal_value = None
+    _signal_value = None
     p_value      = None
     q_value      = None
 
@@ -28,7 +28,7 @@ class Peak(object):
         self.name  = name
         self.score = score
         self.strand = strand
-        self.singal_value = signal_value
+        self.signal_value = signal_value
         self.p_value = p_value
         self.q_value = q_value
         self.peak    = peak
@@ -52,9 +52,27 @@ class Peak(object):
     @end.setter
     def end(self, value):
         self._end = int(value)
+   
+    @property
+    def signal_value(self):
+        return self._signal_value
+
+    @signal_value.setter
+    def signal_value(self, value):
+        self._signal_value = float(value)
 
 
-        
+    @property
+    def name(self):
+        return self._name
+
+    @name.setter
+    def name(self, value):
+        if value == '.':
+            self._name = None
+        else:
+            self._name = value
+
 def broadpeak_parse(line):
     line = line.split('\t')
     PARAM_ORDER = ['chromosome', 'start', 'end', 'name', 'score', 'strand', 'signal_value', 'p_value', 'q_value']
@@ -69,7 +87,7 @@ def narrowpeak_parse(line):
     line = line.split('\t')
     PARAM_ORDER = ['chromosome', 'start', 'end', 'name', 'score', 'strand', 'signal_value', 'p_value', 'q_value', 'peak']
 
-    #params = dict(izip(PARAM_ORDER, line))
+    params = dict(izip(PARAM_ORDER, line))
 
     return Peak(*line)
 
@@ -84,6 +102,18 @@ def bin_peaks(peaks):
 
     return bins
 
+def mean(data):
+    return sum(data) / len(data)
+
+def variance(data):
+    mu = mean(data)
+    
+    varsum = 0
+    for d in data:
+        varsum += (d-mu) * (d - mu)
+
+    return varsum / len(data)
+        
 if __name__ == '__main__':
     filename = sys.argv[1]
     
@@ -104,9 +134,8 @@ if __name__ == '__main__':
 
     for width in sorted(bins):
         peaks_in_the_bin = bins[width]
+        peak_signals = map(lambda x: x.signal_value, peaks_in_the_bin)
+        mu = mean(peak_signals)
+        var = variance(peak_signals)
 
-        print '{0}\t{1}'.format(width, len(peaks_in_the_bin))
-
-
-
-
+        print '{0}\t{1}\t{2}\t{3}'.format(width, len(peaks_in_the_bin), mu, var)
