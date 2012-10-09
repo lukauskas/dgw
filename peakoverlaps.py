@@ -3,6 +3,13 @@ from peakanalyser import open_gzipped_file
 import sys
 from interval import interval
 
+def length_of_interval(x):
+    length = 0
+    for pair in x:
+        length += pair[1] - pair[0]
+    
+    return length
+
 if __name__ == '__main__':
     filenames = sys.argv[1:]
     
@@ -28,47 +35,42 @@ if __name__ == '__main__':
         intervals_store = {}
         for p in peaks:
             try:
-                intervals_store[p.chromosome].append(interval([p.start, p.end]))
+                intervals_store[p.chromosome] |= interval([p.start, p.end])
             except KeyError:
-                intervals_store[p.chromosome] = [interval([p.start, p.end])]
-        
-        for chromosome, l in intervals_store.iteritems():
-            intervals_store[chromosome] = sorted(l)
+                intervals_store[p.chromosome] = interval([p.start, p.end])
         
         peak_intervals[filename] = intervals_store
-    
-    original_count = {}
-    for (filename, peaks_store) in peak_intervals.iteritems():
-        for chromosome in sorted(peaks_store):
-            peaks = peaks_store[chromosome]
-            lenpeaks = len(peaks)
-            try:
-                original_count[chromosome] += lenpeaks
-            except KeyError:
-                original_count[chromosome] = lenpeaks
-                
-            print '{0}\t{1}\t{2}'.format(filename, chromosome, lenpeaks)
-    
+
+#    for (filename, peaks_store) in peak_intervals.iteritems():
+#        for chromosome in sorted(peaks_store):
+#            peaks = peaks_store[chromosome]
+#            lenpeaks = length_of_interval(peaks)
+#                
+#            print '{0}\t{1}\t{2}'.format(filename, chromosome, lenpeaks)
+#    
     print '# Cross-matching'
     intersection = {}
+    union        = {}
     for (filename, intervals_store) in peak_intervals.iteritems():
         if not intersection:
-            intersection = intervals_store
+            for chromosome, item in intervals_store.iteritems():
+                intersection[chromosome] = interval(item)
+                union[chromosome]        = interval(item)
             continue
         
         for (chromosome, peaks) in intervals_store.iteritems():
             if chromosome not in intersection:
                 continue
             
-            peaks_in_intersection = intersection[chromosome]
-            peaks_in_intersection = filter(lambda x: x in peaks, peaks_in_intersection)
+            intersection[chromosome] &= peaks
+            union[chromosome]        |= peaks
             
-            intersection[chromosome] = peaks_in_intersection
-            
+    
+    print '# Calculating lengths'
     for chromosome in sorted(intersection):
-        intersected_length = len(intersection[chromosome])
-        or_count = original_count[chromosome] - intersected_length
+        intersected_length = length_of_interval(intersection[chromosome])
+        union_length = length_of_interval(union[chromosome])
         
-        print "{0}\t{1}\t{2}\t{3}".format(chromosome, intersected_length, or_count, float(intersected_length) / or_count)    
+        print "{0}\t{1}\t{2}\t{3}".format(chromosome, intersected_length, union_length, float(intersected_length) / union_length)    
         
     
