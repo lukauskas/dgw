@@ -2,6 +2,7 @@ import sys
 import gzip
 from itertools import izip
 from peak import Peak
+import os
 
 def open_gzipped_file(filename):
     f = gzip.open(filename, 'rb')
@@ -32,21 +33,29 @@ def mean_and_var(data):
     return (mu, var)
         
 if __name__ == '__main__':
-    filename = sys.argv[1]
-  
-    f = open_gzipped_file(filename)
-    if 'broadPeak' in filename:
-        line_parsing_function = Peak.parse_from_broadpeak_data_row
-    elif 'narrowPeak' in filename:
-        line_parsing_function = Peak.parse_from_narrowpeak_data_row
-    else:
-        raise Exception, 'Unknown filetype'
-
-    peaks = []
-    for line in f:
-        peaks.append(line_parsing_function(line))
     
-    f.close()
+    peaks = []
+    
+    input = sys.argv[1]
+    if os.path.isdir(input):
+        filenames = list(os.listdir(input))
+    else:
+        filenames = [input]
+    
+    for filename in filenames:           
+            
+        f = open_gzipped_file(filename)
+        if 'broadPeak' in filename:
+            line_parsing_function = Peak.parse_from_broadpeak_data_row
+        elif 'narrowPeak' in filename:
+            line_parsing_function = Peak.parse_from_narrowpeak_data_row
+        else:
+            raise Exception, 'Unknown filetype'
+    
+        for line in f:
+            peaks.append(line_parsing_function(line))
+        f.close()
+        
     bins = bin_peaks(peaks)
 
     print 'Bin Width\tBin Size\tMean Score\tVar Score\tMean Signal\tVar Signal\tMean p-value\tVar p-value\tMean q-value\tVar q-value'
