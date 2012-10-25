@@ -16,7 +16,7 @@ if __name__ == '__main__':
     peak_intervals = {}
     
     for filename in filenames:
-        print '# Processing {0!r}'.format(filename)
+        #print '# Processing {0!r}'.format(filename)
         f = open_gzipped_file(filename)
         if 'broadPeak' in filename:
             line_parsing_function = Peak.parse_from_broadpeak_data_row
@@ -48,7 +48,7 @@ if __name__ == '__main__':
 #                
 #            print '{0}\t{1}\t{2}'.format(filename, chromosome, lenpeaks)
 #    
-    print '# Cross-matching'
+    #print '# Cross-matching'
     intersection = {}
     union        = {}
     for (filename, intervals_store) in peak_intervals.iteritems():
@@ -66,7 +66,7 @@ if __name__ == '__main__':
             union[chromosome]        |= peaks
             
     
-    print '# Calculating lengths'
+    #print '# Calculating lengths'
     for chromosome in sorted(intersection):
         intersected_length = length_of_interval(intersection[chromosome])
         union_length = length_of_interval(union[chromosome])

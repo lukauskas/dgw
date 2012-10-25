@@ -1,14 +1,10 @@
 import sys
-import gzip
 from itertools import izip
 from peak import Peak
 import os
 
-def open_gzipped_file(filename):
-    f = gzip.open(filename, 'rb')
-    return f
 
-
+from filetools import open_gzipped_file
 
 def bin_peaks(peaks):
     bins = {}
@@ -37,8 +33,9 @@ if __name__ == '__main__':
     peaks = []
     
     input = sys.argv[1]
+    
     if os.path.isdir(input):
-        filenames = list(os.listdir(input))
+        filenames = map(lambda x : os.path.join(input, x), os.listdir(input))
     else:
         filenames = [input]
     

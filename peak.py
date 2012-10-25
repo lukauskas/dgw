@@ -1,6 +1,7 @@
 from itertools import izip
 
 class Peak(object):
+    table_name = None
     chromosome = None
     _start      = None
     _end        = None
@@ -15,7 +16,8 @@ class Peak(object):
 
     peak         = None
 
-    def __init__(self, chromosome, start, end, name, score, strand, signal_value, p_value, q_value, peak=None):
+    def __init__(self, table_name, chromosome, start, end, name, score, strand, signal_value, p_value, q_value, peak=None):
+        self.table_name = table_name
         self.chromosome = chromosome
         self.start = start
         self.end   = end
@@ -27,6 +29,22 @@ class Peak(object):
         self.q_value = q_value
         self.peak    = peak
 
+    def __repr__(self):
+        return '{name}({table_name}, {chromosome}, {start}, {end}, {score}, {strand}, {signal_value}, {p_value}, {q_value}, {peak})' \
+            .format(name=self.__class__.__name__, track_name=self.table_name,
+                  chromosome=self.chromosome, 
+                  start=self.start, end=self.end, score=self.score,
+                  strand=self.strand, signal_value=self.signal_value, p_value=self.p_value, q_value=self.q_value, peak=self.peak)
+    
+    def __add__(self, other):
+        if self.chromosome != other.chromosome:
+            raise ValueError, 'Cannot add peaks - chromosomes do not match'
+        
+        self.start = min(self.start, other.start)
+        self.end   = max(self.end, other.end)
+        
+        # TODO: not sure what to do with other values
+        return self
     @property
     def width(self):
         return self.end - self.start
@@ -92,7 +110,7 @@ class Peak(object):
             self._name = value
                 
     @classmethod
-    def parse_from_broadpeak_data_row(cls, row):
+    def parse_from_broadpeak_data_row(cls, track_name, row):
         '''
         ENCODE broadPeak: Broad Peaks (or Regions) format    
          
@@ -114,15 +132,15 @@ class Peak(object):
     
         params = dict(izip(PARAM_ORDER, line))
     
-        peak = cls(**params)
+        peak = cls(track_name, **params)
         
         return peak
 
     @classmethod
-    def parse_from_narrowpeak_data_row(cls, row):
+    def parse_from_narrowpeak_data_row(cls, track_name, row):
         line = row.split('\t')
         PARAM_ORDER = ['chromosome', 'start', 'end', 'name', 'score', 'strand', 'signal_value', 'p_value', 'q_value', 'peak']
     
         params = dict(izip(PARAM_ORDER, line))
     
-        return cls(**params)
+        return cls(track_name, **params)
