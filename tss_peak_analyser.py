@@ -5,6 +5,11 @@ from matplotlib import pyplot
 KNOWNGENES_FILE = '../data/knownGenes'
 
 def read_tss(knowngenes_file):
+    '''
+    @param knowngenes_file: Filename of knownGenes
+    @type knowngenes_file: str
+    @rtype: set
+    '''
     f = open(knowngenes_file, 'r')
     
     transcription_starting_sites = set()

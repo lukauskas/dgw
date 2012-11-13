@@ -11,66 +11,67 @@ class Peak:
     __data     = None
     __points_of_interest = None
     
-    data = property(get_data, set_data, None, None)
-    start = property(get_start, set_start, None, None)
-    end = property(get_end, set_end, None, None)
-    points_of_interest = property(get_points_of_interest, set_points_of_interest, None, None) 
-    
     def __init__(self, chromosome, start, end):
         self.chromosome = chromosome
-        self.start      = start
-        self.end        = end
+        self.__start      = int(start)
+        self.__end        = int(end)
         
         self.data = []
         self.points_of_interest = set()
 
-    def get_points_of_interest(self):
+    @property
+    def points_of_interest(self):
         return self.__points_of_interest
 
-
-    def set_points_of_interest(self, value):
+    @points_of_interest.setter
+    def points_of_interest(self, value):
         self.__points_of_interest = value
 
     def add_point_of_interest(self, point):
         self.points_of_interest.add(point)
-
-    def get_start(self):
+    
+    @property
+    def start(self):
         return self.__start
 
-
-    def get_end(self):
+    @property
+    def end(self):
+        '''
+        End of the peak. Please note that the end is not inclusive.
+        
+        That is Peak(chr1, 0, 100) will have 100 elements in it that are integers in [0,99], but
+        will not contain the bp=100
+        '''
         return self.__end
 
-
-    def set_start(self, value):
+    @start.setter
+    def start(self, value):
         self.__start = int(value)
 
-
-    def set_end(self, value):
+    @end.setter
+    def end(self, value):
         self.__end = int(value)
 
-
-    def get_data(self):
+    @property
+    def data(self):
         return self.__data
-
-    def set_data(self, value):
+    @data.setter
+    def data(self, value):
         self.__data = value
 
-    def get_data_relative_to_point(self, point):
-        location = point.location
-        
+    def data_relative_to_point(self, point):
         for pos, n in izip(xrange(self.start, self.end), self.data):
-            adjusted_pos = pos - location
+            adjusted_pos = pos - point
             yield (adjusted_pos, n)
     
-    def find_interesting_points_from_set(self, interesting_points_set, points_type):
+    def find_interesting_points_from_set(self, interesting_points_set):
         for pos in xrange(self.start, self.end):
             if pos in interesting_points_set:
-                self.add_point_of_interest(Point(location=pos, type=points_type))
+                self.add_point_of_interest(pos)
         
         
     def __repr__(self):
         return '<Peak({0!r}, {1!r}, {2!r})>'.format(self.chromosome, 
                                              self.start, 
-                                             self.end)    
+                                             self.end) 
     
