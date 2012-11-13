@@ -35,7 +35,9 @@ def process(peaks_file, alignments_file, transcription_starting_sites):
    
     adjusted_n_sum_4kp = {}
     adjusted_n_count_4kp = {} 
-  
+    
+    tss_counts = {}
+    
     for line in peaks_handle:
         line = line.strip("\n")
         line = line.split("\t")
@@ -48,11 +50,19 @@ def process(peaks_file, alignments_file, transcription_starting_sites):
         for i in range(start, end):
             if (chromosome, i) in transcription_starting_sites:
                 tss_locations.append(i)
-                
+        
         tss_count = len(tss_locations)
+        
+        
+        try:
+            tss_counts[tss_count] += 1        
+        except KeyError:
+            tss_counts[tss_count] = 1
+            
         if tss_count != 1:
             # Skip all the peaks that have zero / more than one tss
             continue
+        
         tss_loc = tss_locations[0]
         
         data = {}
@@ -92,6 +102,7 @@ def process(peaks_file, alignments_file, transcription_starting_sites):
 
         #print '{0}:{1}-{2}\t{3}'.format(chromosome, start, end, len(data_arr))
         
+    print '{0!r}'.format(tss_counts)
     
     x = []
     y = []
