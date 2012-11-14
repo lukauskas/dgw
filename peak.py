@@ -64,6 +64,9 @@ class Peak:
             adjusted_pos = pos - point
             yield (adjusted_pos, n)
     
+    def data_relative_to_start(self):
+        return enumerate(self.data)
+    
     def find_interesting_points_from_set(self, interesting_points_set):
         for pos in xrange(self.start, self.end):
             if pos in interesting_points_set:

@@ -8,8 +8,8 @@ from collections import defaultdict
 from matplotlib import pyplot
 
 
-def plot(data):
-    
+def plot(data, figure=None):
+
     sums   = defaultdict(lambda: 0)
     counts = defaultdict(lambda: 0)
     
@@ -29,7 +29,7 @@ def plot(data):
             print(count)
         y.append(float(n) / count)
     
-    pyplot.plot(x,y)
+    pyplot.plot(x,y, figure=figure)
     return (x,y)
   
     
