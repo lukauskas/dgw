@@ -5,6 +5,7 @@ Created on 13 Nov 2012
 '''
 from scipy.spatial.distance import pdist
 from mlpy import dtw_std
+import numpy
 
 def dtw_distance_matrix(peaks):
     peaks = list(peaks) # Convert to list as need to loop twice
@@ -22,8 +23,34 @@ def dtw_distance_matrix(peaks):
     return distances
 
 
-def dtw(x, y):
-    pass
+def dtw(x, y, distance_function):
+    cost_matrix = numpy.empty([len(x), len(y)])
+    max_x = len(x) - 1
+    max_y = len(y) - 1
+    
+    # Initialise bottom left corner
+    cost_matrix[0,0] = distance_function(x[0], y[0])
+    
+    # Initialise first column
+    for j in range(1, len(y)):
+        cost_matrix[0, j] = cost_matrix[0][j-1] + distance_function(x[0],
+                                                                    y[j])
+    for i in range(1, len(x)):
+        # Init first row
+        cost_matrix[i,0] = cost_matrix[i-1, 0] + distance_function(x[i], y[0])
+        
+        # Init other rows
+        for j in range(1, len(y)):
+            min_global_cost = min(cost_matrix[i-1,j],
+                                  cost_matrix[i-1, j-1],
+                                  cost_matrix[i, j-1])
+            
+            cost_matrix[i,j] = min_global_cost + distance_function(x[i], y[j])
+            
+    # Minimal cost is at the top-right corner of the matrix
+    min_cost = cost_matrix[len(x)-1,len(y)-1]
+    
+    return min_cost
 
 def shrink_time_series(x, shrink_factor):
     '''
