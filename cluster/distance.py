@@ -50,7 +50,55 @@ def dtw(x, y, distance_function):
     # Minimal cost is at the top-right corner of the matrix
     min_cost = cost_matrix[len(x)-1,len(y)-1]
     
-    return min_cost
+    # Trace back the path
+    min_cost_path = []
+    
+    i = len(x)-1
+    j = len(y)-1
+    min_cost_path.append((i,j))
+    
+    while (i > 0) or (j > 0):
+        # Find costs of moving in three possible directions:
+        
+        # diagonal
+        try:
+            diag_cost = cost_matrix[i-1,j-1]
+        except IndexError:
+            diag_cost = float('inf')
+        
+        # left
+        try:
+            left_cost = cost_matrix[i-1, j]
+        except IndexError:
+            left_cost = float('inf')
+        
+        # down
+        try:
+            down_cost = cost_matrix[i, j-1]
+        except IndexError:
+            down_cost = float('inf')
+        
+        # determine where to move in. 
+        # Prefer moving diagonally or towards i==j axis if there
+        # are ties
+        
+        if diag_cost <= left_cost and diag_cost <= down_cost:
+            i -= 1
+            j -= 1
+        elif left_cost < diag_cost and left_cost < down_cost:
+            i -= 1
+        elif down_cost < diag_cost and diag_cost < left_cost:
+            j -= 1
+        elif i <= j: # left_cost == right_cost < diag_cost
+            j -= 1
+        else: # left_cost == right_cost < diag_cost
+            i -= 1
+            
+        min_cost_path.append((i,j))
+    
+    min_cost_path.reverse()
+    
+    return min_cost, min_cost_path
 
 def shrink_time_series(x, shrink_factor):
     '''
