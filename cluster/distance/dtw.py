@@ -54,7 +54,6 @@ def traceback_path(x, y, cost_matrix):
         else:
             down_cost = float('inf')
        
-        assert(not (down_cost == float('inf') and left_cost == float('inf') and diag_cost == float('inf'))) 
         # determine where to move in. 
         # Prefer moving diagonally or towards i==j axis if there
         # are ties
@@ -79,26 +78,31 @@ def traceback_path(x, y, cost_matrix):
 
 def dtw(x, y, distance_function):
     cost_matrix = numpy.empty([len(x), len(y)])
-
-    # Initialise bottom left corner
-    cost_matrix[0,0] = distance_function(x[0], y[0])
     
-    # Initialise first column
-    for j in range(1, len(y)):
-        cost_matrix[0, j] = cost_matrix[0][j-1] + distance_function(x[0],
-                                                                    y[j])
-    for i in range(1, len(x)):
-        # Init first row
-        cost_matrix[i,0] = cost_matrix[i-1, 0] + distance_function(x[i], y[0])
-        
-        # Init other rows
-        for j in range(1, len(y)):
-            min_global_cost = min(cost_matrix[i-1,j],
-                                  cost_matrix[i-1, j-1],
-                                  cost_matrix[i, j-1])
-            
-            cost_matrix[i,j] = min_global_cost + distance_function(x[i], y[j])
-            
+    for i in range(len(x)):
+        for j in range(len(y)):
+            local_dist = distance_function(x[i], y[j])
+            if i == 0 and j == 0:
+                cost_matrix[i,j] = local_dist
+            elif i == 0:
+                assert(cost_matrix[i, j-1] is not None)
+                cost_matrix[i,j] = cost_matrix[i, j-1] + \
+                                   local_dist
+            elif j == 0:
+                assert(cost_matrix[i-1, j] is not None)
+                cost_matrix[i,j] = cost_matrix[i-1, j] + \
+                                   local_dist
+            else:
+                
+                assert(cost_matrix[i, j-1] is not None)
+                assert(cost_matrix[i-1, j] is not None)
+                assert(cost_matrix[i-1, j-1] is not None)
+                min_global_cost = min(cost_matrix[i-1, j],
+                                      cost_matrix[i, j-1],
+                                      cost_matrix[i-1, j-1])
+                
+                cost_matrix[i,j] = min_global_cost + local_dist
+    
     # Minimal cost is at the top-right corner of the matrix
     min_cost = cost_matrix[len(x)-1,len(y)-1]
     
@@ -109,9 +113,9 @@ def constrained_dtw(x, y, window, distance_function):
     assert(isinstance(window, DTWWindow))
     
     cost_matrix = window.get_cost_matrix()
-    
+
     for (i, j) in window:
-        local_dist = distance_function(x[i], y[i])
+        local_dist = distance_function(x[i], y[j])
         if i == 0 and j == 0:
             cost_matrix[i,j] = local_dist
         elif i == 0:
@@ -130,8 +134,9 @@ def constrained_dtw(x, y, window, distance_function):
             min_global_cost = min(cost_matrix[i-1, j],
                                   cost_matrix[i, j-1],
                                   cost_matrix[i-1, j-1])
+          
             cost_matrix[i,j] = min_global_cost + local_dist
-            
+
     min_cost = cost_matrix[len(x)-1, len(y)-1]
     
     min_cost_path = traceback_path(x, y, cost_matrix)
@@ -329,7 +334,8 @@ class WindowMatrix(object):
         current_offset = 0
         for i in range(window.columns):
             self._col_offsets.append(current_offset)
-            current_offset += window.max_value_for(i) - window.min_value_for(i)
+            current_offset += window.max_value_for(i) - window.min_value_for(i) + 1
+            
     def contains(self, col, row):
         return row >= self._window.min_value_for(col) and row <= self._window.max_value_for(col)
     
