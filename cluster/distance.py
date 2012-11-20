@@ -53,7 +53,8 @@ def traceback_path(x, y, cost_matrix):
             down_cost = cost_matrix[i, j-1]
         else:
             down_cost = float('inf')
-        
+       
+        assert(not (down_cost == float('inf') and left_cost == float('inf') and diag_cost == float('inf'))) 
         # determine where to move in. 
         # Prefer moving diagonally or towards i==j axis if there
         # are ties
@@ -109,21 +110,18 @@ def constrained_dtw(x, y, window, distance_function):
     
     cost_matrix = window.get_cost_matrix()
     
-    # TODO:
-    # >>> fast_dtw([1,2,5,17], [4,5,6,7,8,9], cityblock)
-    # (18, [(0, 0), (0, 1), [ WTF: (1, 2), (2, 3) ], (2, 4), (3, 5)])
-
     for (i, j) in window:
+        local_dist = distance_function(x[i], y[i])
         if i == 0 and j == 0:
-            cost_matrix[i,j] = distance_function(x[i], y[j])
+            cost_matrix[i,j] = local_dist
         elif i == 0:
             assert(cost_matrix[i, j-1] is not None)
             cost_matrix[i,j] = cost_matrix[i, j-1] + \
-                               distance_function(x[i], y[j])
+                               local_dist
         elif j == 0:
             assert(cost_matrix[i-1, j] is not None)
             cost_matrix[i,j] = cost_matrix[i-1, j] + \
-                               distance_function(x[i], y[j])
+                               local_dist
         else:
             
             assert(cost_matrix[i, j-1] is not None)
@@ -132,8 +130,8 @@ def constrained_dtw(x, y, window, distance_function):
             min_global_cost = min(cost_matrix[i-1, j],
                                   cost_matrix[i, j-1],
                                   cost_matrix[i-1, j-1])
-            cost_matrix[i,j] = min_global_cost + distance_function(x[i], y[j])
-    
+            cost_matrix[i,j] = min_global_cost + local_dist
+            
     min_cost = cost_matrix[len(x)-1, len(y)-1]
     
     min_cost_path = traceback_path(x, y, cost_matrix)
