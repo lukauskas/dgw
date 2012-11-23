@@ -7,21 +7,49 @@ from scipy.spatial.distance import cityblock
 from mlpy import dtw_std
 from operator import itemgetter
 from sys import maxint as MAXINT
+from itertools import combinations
 import numpy
 
-def dtw_distance_matrix(peaks):
-    peaks = list(peaks) # Convert to list as need to loop twice
+from datetime import datetime
+from math import factorial
+
+from multiprocessing import Pool
+
+def dtw_distance_matrix(peaks, dtw_func):
     
-    distances = []
-    while (peaks):
-        
-        head = peaks[0]
-        tail = peaks[1:]
-        peaks = tail
-        
-        for peak in tail:
-            distances.append(dtw_std(head, peak))
+    peaks = list(peaks) # Convert peaks to list
+    peak_lens = map(len, peaks)
     
+    n = len(peaks)
+    comparison_count = 0
+    total_count = 0
+    distances = [None] * (factorial(n) // (factorial(2) * factorial(n - 2)))
+    INFINITY = float('inf')
+ 
+    for i, j in combinations(range(n), 2):
+        
+        peak_a = peaks[i]
+        peak_b = peaks[j]
+        
+        len_a = peak_lens[i]
+        len_b = peak_lens[j]
+        
+        min_len = min(len_a, len_b)
+        max_len = max(len_a, len_b)
+        total_count += 1
+        if min_len*3 < max_len:
+            distances[total_count -1] = INFINITY
+            continue
+        
+        distances[total_count-1] = dtw_func(peak_a, peak_b)
+            
+#            start = datetime.now()
+#            distances.append(dtw_func(head, peak))
+#            end = datetime.now()
+#            sum_time += (end-start).total_seconds()
+        comparison_count += 1
+    
+    print total_count, comparison_count
     return distances
 
 def traceback_path(x, y, cost_matrix):
@@ -76,7 +104,7 @@ def traceback_path(x, y, cost_matrix):
 
     return min_cost_path
 
-def dtw(x, y, distance_function):
+def dtw(x, y, distance_function=cityblock, return_aligned_path=False):
     cost_matrix = numpy.empty([len(x), len(y)])
     
     for i in range(len(x)):
@@ -105,11 +133,13 @@ def dtw(x, y, distance_function):
     
     # Minimal cost is at the top-right corner of the matrix
     min_cost = cost_matrix[len(x)-1,len(y)-1]
-    
-    min_cost_path = traceback_path(x, y, cost_matrix)
-    return min_cost, min_cost_path
+    if not return_aligned_path:
+        return min_cost
+    else:
+        min_cost_path = traceback_path(x, y, cost_matrix)
+        return min_cost, min_cost_path
 
-def constrained_dtw(x, y, window, distance_function):
+def constrained_dtw(x, y, window, distance_function=cityblock, return_aligned_path=False):
     assert(isinstance(window, DTWWindow))
     
     cost_matrix = window.get_cost_matrix()
@@ -138,10 +168,11 @@ def constrained_dtw(x, y, window, distance_function):
             cost_matrix[i,j] = min_global_cost + local_dist
 
     min_cost = cost_matrix[len(x)-1, len(y)-1]
-    
-    min_cost_path = traceback_path(x, y, cost_matrix)
-    
-    return min_cost, min_cost_path
+    if not return_aligned_path:
+        return min_cost
+    else:
+        min_cost_path = traceback_path(x, y, cost_matrix)
+        return min_cost, min_cost_path
     
 def shrink_time_series(x, shrink_factor):
     '''
@@ -357,7 +388,7 @@ class WindowMatrix(object):
         self._cell_values[value_index] = value
         
     
-def fast_dtw(x, y, distance_function):
+def fast_dtw(x, y, distance_function=cityblock, return_aligned_path = False):
     
     radius = 0
     
@@ -366,7 +397,7 @@ def fast_dtw(x, y, distance_function):
     len_x = len(x)
     len_y = len(y)
     if (len_x <= min_ts_size or len_y <= min_ts_size):
-        return dtw(x, y, distance_function)
+        return dtw(x, y, distance_function, return_aligned_path=return_aligned_path)
     else:
         SHRINK_FACTOR = 2.0
         shrunk_x, agg_x = shrink_time_series(x, SHRINK_FACTOR)
@@ -374,7 +405,7 @@ def fast_dtw(x, y, distance_function):
         shrunk_y, agg_y = shrink_time_series(y, SHRINK_FACTOR)
         assert(sum(agg_y) == len(y))
         
-        _, low_res_path = fast_dtw(shrunk_x, shrunk_y, distance_function)
+        _, low_res_path = fast_dtw(shrunk_x, shrunk_y, distance_function, return_aligned_path=True)
         
         window = expanded_res_window(x, y, 
                                      shrunk_x, shrunk_y, 
@@ -382,4 +413,5 @@ def fast_dtw(x, y, distance_function):
                                      low_res_path,
                                       radius)
 
-        return constrained_dtw(x, y, window, distance_function)
+        return constrained_dtw(x, y, window, distance_function=distance_function, 
+                               return_aligned_path=return_aligned_path)

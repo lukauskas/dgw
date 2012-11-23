@@ -24,7 +24,7 @@ def read_tss(knowngenes_file):
         
         transcription_starting_sites.add((chromosome, tss))
     
-    return transcription_starting_sites
+    return frozenset(transcription_starting_sites)
 
 def process(peaks_file, alignments_file, transcription_starting_sites):
     samfile = pysam.Samfile(alignments_file, "rb")

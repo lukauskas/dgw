@@ -1,6 +1,6 @@
 from __future__ import print_function
 import matplotlib.pyplot as plt
-
+from matplotlib import cm
 import numpy as np
 
 def draw_heatmap(adjusted_peak_data):
@@ -34,12 +34,11 @@ def draw_heatmap(adjusted_peak_data):
     arr = np.empty([N, max_offset+1-min_offset], dtype=float)
     
     for i, apd in enumerate(adjusted_peak_data):
-        apd = dict(apd)
         
-        for (pos, n) in sorted(apd.iteritems()):
+        for (pos, n) in apd.iteritems():
             pos = pos - min_offset
-            scaled_n = (float(n) - min_value) / (max_value - min_value)
+            #scaled_n = (float(n) - min_value) / (max_value - min_value)
             
-            arr[i][pos] = scaled_n
-    plt.imshow(arr)
-    plt.show()
+            arr[i,pos] = n
+    plt.imshow(arr,extent=(0,1600,0,1200))
+    plt.savefig('heatmap.png')

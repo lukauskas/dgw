@@ -69,7 +69,7 @@ class Peak:
     
     def find_interesting_points_from_set(self, interesting_points_set):
         for pos in xrange(self.start, self.end):
-            if pos in interesting_points_set:
+            if (self.chromosome, pos) in interesting_points_set:
                 self.add_point_of_interest(pos)
         
         

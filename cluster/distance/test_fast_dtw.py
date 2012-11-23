@@ -29,6 +29,6 @@ def main(count, seed = None):
                                                                  dtw_std=dtw_std)
 
 if __name__ == '__main__':
-    main(10, 10)
+    main(1000, 10)
     
     
