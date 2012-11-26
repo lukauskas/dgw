@@ -72,21 +72,27 @@ class Peak(object):
         return bin_id
         
     def expanded_data_relative_to_point(self, point):
+        ans = []
         for pos in xrange(self.start, self.end):
             bin_of_pos = self.__data_bin_of_point(pos)
             n = self.data[bin_of_pos]
             adjusted_pos = pos - point
-            yield (adjusted_pos, n)
+            ans.append( (adjusted_pos, n) )
+        
+        return ans
     
     def data_relative_to_point(self, point):
         point_bin = self.__data_bin_of_point(point)
         
+        ans = []
         for i, n in enumerate(self.data):
             rel_bin = i - point_bin
-            yield(rel_bin, n)
+            ans.append((rel_bin, n))
+        
+        return ans
             
     def data_relative_to_start(self):
-        return enumerate(self.data)
+        return list(enumerate(self.data))
     
     def expanded_data_relative_to_start(self):
         return self.expanded_data_relative_to_point(self.start)

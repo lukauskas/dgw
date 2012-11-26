@@ -17,7 +17,10 @@ import os
 from mlpy import dtw_std
 from view.heatmap import draw_heatmap
 
-def parse_peak_from_bam_line(line):
+from math import floor, ceil
+
+
+def parse_peak_from_bam_line(line, resolution = 1):
     '''
     @rtype: Peak
     '''
@@ -25,10 +28,10 @@ def parse_peak_from_bam_line(line):
     line = line.split("\t")
     
     chromosome = line[0]
-    start      = line[1]
-    end        = line[2]
+    start      = resolution * int(floor(float(line[1]) / resolution))
+    end        = resolution * int(ceil(float(line[2]) / resolution))
     
-    return Peak(chromosome, start, end)
+    return Peak(chromosome, start, end, resolution=resolution)
 
 def get_peak_data(samfile, peak):
     '''
@@ -39,23 +42,26 @@ def get_peak_data(samfile, peak):
     @rtype: list
     '''
     
-    data = {}
+    data_arr = []
     
     # Note this has to be peak.end - 1 
     # because samfile.pileup treats ends inclusively
-    for pileupcolumn in samfile.pileup(peak.chromosome, 
-                                       peak.start, 
-                                       peak.end-1):
-        
-        data[pileupcolumn.pos] = int(pileupcolumn.n)
+    data_len = (peak.end - peak.start) / peak.resolution
     
-    data_arr = [ data.get(i, 0) 
-                 for i in range(peak.start, peak.end)]
-
+    for i in xrange(data_len):
+        start = peak.start + i * peak.resolution
+        end   = start + peak.resolution - 1 # samfile treats ends inclusively
+        assert(end > start)
+        
+        count = samfile.count(peak.chromosome, start, end)
+        data_arr.append(count)
+    
+    assert(len(data_arr) > 0)
+    assert(len(data_arr) == data_len)
     return data_arr    
 
 @cached
-def get_peaks(peaks_file, alignments_file, tss_set):
+def get_peaks(peaks_file, alignments_file, tss_set, resolution=1):
     
     samfile = pysam.Samfile(alignments_file, "rb")
     peaks_handle = open(peaks_file, "r")
@@ -64,7 +70,7 @@ def get_peaks(peaks_file, alignments_file, tss_set):
     peaks = []
     for line in peaks_handle:
 
-        peak = parse_peak_from_bam_line(line)
+        peak = parse_peak_from_bam_line(line, resolution)
         
         peak.find_interesting_points_from_set(tss_set)
         if len(peak.points_of_interest) != 1:
@@ -82,31 +88,13 @@ def get_peaks(peaks_file, alignments_file, tss_set):
     
     return peaks
 
-def binned_points(adjusted_points, bin_size):
-
-    items_in_bin = 0
-    bin_id = 0
-    bins = {}
-    current_bin_value = 0
-    for offset, value in adjusted_points:
-        if items_in_bin == bin_size:
-            bins[bin_id] = current_bin_value
-            bin_id += 1
-            items_in_bin = 0
-            current_bin_value = 0
-        
-        current_bin_value += value
-        items_in_bin += 1
-    
-    bins[bin_id] = current_bin_value
-    return bins
 if __name__ == '__main__':
     tss_set = read_tss(KNOWNGENES_FILE)
     
     import sys
     
     print("Obtaining data")
-    peaks = list(get_peaks(*sys.argv[1:], tss_set=tss_set))
+    peaks = list(get_peaks(*sys.argv[1:], tss_set=tss_set, resolution=25))
     print len(peaks)
     
     data = map(lambda x : x.data, peaks)
@@ -141,8 +129,8 @@ if __name__ == '__main__':
    
     fig = pyplot.figure()
     ax = fig.add_subplot(1, 2, 1)
-    binn_points = [ binned_points(p.data_relative_to_start(), 25) for p in peaks ] 
-    plot(map(lambda x : x.items(), binn_points))
+    binn_points = [ p.data_relative_to_start() for p in peaks ] 
+    plot(binn_points)
     ax = fig.add_subplot(1,2,2)
     draw_heatmap(binn_points, ax)
     pyplot.savefig("out.png")

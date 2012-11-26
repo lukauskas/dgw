@@ -6,8 +6,6 @@ import matplotlib
 
 def draw_heatmap(adjusted_peak_data, ax=None):
     adjusted_peak_data = list(adjusted_peak_data)
-    adjusted_peak_data = map(dict, adjusted_peak_data)
-    
     min_offset = None
     max_offset = None
     
@@ -16,7 +14,7 @@ def draw_heatmap(adjusted_peak_data, ax=None):
 
     values = []
     for apd in adjusted_peak_data:
-        for offset, val in apd.iteritems():
+        for offset, val in apd:
             if offset < min_offset or min_offset is None:
                 min_offset = offset
             
@@ -30,7 +28,7 @@ def draw_heatmap(adjusted_peak_data, ax=None):
                 max_value = val
             
             values.append(val)
-    
+   
     min_value = min(values)
     max_value = max(values)
     
@@ -59,7 +57,7 @@ def draw_heatmap(adjusted_peak_data, ax=None):
     adjusted_peak_data = sorted(adjusted_peak_data, key = len)
     for i, apd in enumerate(adjusted_peak_data):
         
-        for (pos, n) in apd.iteritems():
+        for (pos, n) in apd:
             pos = pos - min_offset
             #scaled_n = (float(n) - min_value) / (max_value - min_value)
             
