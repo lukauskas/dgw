@@ -82,6 +82,24 @@ def get_peaks(peaks_file, alignments_file, tss_set):
     
     return peaks
 
+def binned_points(adjusted_points, bin_size):
+
+    items_in_bin = 0
+    bin_id = 0
+    bins = {}
+    current_bin_value = 0
+    for offset, value in adjusted_points:
+        if items_in_bin == bin_size:
+            bins[bin_id] = current_bin_value
+            bin_id += 1
+            items_in_bin = 0
+            current_bin_value = 0
+        
+        current_bin_value += value
+        items_in_bin += 1
+    
+    bins[bin_id] = current_bin_value
+    return bins
 if __name__ == '__main__':
     tss_set = read_tss(KNOWNGENES_FILE)
     
@@ -120,12 +138,18 @@ if __name__ == '__main__':
 #        plot(cluster_data)
 #    
 #    pyplot.savefig('plot.png')
-    pyplot.figure(2)
-    draw_heatmap([ p.data_relative_to_start() for p in peaks ])
-    pyplot.savefig('avg.png')
-    
+   
+    fig = pyplot.figure()
+    ax = fig.add_subplot(1, 2, 1)
+    binn_points = [ binned_points(p.data_relative_to_start(), 25) for p in peaks ] 
+    plot(map(lambda x : x.items(), binn_points))
+    ax = fig.add_subplot(1,2,2)
+    draw_heatmap(binn_points, ax)
+    pyplot.savefig("out.png")
+    pyplot.show()
+
 #        
-    print("Number of clusters: {0}".format(max(cluster_assignments)))
+    #print("Number of clusters: {0}".format(max(cluster_assignments)))
     
      
       

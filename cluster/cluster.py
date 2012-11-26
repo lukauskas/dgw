@@ -14,6 +14,6 @@ def hierarchical_cluster(data, distance_matrix_func, threshold):
     z = linkage(dm)
     dendrogram(z)
     pyplot.show()
-    print "Flattening the cluster"
+    print "Flattening the cleuster"
     cluster_assignments = fcluster(z, t=threshold, criterion='maxclust')
     return cluster_assignments

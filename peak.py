@@ -72,7 +72,7 @@ class Peak:
             if (self.chromosome, pos) in interesting_points_set:
                 self.add_point_of_interest(pos)
         
-        
+    
     def __repr__(self):
         return '<Peak({0!r}, {1!r}, {2!r})>'.format(self.chromosome, 
                                              self.start, 
