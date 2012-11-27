@@ -19,9 +19,6 @@ def _dtw_std_wrapper(args):
     return dtw_std(*args)
 
 def dtw_distance_matrix(peaks):
-    
-    peaks = list(peaks) # Convert peaks to list as we need to iterate it more than once
-    
     p = Pool()
     distances = p.map(_dtw_std_wrapper, combinations(peaks, 2))
 
