@@ -8,10 +8,11 @@ from collections import defaultdict
 from matplotlib import pyplot
 
 
-def plot(data, figure=None):
+def plot(peaks, data_extract_func, figure=None):
 
     sums   = defaultdict(lambda: 0)
     counts = defaultdict(lambda: 0)
+    data = map(data_extract_func, peaks)
     
     for peak_data in data:
         for pos, n in peak_data:

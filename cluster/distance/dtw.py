@@ -15,41 +15,21 @@ from math import factorial
 
 from multiprocessing import Pool
 
-def dtw_distance_matrix(peaks, dtw_func):
+def dtw_distance_matrix(peaks):
     
-    peaks = list(peaks) # Convert peaks to list
-    peak_lens = map(len, peaks)
+    peaks = list(peaks) # Convert peaks to list as we need to iterate it more than once
     
     n = len(peaks)
-    comparison_count = 0
-    total_count = 0
-    distances = [None] * (factorial(n) // (factorial(2) * factorial(n - 2)))
-    INFINITY = float('inf')
- 
-    for i, j in combinations(range(n), 2):
+    # Initialise the output list to save a bit on ever increasing it
+    distances = numpy.empty((factorial(n) // (factorial(2) * factorial(n - 2))))
+    
+    for index, (i, j) in enumerate(combinations(range(n), 2)):
         
         peak_a = peaks[i]
         peak_b = peaks[j]
-        
-        len_a = peak_lens[i]
-        len_b = peak_lens[j]
-        
-        min_len = min(len_a, len_b)
-        max_len = max(len_a, len_b)
-        total_count += 1
-        if min_len*3 < max_len:
-            distances[total_count -1] = INFINITY
-            continue
-        
-        distances[total_count-1] = dtw_func(peak_a, peak_b)
-            
-#            start = datetime.now()
-#            distances.append(dtw_func(head, peak))
-#            end = datetime.now()
-#            sum_time += (end-start).total_seconds()
-        comparison_count += 1
-    
-    print total_count, comparison_count
+                
+        distances[index] = dtw_std(peak_a, peak_b)
+
     return distances
 
 def traceback_path(x, y, cost_matrix):

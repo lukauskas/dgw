@@ -9,7 +9,10 @@ import os
 from functools import wraps
 
 CACHE_DIR = '_cache'
-
+CACHE_DISABLED = os.environ.get('DISABLE_CACHING', False) != False
+if CACHE_DISABLED:
+    print "Cache is disabled"
+    
 def __cache_filename(func, args, kwargs, unique_hash=None):
     if unique_hash is None:
         important_info = (func.__name__, args, sorted(kwargs.items()))
@@ -23,6 +26,8 @@ def cached(func, unique_hash=None):
     
     @wraps(func)
     def f(*args, **kwargs):
+        if CACHE_DISABLED:
+            return func(*args, **kwargs)
         
         cache_filename = __cache_filename(func, args, kwargs)
         

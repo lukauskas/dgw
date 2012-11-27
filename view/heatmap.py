@@ -4,8 +4,8 @@ from matplotlib import cm
 import numpy as np
 import matplotlib
 
-def draw_heatmap(adjusted_peak_data, ax=None):
-    adjusted_peak_data = list(adjusted_peak_data)
+def plot(peaks, data_extract_func):
+    adjusted_peak_data = list(map(data_extract_func, peaks))
     min_offset = None
     max_offset = None
     
@@ -72,11 +72,7 @@ def draw_heatmap(adjusted_peak_data, ax=None):
     cmap = matplotlib.cm.get_cmap('jet')
     cmap.set_bad('#CCCCCC', 1.0)
     
-    if ax is None:
-        fig = plt.figure()
-        ax = fig.add_subplot(111)
-    
-    result = ax.imshow(masked_arr, cmap=cmap, aspect="auto", interpolation="nearest")
+    result = plt.imshow(masked_arr, cmap=cmap, aspect="auto", interpolation="nearest")
     print('Clipping result\'s colours to: ({0}, {1})'.format(min_value, max_value))
     result.set_clim(min_value, max_value)
     cbar = plt.colorbar(result)

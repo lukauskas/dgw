@@ -7,17 +7,18 @@ import pysam
 from peak import Peak
 from itertools import izip
 from tss_peak_analyser import read_tss, KNOWNGENES_FILE
-from view.average import plot
+from view.average import plot as plot_average
 from matplotlib import pyplot
-from cluster.distance.dtw import dtw_distance_matrix, fast_dtw
+from cluster.distance.dtw import dtw_distance_matrix
 from cluster.cluster import hierarchical_cluster
 import math
 from cache import cached
 import os
 from mlpy import dtw_std
-from view.heatmap import draw_heatmap
+from view.heatmap import plot as plot_heatmap
 
 from math import floor, ceil
+import numpy
 
 
 def parse_peak_from_bam_line(line, resolution = 1):
@@ -47,6 +48,7 @@ def get_peak_data(samfile, peak):
     # Note this has to be peak.end - 1 
     # because samfile.pileup treats ends inclusively
     data_len = (peak.end - peak.start) / peak.resolution
+#    return numpy.random.rand(data_len)
     
     for i in xrange(data_len):
         start = peak.start + i * peak.resolution
@@ -80,8 +82,8 @@ def get_peaks(peaks_file, alignments_file, tss_set, resolution=1):
         peaks.append(peak)
         
         counter += 1
-#        if counter > 20:
-#            break
+        if counter > 100:
+            break
 
     samfile.close()
     peaks_handle.close()
@@ -97,44 +99,51 @@ if __name__ == '__main__':
     peaks = list(get_peaks(*sys.argv[1:], tss_set=tss_set, resolution=25))
     print len(peaks)
     
-    data = map(lambda x : x.data, peaks)
+    data_extract_func = lambda peak: peak.data_relative_to_start()
+    data = map(lambda x : map(lambda y : y[1], sorted(data_extract_func(x))), peaks)
     N = len(data)
    
     
-#    dist_func = lambda x : dtw_distance_matrix(x, dtw_std)
-    
     print("Clustering")
-#    THRESHOLD = 10
-#    distance_func = cached(dist_func, os.path.basename(sys.argv[1]))
-#    cluster_assignments = hierarchical_cluster(data, distance_func, THRESHOLD)
-#    print("Number of clusters")
-#    cluster_assignments = list(cluster_assignments)
-#    number_of_clusters = max(cluster_assignments)
-#    
-#    ROWS = int(math.sqrt(number_of_clusters))
-#    COLS = ROWS
-#    while (ROWS*COLS < number_of_clusters):
-#        ROWS += 1
-#        
-#    print('Rows: {0}, cols: {1}'.format(ROWS,COLS))
-##       
-#    pyplot.figure(1)
-#    for i in range(1, number_of_clusters+1):
-#        pyplot.subplot(ROWS, COLS, i)
-#        cluster_data = [ p.data_relative_to_start() for c,p in izip(cluster_assignments, peaks) if c == i]
-#        print("Cluster {0}: {1}".format(i, len(cluster_data)))
-#        plot(cluster_data)
-#    
-#    pyplot.savefig('plot.png')
+    THRESHOLD = 10
+    distance_func = cached(dtw_distance_matrix, os.path.basename(sys.argv[1]))
+    cluster_assignments = hierarchical_cluster(data, distance_func, THRESHOLD)
+    print("Number of clusters")
+    cluster_assignments = list(cluster_assignments)
+    number_of_clusters = max(cluster_assignments)
+    
+    ROWS = int(math.sqrt(number_of_clusters))
+    COLS = ROWS
+    while (ROWS*COLS < number_of_clusters):
+        ROWS += 1
+        
+    print('Rows: {0}, cols: {1}'.format(ROWS,COLS))
+    
+    pyplot.figure(1)
+    for i in range(1, number_of_clusters+1):
+        pyplot.subplot(ROWS, COLS, i)
+        cluster_data = [ p for c,p in izip(cluster_assignments, peaks) if c == i]
+        print("Cluster {0}: {1}".format(i, len(cluster_data)))
+        plot_average(cluster_data, data_extract_func)
+    
+    pyplot.savefig('averages.png')
+    
+    fig = pyplot.figure(2)
+    for i in range(1, number_of_clusters+1):
+        cluster_data = [ p for c,p in izip(cluster_assignments, peaks) if c == i]
+        pyplot.subplot(ROWS,COLS,i)
+        plot_heatmap(cluster_data, data_extract_func)
+    
+    pyplot.savefig('heatmaps.png')
    
-    fig = pyplot.figure()
-    ax = fig.add_subplot(1, 2, 1)
-    binn_points = [ p.data_relative_to_start() for p in peaks ] 
-    plot(binn_points)
-    ax = fig.add_subplot(1,2,2)
-    draw_heatmap(binn_points, ax)
-    pyplot.savefig("out.png")
-    pyplot.show()
+#    fig = pyplot.figure()
+#    ax = fig.add_subplot(1, 2, 1)
+#    data_extract_func = lambda peak: peak.data_relative_to_start()
+#    plot_average(peaks, data_extract_func)
+#    ax = fig.add_subplot(1,2,2)
+#    plot_heatmap(peaks, data_extract_func, ax)
+#    pyplot.savefig("out.png")
+#    pyplot.show()
 
 #        
     #print("Number of clusters: {0}".format(max(cluster_assignments)))
