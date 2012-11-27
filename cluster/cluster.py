@@ -12,8 +12,9 @@ def hierarchical_cluster(data, distance_matrix_func, threshold):
     
     print "Calculating linkage"
     z = linkage(dm, method='complete', metric='cityblock')
-    dendrogram(z)
+    real_threshold = threshold * max(z[:,2])
+    dendrogram(z, color_threshold=real_threshold)
     pyplot.savefig('dendrogram.png')
     print "Flattening the clusters"
-    cluster_assignments = fcluster(z, t=threshold, criterion='maxclust')
+    cluster_assignments = fcluster(z, t=real_threshold, criterion='distance')
     return cluster_assignments

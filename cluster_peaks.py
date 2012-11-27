@@ -105,13 +105,14 @@ if __name__ == '__main__':
    
     
     print("Clustering")
-    THRESHOLD = 10
+    THRESHOLD = 0.3
     distance_func = cached(dtw_distance_matrix, os.path.basename(sys.argv[1]))
     cluster_assignments = hierarchical_cluster(data, distance_func, THRESHOLD)
-    print("Number of clusters")
+    
     cluster_assignments = list(cluster_assignments)
     number_of_clusters = max(cluster_assignments)
     
+    print("Number of clusters: {0}".format(number_of_clusters))
     ROWS = int(math.sqrt(number_of_clusters))
     COLS = ROWS
     while (ROWS*COLS < number_of_clusters):
