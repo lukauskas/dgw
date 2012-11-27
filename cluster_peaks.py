@@ -82,7 +82,7 @@ def get_peaks(peaks_file, alignments_file, tss_set, resolution=1):
         peaks.append(peak)
         
         counter += 1
-        if counter > 100:
+        if counter > 2000:
             break
 
     samfile.close()

@@ -15,20 +15,15 @@ from math import factorial
 
 from multiprocessing import Pool
 
+def _dtw_std_wrapper(args):
+    return dtw_std(*args)
+
 def dtw_distance_matrix(peaks):
     
     peaks = list(peaks) # Convert peaks to list as we need to iterate it more than once
     
-    n = len(peaks)
-    # Initialise the output list to save a bit on ever increasing it
-    distances = numpy.empty((factorial(n) // (factorial(2) * factorial(n - 2))))
-    
-    for index, (i, j) in enumerate(combinations(range(n), 2)):
-        
-        peak_a = peaks[i]
-        peak_b = peaks[j]
-                
-        distances[index] = dtw_std(peak_a, peak_b)
+    p = Pool()
+    distances = p.map(_dtw_std_wrapper, combinations(peaks, 2))
 
     return distances
 
