@@ -20,6 +20,10 @@ def read_tss(knowngenes_file):
         
         line = line.split('\t')
         chromosome = line[1]
+        strand = line[2]
+        if strand == '-':
+            continue
+        
         tss = int(line[3])
         
         transcription_starting_sites.add((chromosome, tss))

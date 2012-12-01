@@ -59,6 +59,7 @@ def plot(peaks, data_extract_func):
         
         for (pos, n) in apd:
             pos = pos - min_offset
+            assert(pos >= 0)
             #scaled_n = (float(n) - min_value) / (max_value - min_value)
             
             arr[i,pos] = n
@@ -75,7 +76,12 @@ def plot(peaks, data_extract_func):
     result = plt.imshow(masked_arr, cmap=cmap, aspect="auto", interpolation="nearest")
     print('Clipping result\'s colours to: ({0}, {1})'.format(min_value, max_value))
     result.set_clim(min_value, max_value)
-    cbar = plt.colorbar(result)
+    plt.colorbar(result)
+    ax = plt.gca()
+    xt = ax.get_xticks()
+    labels = map(lambda x: x+ min_offset, xt)
     
+    ax.set_xticklabels(labels)
+    #plt.xticks(plt.xticks, map(lambda x: x-min_offset, plt.xticks))
     #plt.savefig("heatmap.png", bbox_inches='tight')
     #plt.show()

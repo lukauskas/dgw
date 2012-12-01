@@ -6,15 +6,21 @@ Created on 14 Nov 2012
 from scipy.cluster.hierarchy import *
 from matplotlib import pyplot
 
-def hierarchical_cluster(data, distance_matrix_func, threshold):
+def hierarchical_cluster(data, distance_matrix_func, threshold, z = None, **kwargs):
     print "Calculating distance matrix"
     dm = distance_matrix_func(data)
     
     print "Calculating linkage"
-    z = linkage(dm, method='complete', metric='cityblock')
-    real_threshold = threshold * max(z[:,2])
-    dendrogram(z, color_threshold=real_threshold)
+    if z is None:
+        z = linkage(dm, method='complete', metric='euclidean')
+    
+    y = inconsistent(z, 3)
+    f = open('inconsistency.txt', 'w')
+    for something in y:
+        f.write('{0}\n'.format('\t'.join(map(str, something))))
+    f.close()
+    dendrogram(z, color_threshold=threshold)
     pyplot.savefig('dendrogram.png')
     print "Flattening the clusters"
-    cluster_assignments = fcluster(z, t=real_threshold, criterion='distance')
-    return cluster_assignments
+    cluster_assignments = fcluster(z, t=threshold, **kwargs)
+    return cluster_assignments, z
