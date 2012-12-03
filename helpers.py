@@ -1,13 +1,23 @@
 from math import floor, ceil
-from pandas import read_csv
+import pandas as pd
+import pysam
+import numpy as np
 
 def read_bed(bed_file):
-    peaks = read_csv(bed_file, sep="\t", header=None)
+    peaks = pd.read_csv(bed_file, sep="\t", header=None)
 
     peaks.columns = ['chromosome', 'start', 'end', 'name', 'score']
     peaks = peaks.set_index('name')
 
     return peaks
+
+def join_with_length_information(peaks_df):
+
+    lens = peaks_df['end'] - peaks_df['start']
+    lens.name = 'length'
+
+    return peaks_df.join(lens)
+
 
 def clip_to_fit_resolution(peaks, resolution=1):
 
@@ -18,4 +28,65 @@ def clip_to_fit_resolution(peaks, resolution=1):
     peaks['end']   = peaks['end'].map(lambda x : resolution * int(ceil(float(x) / resolution)) )
 
     return peaks
+
+def get_read_count_for_region(samfile, chromosome, start, end, resolution=1):
+
+    data_arr = []
+
+    # Note this has to be peak.end - 1
+    # because samfile.pileup treats ends inclusively
+    data_len = (end - start) / resolution
+    #    return numpy.random.rand(data_len)
+
+    for i in xrange(data_len):
+        start += i * resolution
+        end   = start + resolution - 1 # samfile treats ends inclusively
+        assert(end > start)
+
+        count = samfile.count(chromosome, start, end)
+        data_arr.append(count)
+
+    assert(len(data_arr) > 0)
+    assert(len(data_arr) == data_len)
+    return data_arr
+
+
+def get_peak_data(alignments_file, peaks, resolution=1):
+    '''
+
+    @param alignments_file:
+    @param peaks:
+    @type peaks: pd.DataFrame
+    @param resolution:
+    @return:
+    '''
+
+    samfile = pysam.Samfile(alignments_file, 'rb')
+
+    peak_data = []
+    assert(isinstance(peaks, pd.DataFrame))
+    for _,peak in peaks.iterrows():
+        current_peak_data = get_read_count_for_region(samfile,
+                                                    peak['chromosome'],
+                                                    peak['start'],
+                                                    peak['end'],
+                                                    resolution)
+        peak_data.append(current_peak_data)
+
+    max_length = max(map(len, peak_data))
+
+    N = len(peak_data)
+
+    # Add NaNs to offsets we do not know peak locations of
+    peak_data = [ x + [np.nan] * (max_length - len(x)) for x in peak_data]
+
+    # Create a sparse DataFrame with peak alignments
+    sdf = pd.SparseDataFrame(peak_data)
+    sdf.index = peaks.index
+
+    del peak_data
+
+    return sdf
+
+
 

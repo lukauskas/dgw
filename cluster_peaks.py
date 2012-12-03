@@ -72,9 +72,9 @@ def get_peaks(peaks_file, alignments_file, tss_set, resolution=1):
     counter = 0
     peaks = []
     for line in peaks_handle:
-        if random.randint(1, 20000) > 5000:
+        if random.randint(1, 20000) > 7000:
             continue
-        if counter == 5000:
+        if counter == 7000:
             break
 
         peak = parse_peak_from_bam_line(line, resolution)

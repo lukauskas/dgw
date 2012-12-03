@@ -4,16 +4,22 @@ Created on 13 Nov 2012
 @author: saulius
 '''
 from scipy.spatial.distance import cityblock
-from mlpy import dtw_std
+from mlpy import dtw_std as mlpy_dtw_std
 from operator import itemgetter
 from sys import maxint as MAXINT
 from itertools import combinations
-import numpy
+import numpy as np
 
 from datetime import datetime
 from math import factorial
 
 from multiprocessing import Pool
+
+def dtw_std(x, y, *args, **kwargs):
+    x = x[np.invert(np.isnan(x))]
+    y = y[np.invert(np.isnan(y))]
+    
+    return mlpy_dtw_std(x, y, *args, **kwargs)
 
 def _dtw_std_wrapper(args):
     return dtw_std(*args)
@@ -77,7 +83,7 @@ def traceback_path(x, y, cost_matrix):
     return min_cost_path
 
 def dtw(x, y, distance_function=cityblock, return_aligned_path=False):
-    cost_matrix = numpy.empty([len(x), len(y)])
+    cost_matrix = np.empty([len(x), len(y)])
     
     for i in range(len(x)):
         for j in range(len(y)):
