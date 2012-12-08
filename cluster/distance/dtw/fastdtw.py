@@ -306,8 +306,8 @@ class DTWWindow(object):
 class WindowMatrix(object):
     _cell_values = None
     _window = None
-    _col_offsets = None
 
+    __key_lookup = None
     def __init__(self, window):
         '''
         
@@ -316,31 +316,40 @@ class WindowMatrix(object):
         '''
         self._window = window
         self._cell_values = [None] * window.size
-        self._col_offsets = []
 
+        self.__precalculate_key_lookup()
+
+    def __precalculate_key_lookup(self):
+        lookup = {}
+        window = self._window
         current_offset = 0
-        for i in range(window.columns):
-            self._col_offsets.append(current_offset)
-            current_offset += window.max_value_for(i) - window.min_value_for(i) + 1
+        for col in xrange (window.columns):
+            min_row = window.min_value_for(col)
+            max_row = window.max_value_for(col)
+            for row in xrange(min_row, max_row+1):
+                lookup[(col, row)] = current_offset
+                current_offset += 1
+
+        self.__key_lookup = lookup
 
     def contains(self, col, row):
-        return row >= self._window.min_value_for(col) and row <= self._window.max_value_for(col)
+        return self._window.min_value_for(col) <= row <= self._window.max_value_for(col)
 
     def __getitem__(self, key):
-        col, row = key
 
-        if not self.contains(col, row):
+        try:
+            return self._cell_values[self.__key_lookup[key]]
+        except KeyError:
             return float('inf')
-
-        return self._cell_values[self._col_offsets[col] + row - self._window.min_value_for(col)]
 
     def __setitem__(self, key, value):
         col, row = key
 
-        if not self.contains(col, row):
+        try:
+            value_index = self.__key_lookup[key]
+        except KeyError:
             raise IndexError, 'Cannot set ({0}, {1}) as matrix does not contain this entry'.format(col, row)
 
-        value_index = self._col_offsets[col] + row - self._window.min_value_for(col)
         self._cell_values[value_index] = value
 
 
