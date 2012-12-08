@@ -3,10 +3,18 @@ Created on 13 Nov 2012
 
 @author: saulius
 '''
-from scipy.spatial.distance import cityblock
 from sys import maxint as MAXINT
 import numpy as np
 
+def fast_cityblock(a, b):
+    '''
+    Similar to scipy.spatial.distance.cityblock but skips the array validations
+    @param a:
+    @param b:
+    @return:
+    '''
+
+    return np.abs(a-b).sum()
 
 def traceback_path(x, y, cost_matrix):
 
@@ -60,7 +68,7 @@ def traceback_path(x, y, cost_matrix):
 
     return min_cost_path
 
-def dtw(x, y, distance_function=cityblock, return_aligned_path=False):
+def dtw(x, y, distance_function=fast_cityblock, return_aligned_path=False):
     cost_matrix = np.empty([len(x), len(y)])
 
     for i in range(len(x)):
@@ -95,7 +103,7 @@ def dtw(x, y, distance_function=cityblock, return_aligned_path=False):
         min_cost_path = traceback_path(x, y, cost_matrix)
         return min_cost, min_cost_path
 
-def constrained_dtw(x, y, window, distance_function=cityblock, return_aligned_path=False):
+def constrained_dtw(x, y, window, distance_function=fast_cityblock, return_aligned_path=False):
     assert(isinstance(window, DTWWindow))
 
     cost_matrix = window.get_cost_matrix()
@@ -353,7 +361,7 @@ class WindowMatrix(object):
         self._cell_values[value_index] = value
 
 
-def fast_dtw(x, y, distance_function=cityblock, return_aligned_path = False):
+def fast_dtw(x, y, distance_function=fast_cityblock, return_aligned_path = False):
 
     radius = 0
 
