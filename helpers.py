@@ -51,7 +51,7 @@ def get_read_count_for_region(samfile, chromosome, start, end, resolution=1):
     return data_arr
 
 
-def get_peak_data(alignments_file, peaks, resolution=1):
+def read_peak_data_from_bam(alignments_file, peaks, resolution=1):
     '''
 
     @param alignments_file:
