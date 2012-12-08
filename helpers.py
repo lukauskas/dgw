@@ -80,13 +80,14 @@ def get_peak_data(alignments_file, peaks, resolution=1):
     # Add NaNs to offsets we do not know peak locations of
     peak_data = [ x + [np.nan] * (max_length - len(x)) for x in peak_data]
 
+    arr = np.array(peak_data)
     # Create a sparse DataFrame with peak alignments
-    sdf = pd.SparseDataFrame(peak_data)
-    sdf.index = peaks.index
+    #sdf = pd.DataFrame(peak_data)
+    #sdf.index = peaks.index
 
     del peak_data
 
-    return sdf
+    return arr
 
 
 

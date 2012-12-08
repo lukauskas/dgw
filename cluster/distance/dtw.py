@@ -3,7 +3,7 @@ Created on 13 Nov 2012
 
 @author: saulius
 '''
-from scipy.spatial.distance import cityblock
+from scipy.spatial.distance import cityblock, pdist
 from mlpy import dtw_std as mlpy_dtw_std
 from operator import itemgetter
 from sys import maxint as MAXINT
@@ -21,14 +21,13 @@ def dtw_std(x, y, *args, **kwargs):
     
     return mlpy_dtw_std(x, y, *args, **kwargs)
 
-def _dtw_std_wrapper(args):
+def dtw_std_one_arg(args):
+    '''
+    Calls dtw_std. Accepts tuple for arguments, passes it into dtw_std
+    @param args:
+    @return:
+    '''
     return dtw_std(*args)
-
-def dtw_distance_matrix(peaks):
-    p = Pool()
-    distances = p.map(_dtw_std_wrapper, combinations(peaks, 2))
-
-    return distances
 
 def traceback_path(x, y, cost_matrix):
     
