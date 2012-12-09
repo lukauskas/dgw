@@ -273,6 +273,13 @@ class DTWWindow(object):
     def size(self):
         return self._size
 
+    @property
+    def boundaries(self):
+        '''
+           Returns min_values and max values for each column
+        @return:
+        '''
+        return zip(self._min_values, self._max_values)
 
     def max_value_for(self, i):
         return self._max_values[i]
@@ -328,11 +335,9 @@ class WindowMatrix(object):
 
     def __init_cell_values(self):
         values = {}
-        window = self._window
+        window_boundaries = self._window.boundaries
 
-        for col in xrange (window.columns):
-            min_row = window.min_value_for(col)
-            max_row = window.max_value_for(col)
+        for col, (min_row, max_row) in enumerate(window_boundaries):
             for row in xrange(min_row, max_row+1):
                 values[(col, row)] = None
 
