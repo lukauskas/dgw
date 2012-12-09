@@ -77,18 +77,18 @@ def dtw(x, y, distance_function=fast_cityblock, return_aligned_path=False):
             if i == 0 and j == 0:
                 cost_matrix[i,j] = local_dist
             elif i == 0:
-                assert(cost_matrix[i, j-1] is not None)
+                #assert(cost_matrix[i, j-1] is not None)
                 cost_matrix[i,j] = cost_matrix[i, j-1] +\
                                    local_dist
             elif j == 0:
-                assert(cost_matrix[i-1, j] is not None)
+                #assert(cost_matrix[i-1, j] is not None)
                 cost_matrix[i,j] = cost_matrix[i-1, j] +\
                                    local_dist
             else:
 
-                assert(cost_matrix[i, j-1] is not None)
-                assert(cost_matrix[i-1, j] is not None)
-                assert(cost_matrix[i-1, j-1] is not None)
+                #assert(cost_matrix[i, j-1] is not None)
+                #assert(cost_matrix[i-1, j] is not None)
+                #assert(cost_matrix[i-1, j-1] is not None)
                 min_global_cost = min(cost_matrix[i-1, j],
                     cost_matrix[i, j-1],
                     cost_matrix[i-1, j-1])
@@ -104,7 +104,7 @@ def dtw(x, y, distance_function=fast_cityblock, return_aligned_path=False):
         return min_cost, min_cost_path
 
 def constrained_dtw(x, y, window, distance_function=fast_cityblock, return_aligned_path=False):
-    assert(isinstance(window, DTWWindow))
+    #assert(isinstance(window, DTWWindow))
 
     cost_matrix = window.get_cost_matrix()
 
@@ -113,18 +113,18 @@ def constrained_dtw(x, y, window, distance_function=fast_cityblock, return_align
         if i == 0 and j == 0:
             cost_matrix[i,j] = local_dist
         elif i == 0:
-            assert(cost_matrix[i, j-1] is not None)
+            #assert(cost_matrix[i, j-1] is not None)
             cost_matrix[i,j] = cost_matrix[i, j-1] +\
                                local_dist
         elif j == 0:
-            assert(cost_matrix[i-1, j] is not None)
+            #assert(cost_matrix[i-1, j] is not None)
             cost_matrix[i,j] = cost_matrix[i-1, j] +\
                                local_dist
         else:
 
-            assert(cost_matrix[i, j-1] is not None)
-            assert(cost_matrix[i-1, j] is not None)
-            assert(cost_matrix[i-1, j-1] is not None)
+            #assert(cost_matrix[i, j-1] is not None)
+            #assert(cost_matrix[i-1, j] is not None)
+            #assert(cost_matrix[i-1, j-1] is not None)
             min_global_cost = min(cost_matrix[i-1, j],
                 cost_matrix[i, j-1],
                 cost_matrix[i-1, j-1])
@@ -156,7 +156,7 @@ def shrink_time_series(x, shrink_factor):
     @type shrink_factor: float
     '''
 
-    assert(shrink_factor > 1)
+    #assert(shrink_factor > 1)
 
     original_size = len(x)
     # Get the size of shrunk time series
@@ -171,7 +171,7 @@ def shrink_time_series(x, shrink_factor):
 
     ans = []
     aggregate_sizes = []
-    while (read_from < original_size):
+    while read_from < original_size:
 
         read_to = int(round(reduced_point_size*(len(ans)+1)) -1 )
 
@@ -289,8 +289,8 @@ class DTWWindow(object):
         return 0
 
     def mark_visited(self, column, row):
-        assert(column >= 0)
-        assert(column <= self.columns)
+        #assert(column >= 0)
+        #assert(column <= self.columns)
         if self._min_values[column] is None:
             self._min_values[column] = row
             self._max_values[column] = row
@@ -312,10 +312,10 @@ class DTWWindow(object):
         return WindowMatrix(self)
 
 class WindowMatrix(object):
-    _cell_values = None
     _window = None
 
-    __key_lookup = None
+    __values = None
+    INFINITY = float('inf')
     def __init__(self, window):
         '''
         
@@ -323,22 +323,20 @@ class WindowMatrix(object):
         @type window: DTWWindow
         '''
         self._window = window
-        self._cell_values = [None] * window.size
 
-        self.__precalculate_key_lookup()
+        self.__init_cell_values()
 
-    def __precalculate_key_lookup(self):
-        lookup = {}
+    def __init_cell_values(self):
+        values = {}
         window = self._window
-        current_offset = 0
+
         for col in xrange (window.columns):
             min_row = window.min_value_for(col)
             max_row = window.max_value_for(col)
             for row in xrange(min_row, max_row+1):
-                lookup[(col, row)] = current_offset
-                current_offset += 1
+                values[(col, row)] = None
 
-        self.__key_lookup = lookup
+        self.__values = values
 
     def contains(self, col, row):
         return self._window.min_value_for(col) <= row <= self._window.max_value_for(col)
@@ -346,20 +344,15 @@ class WindowMatrix(object):
     def __getitem__(self, key):
 
         try:
-            return self._cell_values[self.__key_lookup[key]]
+            return self.__values[key]
         except KeyError:
-            return float('inf')
+            return self.INFINITY
 
     def __setitem__(self, key, value):
-        col, row = key
-
         try:
-            value_index = self.__key_lookup[key]
+            self.__values[key] = value
         except KeyError:
-            raise IndexError, 'Cannot set ({0}, {1}) as matrix does not contain this entry'.format(col, row)
-
-        self._cell_values[value_index] = value
-
+            raise IndexError, 'Cannot set {0} as matrix does not contain this entry'.format(key)
 
 def fast_dtw(x, y, distance_function=fast_cityblock, return_aligned_path = False):
 
@@ -369,14 +362,14 @@ def fast_dtw(x, y, distance_function=fast_cityblock, return_aligned_path = False
 
     len_x = len(x)
     len_y = len(y)
-    if (len_x <= min_ts_size or len_y <= min_ts_size):
+    if len_x <= min_ts_size or len_y <= min_ts_size:
         return dtw(x, y, distance_function, return_aligned_path=return_aligned_path)
     else:
         SHRINK_FACTOR = 2.0
         shrunk_x, agg_x = shrink_time_series(x, SHRINK_FACTOR)
-        assert(sum(agg_x) == len(x))
+        #assert(sum(agg_x) == len(x))
         shrunk_y, agg_y = shrink_time_series(y, SHRINK_FACTOR)
-        assert(sum(agg_y) == len(y))
+        #assert(sum(agg_y) == len(y))
 
         _, low_res_path = fast_dtw(shrunk_x, shrunk_y, distance_function, return_aligned_path=True)
 
