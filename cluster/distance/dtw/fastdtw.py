@@ -107,9 +107,10 @@ def constrained_dtw(x, y, window, distance_function=fast_cityblock, return_align
     #assert(isinstance(window, DTWWindow))
 
     cost_matrix = window.get_cost_matrix()
+    dist_func = lambda args: distance_function(x[args[0]], y[args[1]])
+    local_distances = map(dist_func, window)
 
-    for (i, j) in window:
-        local_dist = distance_function(x[i], y[j])
+    for (i, j), local_dist in zip(window, local_distances):
         if i == 0 and j == 0:
             cost_matrix[i,j] = local_dist
         elif i == 0:
