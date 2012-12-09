@@ -310,10 +310,9 @@ class DTWWindow(object):
             self._max_values[column] = row
 
     def __iter__(self):
-        for i in xrange(self.min_column, self.columns):
-            for j in xrange(self.min_value_for(i), self.max_value_for(i)+1):
-                yield (i, j)
-
+        for i, (min_row, max_row) in enumerate(self.boundaries):
+            for j in xrange(min_row, max_row+1):
+                yield (i,j)
 
     def get_cost_matrix(self):
         return WindowMatrix(self)
@@ -334,13 +333,7 @@ class WindowMatrix(object):
         self.__init_cell_values()
 
     def __init_cell_values(self):
-        values = {}
-        window_boundaries = self._window.boundaries
-
-        for col, (min_row, max_row) in enumerate(window_boundaries):
-            for row in xrange(min_row, max_row+1):
-                values[(col, row)] = None
-
+        values = { key: None for key in self._window }
         self.__values = values
 
     def contains(self, col, row):
