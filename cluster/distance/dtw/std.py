@@ -41,7 +41,7 @@ def parallel_pdist(two_dim_array):
     Note: if using pandas dataframes, call the function as follows:
         parallel_pdist(df.values)
     otherwise some weird behaviour will happen.
-    
+
     @param two_dim_array: a numpy data array.
     @return: condensed distance matrix. See pdist documentation in scipy
     '''
