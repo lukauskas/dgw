@@ -38,7 +38,11 @@ def parallel_pdist(two_dim_array):
     Calculates pairwise DTW distance for all the rows in
     two_dim_array using all CPUs of the computer.
 
-    @param two_dim_array: data array
+    Note: if using pandas dataframes, call the function as follows:
+        parallel_pdist(df.values)
+    otherwise some weird behaviour will happen.
+    
+    @param two_dim_array: a numpy data array.
     @return: condensed distance matrix. See pdist documentation in scipy
     '''
 
@@ -64,11 +68,13 @@ def parallel_pdist(two_dim_array):
         end   = start + len(items_to_process)
 
         ans_container[start:end] = ans
+        curr_step_offset += 1
 
         del items_to_process
         gc.collect()
 
-
+    p.close()
+    p.join()
     return ans_container
 
 
