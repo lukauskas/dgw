@@ -24,6 +24,17 @@ def plot(data_frame):
     
     max_value = bin_edges[last_good_bin+1]
 
+    # Get length info
+    lengths = {}
+
+    for ix, row in data_frame.iterrows():
+        lengths[ix] = len(row.dropna())
+
+    lengths = pd.Series(lengths)
+    lengths.sort()
+
+    data_frame = data_frame.ix[lengths.index]
+
     # Start plotting
     N = len(data_frame)
 
@@ -32,9 +43,9 @@ def plot(data_frame):
 
     # Plot the array using JET colourmap, draw NaNs as grey
     cmap = matplotlib.cm.get_cmap('jet')
-    cmap.set_bad('#CCCCCC', 1.0)
+    cmap.set_bad('#FFFFFF', 1.0)
     
-    result = plt.pcolormesh(masked_arr, cmap=cmap)
+    result = plt.imshow(masked_arr, cmap=cmap, aspect="auto", interpolation='nearest')
     result.set_clim(values.min(), max_value)
     plt.colorbar(result)
     ax = plt.gca()

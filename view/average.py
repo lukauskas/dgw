@@ -8,7 +8,7 @@ from collections import defaultdict
 from matplotlib import pyplot
 
 
-def plot(peaks, data_extract_func, figure=None):
+def plot(peaks):
 
     sums   = defaultdict(lambda: 0)
     counts = defaultdict(lambda: 0)

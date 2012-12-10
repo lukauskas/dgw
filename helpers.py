@@ -102,11 +102,11 @@ def get_read_count_for_region(samfile, chromosome, start, end, resolution=1):
     #    return numpy.random.rand(data_len)
 
     for i in xrange(data_len):
-        start += i * resolution
-        end   = start + resolution - 1 # samfile treats ends inclusively
-        assert(end > start)
+        read_from = start + i * resolution
+        read_to   = read_from + resolution - 1 # samfile treats ends inclusively
+        assert(start <= read_from <= read_to <= end)
 
-        count = samfile.count(chromosome, start, end)
+        count = samfile.count(chromosome, read_from, read_to)
         data_arr.append(count)
 
     assert(len(data_arr) > 0)
