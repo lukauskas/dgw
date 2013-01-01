@@ -32,6 +32,40 @@ def dtw_std(x, y, *args, **kwargs):
     return mlpy_dtw_std(x, y, *args, **kwargs)
 
 #-----------------------------------------------------------------------------------------------------------------------
+def average_warp(base, others):
+    '''
+         Takes one time series as a base and returns all other time series in others projected onto it after time-warping.
+
+    :param base:       the base all others will be projected on
+    :param others:    other time series that will be projected on the base
+    :return: a time series of length len(base) that will be average projections of others
+    '''
+
+    sums = np.zeros(len(base))
+    counts = np.zeros(len(base))
+
+    # Add NaNs into appropriate places
+    sums[np.isnan(base)] = np.nan
+    counts[np.isnan(base)] = np.nan
+
+    # Convert "others" into a list as numpy arrays are not iterable:
+#    others = list(others) # TODO: this will screw up any generators passed into the function -- rethink this
+
+
+    for other in others:
+
+        distance, cost, path = dtw_std(base, other, dist_only=False)
+
+        path_base, path_other = path
+
+        for mapped_i, i in zip(path_base, path_other):
+            # Go through the path and sum all points that map to the base location i together
+            sums[mapped_i] += other[i]
+            counts[mapped_i] += 1
+
+    return sums / counts
+
+
 
 def parallel_pdist(two_dim_array):
     '''
@@ -53,6 +87,7 @@ def parallel_pdist(two_dim_array):
     combs = combinations(xrange(len(two_dim_array)), 2)
 
     step_size = 30000000
+
     ans_container = np.empty(size_dm)
     curr_step_offset = 0
     while True:
