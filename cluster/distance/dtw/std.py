@@ -43,6 +43,9 @@ def adaptive_scaling(x, threshold=1e-6):
         A global averaging method for dynamic time warping, with applications to clustering.
         Pattern Recognition, 44(3), 678-693. doi:10.1016/j.patcog.2010.09.013
 
+        Note that this might change the DTW distance, e.g.:
+           dtw([1,2,3], [5,5,2]) != dtw([1,2,3], [5,2])
+        The discrepancy occurs because of the restriction that every point must me mapped to some other point
     :param x:
     :param threshold:
     :return:
