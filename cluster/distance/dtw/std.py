@@ -42,7 +42,7 @@ def _strip_nans(sequence):
     return sequence[np.invert(np.isnan(sequence))]
 
 #-----------------------------------------------------------------------------------------------------------------------
-def dba(sequences, initialisation_sequence, conversion_threshold=1e-6, metric='sqeuclidean'):
+def dba(sequences, initialisation_sequence, convergence_threshold=1e-6, metric='sqeuclidean'):
     '''
         Implements DBA (DTW Barycenter Averaging) algorithm given by
         Petitjean, F., Ketterlin, A., & Gancarski, P. (2011).
@@ -51,7 +51,7 @@ def dba(sequences, initialisation_sequence, conversion_threshold=1e-6, metric='s
 
     :param sequences: sequences in the cluster
     :param initialisation_sequence: initialisation sequence to choose
-    :param conversion_threshold: threshold at which values will be considered equal and iteration will stop
+    :param convergence_threshold: threshold at which values will be considered equal and iteration will stop
     :param metric: metric to use either euclidean or sqeuclidean
     :return:
     '''
@@ -102,7 +102,7 @@ def dba(sequences, initialisation_sequence, conversion_threshold=1e-6, metric='s
         difference = np.abs(_strip_nans(new_base) - _strip_nans(previous_base))
         #print iteration, np.sum(difference), np.min(difference), np.max(difference), np.mean(difference)
         print iteration, total_distance
-        if (difference < conversion_threshold).all():
+        if (difference < convergence_threshold).all():
             completed = True
             break
         else:
