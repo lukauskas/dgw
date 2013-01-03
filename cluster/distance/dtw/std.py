@@ -1,15 +1,17 @@
+from collections import defaultdict
 import numpy as np
 from mlpy import dtw_std as mlpy_dtw_std
 
 
 import gc
-from itertools import combinations
+from itertools import combinations, izip
 from multiprocessing import Pool as Pool
 import numpy as np
+import matplotlib.pyplot as plt
 
 from math import factorial
 
-def dtw_std(x, y, *args, **kwargs):
+def dtw_std(x, y, metric='sqeuclidean', *args, **kwargs):
     '''
         Wrapper around mlpy's dtw_std that first strips all NaNs out of the data.
 
@@ -19,55 +21,144 @@ def dtw_std(x, y, *args, **kwargs):
     @param kwargs:
     @return:
     '''
-    '''
-    @param x:
-    @param y:
-    @param args:
-    @param kwargs:
-    @return:
-    '''
-    x = x[np.invert(np.isnan(x))]
-    y = y[np.invert(np.isnan(y))]
 
-    return mlpy_dtw_std(x, y, *args, **kwargs)
+    x = _strip_nans(x)
+    y = _strip_nans(y)
+
+    if metric == 'sqeuclidean':
+        squared = True
+    elif metric == 'euclidean':
+        squared = False
+    else:
+        raise ValueError('Unsupported metric provided: {0!r}'.format(metric))
+
+    return mlpy_dtw_std(x, y, squared=squared, *args, **kwargs)
+def _strip_nans(sequence):
+    '''
+        Strips NaNs that are padded to the right of each peak if they are of unequal length
+    :param sequence:
+    :return:
+    '''
+    return sequence[np.invert(np.isnan(sequence))]
 
 #-----------------------------------------------------------------------------------------------------------------------
-def average_warp(base, others):
+def dba(sequences, initialisation_sequence, conversion_threshold=1e-6, metric='sqeuclidean'):
     '''
-         Takes one time series as a base and returns all other time series in others projected onto it after time-warping.
+        Implements DBA (DTW Barycenter Averaging) algorithm given by
+        Petitjean, F., Ketterlin, A., & Gancarski, P. (2011).
+        A global averaging method for dynamic time warping, with applications to clustering.
+        Pattern Recognition, 44(3), 678-693. doi:10.1016/j.patcog.2010.09.013
 
-    :param base:       the base all others will be projected on
-    :param others:    other time series that will be projected on the base
-    :return: a time series of length len(base) that will be average projections of others
+    :param sequences: sequences in the cluster
+    :param initialisation_sequence: initialisation sequence to choose
+    :param conversion_threshold: threshold at which values will be considered equal and iteration will stop
+    :param metric: metric to use either euclidean or sqeuclidean
+    :return:
     '''
 
-    sums = np.zeros(len(base))
-    counts = np.zeros(len(base))
+    MAX_ITERATIONS = 2000 # How many iterations of the algorithm to allow
 
-    # Add NaNs into appropriate places
-    sums[np.isnan(base)] = np.nan
-    counts[np.isnan(base)] = np.nan
+    # Init iteration
+    previous_base = initialisation_sequence
+    iteration = 1
+    new_base = None
 
-    # Convert "others" into a list as numpy arrays are not iterable:
-#    others = list(others) # TODO: this will screw up any generators passed into the function -- rethink this
+    completed = False
+
+    while iteration <= MAX_ITERATIONS:
+
+        total_distance = 0
+        base_assoc = {}
+        for sequence in sequences:
+
+            distance, cost, path = dtw_std(previous_base, sequence, dist_only=False)
+            total_distance += distance
+
+            # splitting and zipping again is necessary here
+            # as numpy arrays are not too friendly for iteration like this
+            path_base, path_sequence = path
+            for (base_coord, sequence_coord) in zip(path_base, path_sequence):
+                # We essentially compute barycenter here which is defined as
+                # barycenter(x_1, ..., x_n) = SUM(x_1,..,x_n) / n
+                # Where x_1 and x_n are given by assoc(S1,..S2) that links
+                # that links each coordinate of the average sequence to one or more coordinates of the sequences
+                # of S1..S2 see Petitjean et al, 2011
+
+                try:
+                    base_assoc[base_coord].append(sequence[sequence_coord])
+                except KeyError:
+                    base_assoc[base_coord] = [sequence[sequence_coord]]
+
+        #new_base = sums_of_values / counts_of_mappings # For euclidean metric
+        # We need a median to minimise unsquared city-block distance
+        if metric == 'euclidean':
+            new_base = np.array([ np.median(base_assoc[i]) if not np.isnan(previous_base[i]) else np.nan for i in range(len(previous_base))])
+        elif metric == 'sqeuclidean':
+            new_base = np.array([ np.mean(base_assoc[i]) if not np.isnan(previous_base[i]) else np.nan for i in range(len(previous_base))])
+        else:
+            raise ValueError('Metric {0!r} is unsupported'.format(metric))
+
+        # If we converged already, return
+        difference = np.abs(_strip_nans(new_base) - _strip_nans(previous_base))
+        #print iteration, np.sum(difference), np.min(difference), np.max(difference), np.mean(difference)
+        print iteration, total_distance
+        if (difference < conversion_threshold).all():
+            completed = True
+            break
+        else:
+            # Else, go further down the rabbit hole and continue
+            iteration += 1
+            previous_base = new_base
+
+    if not completed:
+        raise Exception('Maximum limit of {0} iterations has been reached'.format(MAX_ITERATIONS))
+    return new_base
+
+def dtw_projection(base, x):
+    '''
+    Projects time series x onto a base time series using dtw
+    :param base: base time series
+    :param x: another time series to project on
+    :return: new time series of length base containing x projected on it
+    '''
+
+    distance, cost, path = dtw_std(base, x, dist_only=False)
+
+    path_base, path_other = path
+
+    current_sums = np.zeros(len(base))
+    current_counts = np.zeros(len(base))
+
+    current_sums[np.isnan(base)] = np.nan
+    current_counts[np.isnan(base)] = np.nan
+
+    for mapped_i, i in zip(path_base, path_other):
+        # Go through the path and sum all points that map to the base location i together
+        current_sums[mapped_i] += x[i]
+        current_counts[mapped_i] += 1
 
 
-    for other in others:
+    current_average = current_sums / current_counts
 
-        distance, cost, path = dtw_std(base, other, dist_only=False)
+    return current_average
 
-        path_base, path_other = path
+def min_dist_to_others(dm, n):
 
-        for mapped_i, i in zip(path_base, path_other):
-            # Go through the path and sum all points that map to the base location i together
-            sums[mapped_i] += other[i]
-            counts[mapped_i] += 1
+    sums = defaultdict(lambda: 0)
+    for (a, b), dist in izip(combinations(xrange(n), 2), dm):
+        sums[a] += dist
+        sums[b] += dist
 
-    return sums / counts
+    min_val = float('+inf')
+    min_i = None
+    for i, val in sums.iteritems():
+        if val < min_val:
+            min_val = val
+            min_i = i
 
+    return min_i, min_val
 
-
-def parallel_pdist(two_dim_array):
+def parallel_pdist(two_dim_array, metric='sqeuclidean'):
     '''
     Calculates pairwise DTW distance for all the rows in
     two_dim_array using all CPUs of the computer.
@@ -81,7 +172,7 @@ def parallel_pdist(two_dim_array):
     '''
 
     p = Pool()
-    smd = _shared_mem_dtw(two_dim_array)
+    smd = _shared_mem_dtw(two_dim_array, metric)
 
     size_dm = factorial(len(two_dim_array)) / (2 * factorial(len(two_dim_array) - 2))
     combs = combinations(xrange(len(two_dim_array)), 2)
@@ -114,14 +205,16 @@ def parallel_pdist(two_dim_array):
 
 
 
-class _shared_mem_dtw():
+class _shared_mem_dtw:
     '''
         Dtw function that keeps the data matrix in memory
         and takes only indexes as call arguments
     '''
     shared_mem_matrix = None
-    def __init__(self, shared_mem_matrix):
+    metric = None
+    def __init__(self, shared_mem_matrix, metric='sqeuclidean'):
         self.shared_mem_matrix = shared_mem_matrix
+        self.metric = metric
 
     def __call__(self, args):
 
@@ -131,7 +224,7 @@ class _shared_mem_dtw():
         a = self.shared_mem_matrix[x]
         b = self.shared_mem_matrix[y]
 
-        return dtw_std(a,b)
+        return dtw_std(a,b, metric=self.metric)
 
 def take(iterable, n):
     '''
