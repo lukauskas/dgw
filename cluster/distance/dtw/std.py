@@ -33,6 +33,38 @@ def dtw_std(x, y, metric='sqeuclidean', *args, **kwargs):
         raise ValueError('Unsupported metric provided: {0!r}'.format(metric))
 
     return mlpy_dtw_std(x, y, squared=squared, *args, **kwargs)
+
+def adaptive_scaling(x, threshold=1e6):
+    '''
+        Merges successive coordinates that are identical (i.e. difference is smaller than threshold provided)
+
+        See:
+        Petitjean, F., Ketterlin, A., & Gancarski, P. (2011).
+        A global averaging method for dynamic time warping, with applications to clustering.
+        Pattern Recognition, 44(3), 678-693. doi:10.1016/j.patcog.2010.09.013
+
+    :param x:
+    :param threshold:
+    :return:
+    '''
+
+    new_sequence = []
+    prev_item = None
+    for item in x:
+        if np.isnan(item):
+            break
+
+        if prev_item is None or abs(item - prev_item) < threshold:
+            new_sequence.append(item)
+        prev_item = item
+
+    # Append NaNs to the end.
+    ans = np.empty(len(x))
+    ans[:len(new_sequence)] = new_sequence
+    ans[len(new_sequence):] = np.nan
+
+    return ans
+
 def _strip_nans(sequence):
     '''
         Strips NaNs that are padded to the right of each peak if they are of unequal length
@@ -101,7 +133,6 @@ def dba(sequences, initialisation_sequence, convergence_threshold=1e-6, metric='
         # If we converged already, return
         difference = np.abs(_strip_nans(new_base) - _strip_nans(previous_base))
         #print iteration, np.sum(difference), np.min(difference), np.max(difference), np.mean(difference)
-        print iteration, total_distance
         if (difference < convergence_threshold).all():
             completed = True
             break
@@ -112,7 +143,7 @@ def dba(sequences, initialisation_sequence, convergence_threshold=1e-6, metric='
 
     if not completed:
         raise Exception('Maximum limit of {0} iterations has been reached'.format(MAX_ITERATIONS))
-    return new_base
+    return new_base, total_distance
 
 def dtw_projection(base, x):
     '''
@@ -158,7 +189,7 @@ def min_dist_to_others(dm, n):
 
     return min_i, min_val
 
-def parallel_pdist(two_dim_array, metric='sqeuclidean'):
+def parallel_pdist(two_dim_array, metric='sqeuclidean', apply_adaptive_scaling=True):
     '''
     Calculates pairwise DTW distance for all the rows in
     two_dim_array using all CPUs of the computer.
@@ -172,7 +203,7 @@ def parallel_pdist(two_dim_array, metric='sqeuclidean'):
     '''
 
     p = Pool()
-    smd = _shared_mem_dtw(two_dim_array, metric)
+    smd = _shared_mem_dtw(two_dim_array, metric=metric, apply_adaptive_scaling=apply_adaptive_scaling)
 
     size_dm = factorial(len(two_dim_array)) / (2 * factorial(len(two_dim_array) - 2))
     combs = combinations(xrange(len(two_dim_array)), 2)
@@ -212,9 +243,15 @@ class _shared_mem_dtw:
     '''
     shared_mem_matrix = None
     metric = None
-    def __init__(self, shared_mem_matrix, metric='sqeuclidean'):
+    apply_adaptive_scaling = None
+    def __init__(self, shared_mem_matrix, metric='sqeuclidean', apply_adaptive_scaling=True):
         self.shared_mem_matrix = shared_mem_matrix
         self.metric = metric
+        self.apply_adaptive_scaling = apply_adaptive_scaling
+
+        if self.apply_adaptive_scaling:
+            for i in range(len(self.shared_mem_matrix)):
+                self.shared_mem_matrix[i] = adaptive_scaling(self.shared_mem_matrix[i])
 
     def __call__(self, args):
 
