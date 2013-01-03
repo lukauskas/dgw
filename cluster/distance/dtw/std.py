@@ -34,7 +34,7 @@ def dtw_std(x, y, metric='sqeuclidean', *args, **kwargs):
 
     return mlpy_dtw_std(x, y, squared=squared, *args, **kwargs)
 
-def adaptive_scaling(x, threshold=1e6):
+def adaptive_scaling(x, threshold=1e-6):
     '''
         Merges successive coordinates that are identical (i.e. difference is smaller than threshold provided)
 
@@ -53,8 +53,7 @@ def adaptive_scaling(x, threshold=1e6):
     for item in x:
         if np.isnan(item):
             break
-
-        if prev_item is None or abs(item - prev_item) < threshold:
+        if prev_item is None or abs(item - prev_item) > threshold:
             new_sequence.append(item)
         prev_item = item
 
@@ -189,7 +188,7 @@ def min_dist_to_others(dm, n):
 
     return min_i, min_val
 
-def parallel_pdist(two_dim_array, metric='sqeuclidean', apply_adaptive_scaling=True):
+def parallel_pdist(two_dim_array, metric='sqeuclidean'):
     '''
     Calculates pairwise DTW distance for all the rows in
     two_dim_array using all CPUs of the computer.
@@ -203,7 +202,7 @@ def parallel_pdist(two_dim_array, metric='sqeuclidean', apply_adaptive_scaling=T
     '''
 
     p = Pool()
-    smd = _shared_mem_dtw(two_dim_array, metric=metric, apply_adaptive_scaling=apply_adaptive_scaling)
+    smd = _shared_mem_dtw(two_dim_array, metric=metric)
 
     size_dm = factorial(len(two_dim_array)) / (2 * factorial(len(two_dim_array) - 2))
     combs = combinations(xrange(len(two_dim_array)), 2)
@@ -243,15 +242,10 @@ class _shared_mem_dtw:
     '''
     shared_mem_matrix = None
     metric = None
-    apply_adaptive_scaling = None
-    def __init__(self, shared_mem_matrix, metric='sqeuclidean', apply_adaptive_scaling=True):
-        self.shared_mem_matrix = shared_mem_matrix
-        self.metric = metric
-        self.apply_adaptive_scaling = apply_adaptive_scaling
+    def __init__(self, shared_mem_matrix, metric='sqeuclidean'):
 
-        if self.apply_adaptive_scaling:
-            for i in range(len(self.shared_mem_matrix)):
-                self.shared_mem_matrix[i] = adaptive_scaling(self.shared_mem_matrix[i])
+        self.metric = metric
+        self.shared_mem_matrix = shared_mem_matrix
 
     def __call__(self, args):
 
