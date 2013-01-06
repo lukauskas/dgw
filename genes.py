@@ -10,19 +10,31 @@ def read_known_genes_file(known_genes_filename):
     cols = list(known_genes.columns)
     cols = map(lambda x : x.strip('#'), cols)
 
-    known_genes.columns = cols
+    # Rename cols
+    new_cols = []
+    for c in cols:
+        if c == 'chrom':
+            c = 'chromosome'
+        elif c == 'txStart':
+            c = 'start'
+        elif c == 'txEnd':
+            c = 'end'
+        new_cols.append(c)
+
+    known_genes.columns = new_cols
     known_genes = known_genes.set_index('name')
+
 
     return known_genes
 
 def get_tss_peak_df(known_genes, window, resolution=1):
-    known_genes = known_genes[['chrom', 'txStart']].drop_duplicates()
+    known_genes = known_genes[['chromosome', 'start']].drop_duplicates()
 
-    starts = known_genes['txStart'] - window
-    ends   = known_genes['txStart'] + window
+    starts = known_genes['start'] - window
+    ends   = known_genes['start'] + window
 
 
-    peak_df = pd.DataFrame({'chromosome' : known_genes['chrom'],
+    peak_df = pd.DataFrame({'chromosome' : known_genes['chromosome'],
                             'start' : starts,
                             'end' : ends}, index=known_genes.index)
     peak_df = helpers.clip_to_fit_resolution2(peak_df, resolution=resolution)
@@ -44,7 +56,7 @@ def read_gtf(gtf_location):
         return dict(attribute)
 
     data = pd.read_csv(gtf_location, sep='\t', skiprows=5, header=None)
-    data.columns = ['seqname', 'source', 'feature', 'start', 'end', 'score', 'strand', 'frame', 'attribute']
+    data.columns = ['chromosome', 'source', 'feature', 'start', 'end', 'score', 'strand', 'frame', 'attribute']
 
     # Leave only data about genes
     data = data[data.feature == 'gene']
