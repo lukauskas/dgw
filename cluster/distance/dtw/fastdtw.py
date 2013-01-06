@@ -6,7 +6,21 @@ Created on 13 Nov 2012
 from sys import maxint as MAXINT
 import numpy as np
 
-def fast_cityblock(a, b):
+from mlpy.dtw import dtw_std as mlpy_dtw_std
+
+def dtw_std(a, b, metric='sqeuclidean', distance_only=True):
+    if metric == 'sqeuclidean':
+        squared = True
+    elif metric == 'euclidean':
+        squared = False
+    else:
+        raise ValueError('Unsupported metric {0!r}'.format(metric))
+
+    return mlpy_dtw_std(a, b, squared=squared, dist_only=distance_only)
+
+from scipy.spatial.distance import euclidean, sqeuclidean
+
+def fast_euclidean(a, b):
     '''
     Similar to scipy.spatial.distance.cityblock but skips the array validations
     @param a:
@@ -16,14 +30,17 @@ def fast_cityblock(a, b):
 
     return np.abs(a-b).sum()
 
+
 def traceback_path(x, y, cost_matrix):
 
     # Trace back the path
-    min_cost_path = []
+    min_cost_path_a = []
+    min_cost_path_b = []
 
     i = len(x)-1
     j = len(y)-1
-    min_cost_path.append((i,j))
+    min_cost_path_a.append(i)
+    min_cost_path_b.append(j)
 
     while (i > 0) or (j > 0):
         # Find costs of moving in three possible directions:
@@ -46,7 +63,7 @@ def traceback_path(x, y, cost_matrix):
         else:
             down_cost = float('inf')
 
-        # determine where to move in. 
+        # determine where to move in.
         # Prefer moving diagonally or towards i==j axis if there
         # are ties
 
@@ -62,18 +79,27 @@ def traceback_path(x, y, cost_matrix):
         else: # left_cost == right_cost < diag_cost
             i -= 1
 
-        min_cost_path.append((i,j))
+        min_cost_path_a.append(i)
+        min_cost_path_b.append(j)
 
-    min_cost_path.reverse()
+    min_cost_path_a.reverse()
+    min_cost_path_b.reverse()
 
-    return min_cost_path
+    return (min_cost_path_a, min_cost_path_b)
 
-def dtw(x, y, distance_function=fast_cityblock, return_aligned_path=False):
+def dtw(x, y, metric='sqeuclidean', distance_only=True):
     cost_matrix = np.empty([len(x), len(y)])
+
+    if metric == 'sqeuclidean':
+        distance_func = sqeuclidean
+    elif metric == 'euclidean':
+        distance_func = euclidean
+    else:
+        raise ValueError('Unsupported metric {0!r}'.format(metric))
 
     for i in range(len(x)):
         for j in range(len(y)):
-            local_dist = distance_function(x[i], y[j])
+            local_dist = distance_func(x[i], y[j])
             if i == 0 and j == 0:
                 cost_matrix[i,j] = local_dist
             elif i == 0:
@@ -97,17 +123,25 @@ def dtw(x, y, distance_function=fast_cityblock, return_aligned_path=False):
 
     # Minimal cost is at the top-right corner of the matrix
     min_cost = cost_matrix[len(x)-1,len(y)-1]
-    if not return_aligned_path:
+    if distance_only:
         return min_cost
     else:
         min_cost_path = traceback_path(x, y, cost_matrix)
-        return min_cost, min_cost_path
+        return min_cost, cost_matrix, min_cost_path
 
-def constrained_dtw(x, y, window, distance_function=fast_cityblock, return_aligned_path=False):
+def constrained_dtw(x, y, window, metric='sqeuclidean', distance_only=True):
     #assert(isinstance(window, DTWWindow))
 
     cost_matrix = window.get_cost_matrix()
-    dist_func = lambda args: distance_function(x[args[0]], y[args[1]])
+
+    if metric == 'sqeuclidean':
+        distance_func = sqeuclidean
+    elif metric == 'euclidean':
+        distance_func = euclidean
+    else:
+        raise ValueError('Unsupported metric {0!r}'.format(metric))
+
+    dist_func = lambda args: distance_func(x[args[0]], y[args[1]])
     local_distances = map(dist_func, window)
 
     for (i, j), local_dist in zip(window, local_distances):
@@ -133,17 +167,17 @@ def constrained_dtw(x, y, window, distance_function=fast_cityblock, return_align
             cost_matrix[i,j] = min_global_cost + local_dist
 
     min_cost = cost_matrix[len(x)-1, len(y)-1]
-    if not return_aligned_path:
+    if distance_only:
         return min_cost
     else:
         min_cost_path = traceback_path(x, y, cost_matrix)
-        return min_cost, min_cost_path
+        return min_cost, cost_matrix, min_cost_path
 
 def shrink_time_series(x, shrink_factor):
     '''
     Shrinks time series x by a factor specified as shrink_factor.
     The series is shrunk by averaging components.
-    
+
     Examples:
     >>> shrink_time_series([1,2,3,4,5,6,7,8,9], 2.0)
     [1.5, 4.0, 6.5, 8.5]
@@ -151,7 +185,7 @@ def shrink_time_series(x, shrink_factor):
     [2.0, 5.0]
 
     This is direct translation from a similar function in PAA.java in FastDTW implementation.
-    
+
     @param x: time series to be shrunk. should be list like and support direct element access
     @param shrink_factor: ratio to reduce the size by. E.g
     @type shrink_factor: float
@@ -197,20 +231,21 @@ def expanded_res_window(x, y, shrunk_x, shrunk_y,
     if radius > 0:
         raise Exception, 'Not implemented yet'
 
-    # variables to keep track of current location of higher-res 
+    # variables to keep track of current location of higher-res
     # projected path
 
     # TODO: that looks fishy: refers to the min values of low_res_path
     # but uses them for the larger seq
     current_i = low_res_path[0][0]
-    current_j = low_res_path[0][1]
+    current_j = low_res_path[1][0]
 
     last_warped_i = MAXINT
     last_warped_j = MAXINT
 
     window = DTWWindow(len(x), len(y))
 
-    for warped_i, warped_j in low_res_path:
+    zipped_low_res_path = zip(low_res_path[0], low_res_path[1])
+    for warped_i, warped_j in zipped_low_res_path:
         block_size_i = agg_x[warped_i]
         block_size_j = agg_y[warped_j]
 
@@ -222,12 +257,12 @@ def expanded_res_window(x, y, shrunk_x, shrunk_y,
         if warped_i > last_warped_i:
             current_i += agg_x[last_warped_i]
 
-        # If diagonal move was performed add 2 cells to the edges 
+        # If diagonal move was performed add 2 cells to the edges
         # to create a continuous path with even with:
         #                        |_|_|x|x|     then mark      |_|_|x|x|
         #    ex: projected path: |_|_|x|x|  --2 more cells->  |_|X|x|x|
         #                        |x|x|_|_|        (X's)       |x|x|X|_|
-        #                        |x|x|_|_|                    |x|x|_|_| 
+        #                        |x|x|_|_|                    |x|x|_|_|
         if (warped_j > last_warped_j) and (warped_i > last_warped_i):
             window.mark_visited(current_i - 1, current_j)
             window.mark_visited(current_i, current_j - 1)
@@ -325,7 +360,7 @@ class WindowMatrix(object):
     INFINITY = float('inf')
     def __init__(self, window):
         '''
-        
+
         @param window:
         @type window: DTWWindow
         '''
@@ -353,7 +388,7 @@ class WindowMatrix(object):
         except KeyError:
             raise IndexError, 'Cannot set {0} as matrix does not contain this entry'.format(key)
 
-def fast_dtw(x, y, distance_function=fast_cityblock, return_aligned_path = False):
+def fast_dtw(x, y, metric='sqeuclidean', distance_only = True):
 
     radius = 0
 
@@ -362,7 +397,7 @@ def fast_dtw(x, y, distance_function=fast_cityblock, return_aligned_path = False
     len_x = len(x)
     len_y = len(y)
     if len_x <= min_ts_size or len_y <= min_ts_size:
-        return dtw(x, y, distance_function, return_aligned_path=return_aligned_path)
+        return dtw_std(x, y, metric, distance_only=distance_only)
     else:
         SHRINK_FACTOR = 2.0
         shrunk_x, agg_x = shrink_time_series(x, SHRINK_FACTOR)
@@ -370,7 +405,7 @@ def fast_dtw(x, y, distance_function=fast_cityblock, return_aligned_path = False
         shrunk_y, agg_y = shrink_time_series(y, SHRINK_FACTOR)
         #assert(sum(agg_y) == len(y))
 
-        _, low_res_path = fast_dtw(shrunk_x, shrunk_y, distance_function, return_aligned_path=True)
+        _, _, low_res_path = fast_dtw(shrunk_x, shrunk_y, metric, distance_only=False)
 
         window = expanded_res_window(x, y,
             shrunk_x, shrunk_y,
@@ -378,5 +413,5 @@ def fast_dtw(x, y, distance_function=fast_cityblock, return_aligned_path = False
             low_res_path,
             radius)
 
-        return constrained_dtw(x, y, window, distance_function=distance_function,
-            return_aligned_path=return_aligned_path)
+        return constrained_dtw(x, y, window, metric=metric,
+            distance_only=distance_only)
