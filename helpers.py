@@ -5,6 +5,48 @@ import numpy as np
 import scipy.spatial.distance
 from itertools import combinations, izip
 
+def get_read_counts_distribution(regions, samfile):
+    def safe_samfile_count(*args, **kwargs):
+        try:
+            return samfile.count(*args, **kwargs)
+        except ValueError:
+            return np.nan
+
+    read_counts = map(lambda x : safe_samfile_count(x[1]['chromosome'], x[1]['start'], x[1]['end']), regions.iterrows())
+
+    return pd.Series(read_counts, index=regions.index, name='read_count')
+
+def get_mean_mark(regions, samfile, resolution=1):
+
+    cumulative_mark = None
+    count = 0
+
+    for index, data in regions.iterrows():
+        read_count = get_read_count_for_region(samfile, data['chromosome'], data['start'], data['end'])
+
+        try:
+            cumulative_mark += read_count
+        except TypeError:
+            # Will happend for the first mark
+            cumulative_mark = np.zeros(len(read_count), dtype=float) # Explicity doing np zeros here to make it float
+            cumulative_mark += read_count
+
+        count += 1
+
+    if cumulative_mark is not None:
+        return cumulative_mark / count
+    else:
+        return None
+
+def get_highest_stack_distribution(regions, samfile, resolution=1):
+
+    def get_highest_stack_for_item(iter_item):
+        index,data = iter_item
+
+        return get_read_count_for_region(samfile, data['chromosome'], data['start'], data['end']).max()
+
+    return pd.Series(map(get_highest_stack_for_item, regions.iterrows()), index=regions.index, name='highest_stack')
+
 def read_bed(bed_file, resolution=1):
     peaks = pd.read_csv(bed_file, sep="\t", header=None)
 
@@ -121,9 +163,6 @@ def join_peaks_that_are_close(peaks_df, proximity_threshold):
         new_peaks_idx = []
 
     return pd.DataFrame(new_peaks_df_data, index=new_peaks_df_index)
-
-
-
 
 def clip_to_fit_resolution(peaks, resolution=1):
 
