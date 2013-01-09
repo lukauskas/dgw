@@ -20,17 +20,6 @@ def dtw_std(a, b, metric='sqeuclidean', distance_only=True):
 
 from scipy.spatial.distance import euclidean, sqeuclidean
 
-def fast_euclidean(a, b):
-    '''
-    Similar to scipy.spatial.distance.cityblock but skips the array validations
-    @param a:
-    @param b:
-    @return:
-    '''
-
-    return np.abs(a-b).sum()
-
-
 def traceback_path(x, y, cost_matrix):
 
     # Trace back the path
