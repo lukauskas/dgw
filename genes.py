@@ -36,6 +36,19 @@ def read_known_genes_file(known_genes_filename):
 
     return known_genes
 
+def tss_tse_locations(known_genes):
+    '''
+    Returns locations of TSS. Either uses gene['start'] or gene['end'] depending on whether the gene is on '+' or '-' strand.
+
+    :param known_genes:
+    :return:
+    '''
+
+    locations = known_genes[known_genes.strand=='+']['start'].append(known_genes[known_genes.strand=='-']['end'])
+    locations = locations.ix[known_genes.index] # reindex the data using original order
+
+    return locations
+
 def get_regions_around_tss(known_genes, window, resolution=1):
     '''
     Returns regions that are around transcription starting sites.
@@ -48,7 +61,7 @@ def get_regions_around_tss(known_genes, window, resolution=1):
     :return:
     '''
     # Get the locations of tss. Note that they coinside with Transcription End Site for peaks on negative strand
-    tss_locations = known_genes[known_genes.strand == '+']['start'].append(known_genes[known_genes.strand == '-']['end'])
+    tss_locations = tss_tse_locations(known_genes)
 
     # Add window around these
     starts = tss_locations - window
@@ -62,8 +75,27 @@ def get_regions_around_tss(known_genes, window, resolution=1):
     peak_df = peak_df.drop_duplicates()
     return peak_df
 
+def genes_that_may_overlap_region(known_genes, region, overlap_window=2000):
+    chr_genes = known_genes[known_genes.chromosome == region['chromosome']]
 
+    transcription_starts = tss_tse_locations(chr_genes)
+    overlaps = transcription_starts[transcription_starts.between(region['start'] - overlap_window,
+                                                                     region['end'] + overlap_window)]
 
+    overlap_indices = overlaps.index - [region.name] # Remove the region provided from list
+
+    return known_genes.ix[overlap_indices]
+
+def overlapping_gene_counts(known_genes, regions, overlap_window=2000):
+
+    ixs = []
+    counts = []
+
+    for ix, region in regions.iterrows():
+        ixs.append(ix)
+        counts.append(len(genes_that_may_overlap_region(known_genes, region, overlap_window=overlap_window)))
+
+    return pd.Series(counts, index=ixs)
 
 def read_gtf(gtf_location):
 
