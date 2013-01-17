@@ -4,6 +4,7 @@ import pysam
 import numpy as np
 import scipy.spatial.distance
 from itertools import combinations, izip
+from scipy.spatial.distance import num_obs_dm, num_obs_y
 
 def get_read_counts_distribution(regions, samfile):
     def safe_samfile_count(*args, **kwargs):
@@ -47,6 +48,17 @@ def get_highest_stack_distribution(regions, samfile, resolution=1):
 
     return pd.Series(map(get_highest_stack_for_item, regions.iterrows()), index=regions.index, name='highest_stack')
 
+def get_variance_of_stack_heights_distribution(regions, samfile, resolution=1):
+
+    def get_variance_of_stack_heights_for_item(iter_item):
+        index,data = iter_item
+
+        return get_read_count_for_region(samfile, data['chromosome'], data['start'], data['end']).var()
+
+    return pd.Series(map(get_variance_of_stack_heights_for_item, regions.iterrows()), index=regions.index, name='highest_stack')
+
+
+
 def read_bed(bed_file, resolution=1):
     peaks = pd.read_csv(bed_file, sep="\t", header=None)
 
@@ -66,6 +78,36 @@ def join_with_length_information(peaks_df):
 def choose(n, k):
     return factorial(n) / ((factorial(n-k)) * factorial(k))
 
+def read_dm_for_index(dm, index, n=None):
+
+    if n is None:
+       n = num_obs_y(dm)
+
+    if index >= n:
+        raise ValueError('No index {0} in dm of size {1}'.format(index, n))
+
+    obs = []
+    start = 0
+    for i in range(index + 1):
+
+        # Each i will have to be compared with n_compared to items:
+        n_compared_to = n - i - 1
+
+        if i < index:
+            # the comparisons will be in this order
+            # (i, i+1), (i, i+2), (i, i+3)
+            # So if index == i+1 then offset = 0
+            # If index == i+2, offset = 1
+            # So on, so offset = index - i - 1
+            index_offset = index - i-1
+            obs.append(dm[start + index_offset])
+
+            start += n_compared_to
+        elif i == index:
+            obs.extend(dm[start:start+n_compared_to])
+
+    return np.array(obs)
+
 def find_prototype(dm, full_index, cluster_indices):
 
     # If we have only one element in the cluster, it is its own prototype
@@ -73,22 +115,11 @@ def find_prototype(dm, full_index, cluster_indices):
         return list(cluster_indices)[0], 0
 
     sums = {}
-    for (i, j), dist in izip(combinations(full_index, 2), dm):
-        if i not in cluster_indices:
-            continue
+    full_index_list = list(full_index)
+    cluster_indices_is = [ full_index_list.index(x) for x in cluster_indices ]
 
-        if j not in cluster_indices:
-            continue
-
-        try:
-            sums[i] += dist
-        except KeyError:
-            sums[i] = dist
-
-        try:
-            sums[j] += dist
-        except KeyError:
-            sums[j] = dist
+    for i, ix in zip(cluster_indices_is, cluster_indices):
+        sums[ix] = read_dm_for_index(dm, i).sum()
 
     min_key = None
     min_value = None
@@ -252,6 +283,41 @@ def get_read_count_for_region(samfile, chromosome, start, end, resolution=1):
 
     return data_buffer
 
+def compare_distance_matrices(dm1, dm2):
+
+    def get_closer_distances(df_dm):
+        df_dm = df_dm.sort(columns=0)
+
+        closer_distances = {}
+        prev_items = set()
+        curr_items = set()
+        prev_value = None
+        for index, value in df_dm.itertuples():
+            if prev_value == value:
+                closer_distances[index] = prev_items
+            elif prev_value < value or prev_value is None:
+               prev_items = curr_items.copy()
+               prev_value = value
+               closer_distances[index] = prev_items
+            else:
+                raise Exception('Prev_value > value?? prev:{0}, curr:{1}'.format(prev_value, value))
+
+            curr_items.add(index)
+
+        return closer_distances
+
+    # Convert the distance matrices into pd.DataFrame for easier keeping track of indices
+    df_dm1 = pd.DataFrame(dm1)
+    df_dm2 = pd.DataFrame(dm2)
+
+    closer_distances1 = get_closer_distances(df_dm1)
+    closer_distances2 = get_closer_distances(df_dm2)
+
+    overlaps = []
+    for i in df_dm1.index:
+        overlaps.append(len(closer_distances1[i] & closer_distances2[i]))
+
+    return pd.DataFrame(overlaps, index=df_dm1.index)
 
 def read_peak_data_from_bam(alignments_file, peaks, resolution=1):
     '''
