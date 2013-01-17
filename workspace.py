@@ -12,11 +12,29 @@ import numpy as np
 import matplotlib.pyplot as plt
 import view.heatmap as heatmap
 import cluster.distance.dtw.std as dtw
+import fastcluster
+import scipy.cluster.hierarchy as hierarchy
 
 import random
 
 CLEAN_VALID_GENE_REGIONS_FILENAME = 'clean_valid_gene_regions.pandas'
 
+def overlapping_regions(region, data, window=2000):
+    chr_regions = data[data.chromosome==region['chromosome']]
+    overlapping_regions = chr_regions[chr_regions.start.between(region['start']-window, region['end'])]
+    return overlapping_regions.ix[overlapping_regions.index - [region.name]]
+
+def overlapping_regions_count(regions, data):
+
+    series = []
+    ixs    = []
+
+    for ix, region in regions.iterrows():
+        overlaps = overlapping_regions(region, data)
+        series.append(len(overlaps))
+        ixs.append(ix)
+
+    return pd.Series(series, index=ixs)
 
 def xticks_rel_to_tss(resolution, window):
     (xticks, xtick_labels) = plt.xticks()
@@ -71,5 +89,8 @@ def plot_clusters(clusters, data, plots=['heatmap', 'mean'], resolution=None, wi
 # Initialise
 print '> Initialising..'
 clean_valid_gene_regions = pd.load(CLEAN_VALID_GENE_REGIONS_FILENAME)
-peak_data = helpers.read_peak_data_from_bam(K562_H3K4ME3_REP1, clean_valid_gene_regions, resolution=25)
+peak_data = pd.load('peak_data.pandas')
+#peak_data = helpers.read_peak_data_from_bam(K562_H3K4ME3_REP1, clean_valid_gene_regions, resolution=25)
 norm_peak_data = peak_data.div(peak_data.T.sum(), axis='index')
+known_genes = genes.read_known_genes_file(KNOWN_GENES)
+known_genes = known_genes.ix[peak_data.index]
