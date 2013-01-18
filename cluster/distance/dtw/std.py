@@ -76,6 +76,44 @@ def _strip_nans(sequence):
     return sequence[np.invert(np.isnan(sequence))]
 
 #-----------------------------------------------------------------------------------------------------------------------
+def barycenter_average(base_sequence, sequences, metric='sqeuclidean', return_total_distance=False):
+
+    base_assoc = {}
+    total_distance = 0
+
+    for sequence in sequences:
+
+        distance, cost, path = dtw_std(base_sequence, sequence, dist_only=False)
+        total_distance += 1
+        # splitting and zipping again is necessary here
+        # as numpy arrays are not too friendly for iteration like this
+        path_base, path_sequence = path
+        for (base_coord, sequence_coord) in zip(path_base, path_sequence):
+            # We essentially compute barycenter here which is defined as
+            # barycenter(x_1, ..., x_n) = SUM(x_1,..,x_n) / n
+            # Where x_1 and x_n are given by assoc(S1,..S2) that links
+            # that links each coordinate of the average sequence to one or more coordinates of the sequences
+            # of S1..S2 see Petitjean et al, 2011
+
+            try:
+                base_assoc[base_coord].append(sequence[sequence_coord])
+            except KeyError:
+                base_assoc[base_coord] = [sequence[sequence_coord]]
+
+    #new_base = sums_of_values / counts_of_mappings # For euclidean metric
+    # We need a median to minimise unsquared city-block distance
+    if metric == 'euclidean':
+        new_base = np.array([ np.median(base_assoc[i]) if not np.isnan(base_sequence[i]) else np.nan for i in xrange(len(base_sequence))])
+    elif metric == 'sqeuclidean':
+        new_base = np.array([ np.mean(base_assoc[i]) if not np.isnan(base_sequence[i]) else np.nan for i in xrange(len(base_sequence))])
+    else:
+        raise ValueError('Metric {0!r} is unsupported'.format(metric))
+
+    if not return_total_distance:
+        return new_base
+    else:
+        return new_base, total_distance
+
 def dba(sequences, initialisation_sequence, convergence_threshold=1e-6, metric='sqeuclidean'):
     '''
         Implements DBA (DTW Barycenter Averaging) algorithm given by
@@ -100,38 +138,7 @@ def dba(sequences, initialisation_sequence, convergence_threshold=1e-6, metric='
     completed = False
 
     while iteration <= MAX_ITERATIONS:
-
-        total_distance = 0
-        base_assoc = {}
-        for sequence in sequences:
-
-            distance, cost, path = dtw_std(previous_base, sequence, dist_only=False)
-            total_distance += distance
-
-            # splitting and zipping again is necessary here
-            # as numpy arrays are not too friendly for iteration like this
-            path_base, path_sequence = path
-            for (base_coord, sequence_coord) in zip(path_base, path_sequence):
-                # We essentially compute barycenter here which is defined as
-                # barycenter(x_1, ..., x_n) = SUM(x_1,..,x_n) / n
-                # Where x_1 and x_n are given by assoc(S1,..S2) that links
-                # that links each coordinate of the average sequence to one or more coordinates of the sequences
-                # of S1..S2 see Petitjean et al, 2011
-
-                try:
-                    base_assoc[base_coord].append(sequence[sequence_coord])
-                except KeyError:
-                    base_assoc[base_coord] = [sequence[sequence_coord]]
-
-        #new_base = sums_of_values / counts_of_mappings # For euclidean metric
-        # We need a median to minimise unsquared city-block distance
-        if metric == 'euclidean':
-            new_base = np.array([ np.median(base_assoc[i]) if not np.isnan(previous_base[i]) else np.nan for i in range(len(previous_base))])
-        elif metric == 'sqeuclidean':
-            new_base = np.array([ np.mean(base_assoc[i]) if not np.isnan(previous_base[i]) else np.nan for i in range(len(previous_base))])
-        else:
-            raise ValueError('Metric {0!r} is unsupported'.format(metric))
-
+        new_base, total_distance = barycenter_average(previous_base, sequences, metric=metric, return_total_distance=True)
         # If we converged already, return
         difference = np.abs(_strip_nans(new_base) - _strip_nans(previous_base))
         #print iteration, np.sum(difference), np.min(difference), np.max(difference), np.mean(difference)
@@ -191,7 +198,7 @@ def min_dist_to_others(dm, n):
 
     return min_i, min_val
 
-def parallel_pdist(two_dim_array, metric='sqeuclidean'):
+def parallel_pdist(two_dim_array, metric='sqeuclidean', sakoe_chiba_band_parameter=-1):
     '''
     Calculates pairwise DTW distance for all the rows in
     two_dim_array using all CPUs of the computer.
@@ -205,7 +212,7 @@ def parallel_pdist(two_dim_array, metric='sqeuclidean'):
     '''
 
     p = Pool()
-    smd = _shared_mem_dtw(two_dim_array, metric=metric)
+    smd = _shared_mem_dtw(two_dim_array, metric=metric, sakoe_chiba_band_parameter=sakoe_chiba_band_parameter)
 
     size_dm = factorial(len(two_dim_array)) / (2 * factorial(len(two_dim_array) - 2))
     combs = combinations(xrange(len(two_dim_array)), 2)
@@ -245,10 +252,12 @@ class _shared_mem_dtw:
     '''
     shared_mem_matrix = None
     metric = None
-    def __init__(self, shared_mem_matrix, metric='sqeuclidean'):
+    sakoe_chiba_band_parameter = None
+    def __init__(self, shared_mem_matrix, metric='sqeuclidean', sakoe_chiba_band_parameter=-1):
 
         self.metric = metric
         self.shared_mem_matrix = shared_mem_matrix
+        self.sakoe_chiba_band_parameter = sakoe_chiba_band_parameter
 
     def __call__(self, args):
 
@@ -258,7 +267,7 @@ class _shared_mem_dtw:
         a = self.shared_mem_matrix[x]
         b = self.shared_mem_matrix[y]
 
-        return dtw_std(a,b, metric=self.metric)
+        return dtw_std(a,b, metric=self.metric, sakoe_chiba_band_parameter=self.sakoe_chiba_band_parameter)
 
 def take(iterable, n):
     '''
