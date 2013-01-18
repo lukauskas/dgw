@@ -5,35 +5,45 @@ import numpy as np
 import matplotlib
 import pandas as pd
 
-def plot(data_frame):
-
-    # Calculate the max_value threshold so heatmap looks good
+def plot(data_frame, sort_by='length', clip_colors=True):
     values = data_frame.unstack().dropna()
-    histogram, bin_edges = np.histogram(values, bins=1000)
+    if clip_colors:
+        # Calculate the max_value threshold so heatmap looks good
 
-    last_good_bin = None
-    TRIM_MAX_VALUE_THRESHOLD = 0.001 # Trim max value threshold to be the value that hides 0.1% of peaks
-    allowed_slack = round(TRIM_MAX_VALUE_THRESHOLD * len(values))
+        histogram, bin_edges = np.histogram(values, bins=1000)
 
-    current_slack = 0
-    for i, hist in reversed(list(enumerate(histogram))):
-        current_slack =+ hist
-        if current_slack >= allowed_slack:
-            last_good_bin = i
-            break
-    
-    max_value = bin_edges[last_good_bin+1]
+        last_good_bin = None
+        TRIM_MAX_VALUE_THRESHOLD = 0.001 # Trim max value threshold to be the value that hides 0.1% of peaks
+        allowed_slack = round(TRIM_MAX_VALUE_THRESHOLD * len(values))
 
-    # Get length info
-    lengths = {}
+        current_slack = 0
+        for i, hist in reversed(list(enumerate(histogram))):
+            current_slack =+ hist
+            if current_slack >= allowed_slack:
+                last_good_bin = i
+                break
 
-    for ix, row in data_frame.iterrows():
-        lengths[ix] = len(row.dropna())
+        max_value = bin_edges[last_good_bin+1]
+    else:
+        max_value = values.max()
 
-    lengths = pd.Series(lengths)
+    lengths = data_frame.apply(lambda x : len(x.values[np.invert(np.isnan(x.values))]), axis=1)
     lengths.sort()
 
-    data_frame = data_frame.ix[lengths.index]
+    # Cut most of the columns out of dataframe
+    data_frame = data_frame[data_frame.columns[:lengths.max()+1]]
+    if sort_by == 'length':
+        data_frame = data_frame.ix[lengths.index]
+    elif sort_by == 'read_count':
+        read_counts = data_frame.T.sum()
+        read_counts.sort()
+
+        data_frame = data_frame.ix[read_counts.index]
+
+    elif sort_by == 'nothing':
+        pass
+    else:
+        raise ValueError("Only 'length', 'read_count' and 'nothing' supported")
 
     # Start plotting
     N = len(data_frame)
