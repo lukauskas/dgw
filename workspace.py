@@ -3,7 +3,9 @@ __author__ = 'saulius'
 KNOWN_GENES = '../data/knownGenes'
 K562_H3K4ME3_REP1 = '../data/interesting/broad/K562/wgEncodeBroadHistoneK562H3k4me3StdAlnRep1.bam'
 K562_H3K4ME3_REP2 = '../data/interesting/broad/K562/wgEncodeBroadHistoneK562H3k4me3StdAlnRep2.bam'
+MACS_MACS_H3K4ME3_REP1 = '../data/interesting/broad/K562/K56H3k4me3Rep1_peaks.bed'
 
+RESOLUTION = 25
 
 import helpers
 import genes
@@ -14,6 +16,7 @@ import view.heatmap as heatmap
 import cluster.distance.dtw.std as dtw
 import fastcluster
 import scipy.cluster.hierarchy as hierarchy
+import webbrowser
 
 import random
 
@@ -68,8 +71,8 @@ def plot_clusters(clusters, data, plots=['heatmap', 'mean'], resolution=None, wi
 
         plt.figure()
 
-        for i, plot in enumerate(plots):
-            plt.subplot(1, plot_count, i+1)
+        for j, plot in enumerate(plots):
+            plt.subplot(1, plot_count, j+1)
             if plot == 'heatmap':
                 heatmap.plot(sub_data)
                 if resolution is not None and window is not None:
@@ -86,11 +89,42 @@ def plot_clusters(clusters, data, plots=['heatmap', 'mean'], resolution=None, wi
 
         plt.suptitle('Cluster {0} ({1} items)'.format(i, len(sub_data)))
 
-# Initialise
-print '> Initialising..'
-clean_valid_gene_regions = pd.load(CLEAN_VALID_GENE_REGIONS_FILENAME)
-peak_data = pd.load('peak_data.pandas')
-#peak_data = helpers.read_peak_data_from_bam(K562_H3K4ME3_REP1, clean_valid_gene_regions, resolution=25)
-norm_peak_data = peak_data.div(peak_data.T.sum(), axis='index')
-known_genes = genes.read_known_genes_file(KNOWN_GENES)
-known_genes = known_genes.ix[peak_data.index]
+def cut(linkage, t, criterion='distance',  *args, **kwargs):
+    return pd.Series(hierarchy.fcluster(linkage, t=t, criterion='distance', *args, **kwargs), index=peak_data.index)
+
+def get_prototype(dm, clusters, cluster_id, data, average=True):
+    important_cluster = clusters[clusters == cluster_id]
+    prototype_ix, prototype_dist = helpers.find_prototype(dm, clusters.index, important_cluster.index)
+    prototype_sequence = data.ix[prototype_ix].values
+    if average:
+        prototype_sequence = dtw.barycenter_average(prototype_sequence, data[clusters==cluster_id].values)
+    return prototype_sequence
+
+def cut(linkage, t, criterion='distance', *args, **kwargs):
+    return pd.Series(hierarchy.fcluster(linkage, t=t, criterion=criterion, *args, **kwargs), index=peak_data.index)
+
+def genome_browser_link(region):
+    return 'http://genome.ucsc.edu/cgi-bin/hgTracks?hgS_doOtherUser=submit&hgS_otherUserName=sauliusl&hgS_otherUserSessionName=hg19_k562-h3k4me3&position={0}:{1}-{2}'.format(region['chromosome'], region['start'], region['end'])
+def open_in_genome_browser(region):
+    webbrowser.open(genome_browser_link(region))
+
+if __name__ == '__main__':
+    print '> Initialising..'
+
+    known_genes = genes.read_known_genes_file(KNOWN_GENES)
+
+
+    import sys
+    if len(sys.argv) == 1 or sys.argv[1] == '--tss':
+        # Initialise
+        clean_valid_gene_regions = pd.load(CLEAN_VALID_GENE_REGIONS_FILENAME)
+        peak_data = pd.load('peak_data.pandas')
+        #peak_data = helpers.read_peak_data_from_bam(K562_H3K4ME3_REP1, clean_valid_gene_regions, resolution=25)
+        norm_peak_data = peak_data.div(peak_data.T.sum(), axis='index')
+        known_genes = known_genes.ix[peak_data.index]
+    elif sys.argv[1] == '--macs':
+        regions =  helpers.read_bed(MACS_MACS_H3K4ME3_REP1, resolution=RESOLUTION)
+        peak_data = helpers.read_peak_data_from_bam(K562_H3K4ME3_REP1, regions, resolution=RESOLUTION)
+        norm_peak_data = peak_data.div(peak_data.T.sum(), axis='index')
+
+
