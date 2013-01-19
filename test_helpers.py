@@ -107,13 +107,22 @@ class TestReadCountForRegionReading(unittest.TestCase):
         correct = np.array([3,3])
         assert_array_equal(correct, peak_data)
 
-        #0123456789012345678901234567890123456789[0123]
-        #.....aaaaaAAAAAAAAAA....................[....]
-        #...............bbbbbBBBBBBBBBB..........[....]
-        #.....CCCCCCCCCCccccc.....DDDDDDDDDDdddd[d....]
+        #012345678901234567890123456789012345678[9012]
+        #.....aaaaaAAAAAAAAAA...................[....]
+        #...............bbbbbBBBBBBBBBB.........[....]
+        #.....CCCCCCCCCCccccc.....DDDDDDDDDDdddd[d...]
 
-        peak_data = helpers.get_read_count_for_region(self.samfile, 'chr1', 40, 44, resolution=1, extend_to=15)
+        peak_data = helpers.get_read_count_for_region(self.samfile, 'chr1', 39, 43, resolution=1, extend_to=15)
         correct = np.array([1,0,0,0])
+        assert_array_equal(correct, peak_data)
+
+        #01234567890123456789012345678901234567890[123]
+        #.....aaaaaAAAAAAAAAA.....................[...]
+        #...............bbbbbBBBBBBBBBB...........[...]
+        #.....CCCCCCCCCCccccc.....DDDDDDDDDDddddd[....]
+
+        peak_data = helpers.get_read_count_for_region(self.samfile, 'chr1', 41, 44, resolution=1, extend_to=15)
+        correct = np.array([0,0,0])
         assert_array_equal(correct, peak_data)
 
         #[012345]67890123456789012345678901234567890123
@@ -122,7 +131,16 @@ class TestReadCountForRegionReading(unittest.TestCase):
         #[.....C]CCCCCCCCCccccc.....DDDDDDDDDDddddd....
 
         peak_data = helpers.get_read_count_for_region(self.samfile, 'chr1', 0, 6, resolution=1, extend_to=15)
-        correct = np.array([0,0,0,0,0,1])
+        correct = np.array([0,0,0,0,0,2])
+        assert_array_equal(correct, peak_data)
+
+        #[01234]567890123456789012345678901234567890123
+        #[.....]aaaaaAAAAAAAAAA........................
+        #[.....]..........bbbbbBBBBBBBBBB..............
+        #[.....]CCCCCCCCCCccccc.....DDDDDDDDDDddddd....
+
+        peak_data = helpers.get_read_count_for_region(self.samfile, 'chr1', 0, 5, resolution=1, extend_to=15)
+        correct = np.array([0,0,0,0,0])
         assert_array_equal(correct, peak_data)
 
 if __name__ == '__main__':

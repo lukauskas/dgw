@@ -6,6 +6,7 @@ import scipy.spatial.distance
 from itertools import combinations, izip
 from scipy.spatial.distance import num_obs_dm, num_obs_y
 
+
 def get_read_counts_distribution(regions, samfile):
     def safe_samfile_count(*args, **kwargs):
         try:
@@ -240,11 +241,28 @@ def clip_to_fit_resolution2(peaks, resolution=1):
     new_peaks = pd.DataFrame(new_peaks_data, index=new_peaks_index)
     return new_peaks
 
+def extend_read_to(aligned_read, extend_to):
 
+    if aligned_read.alen > extend_to:
+        raise ValueError('AlignedRead {0!r} is already longer than {1}'.format(aligned_read, extend_to))
 
+    if extend_to is None or extend_to == 0:
+        alignment_start = aligned_read.pos
+        alignment_end   = aligned_read.aend
+    else:
+        alen = aligned_read.alen
+        if alen > extend_to:
+            raise ValueError('Alignment length, alen={0} greater than extend_to parameter ({1})'.format(alen, extend_to))
+        if not aligned_read.is_reverse:
+            alignment_start = aligned_read.pos
+            alignment_end   = alignment_start + extend_to
+        else:
+            alignment_start = aligned_read.aend - extend_to
+            alignment_end   = aligned_read.aend
 
+    return alignment_start, alignment_end
 
-def get_read_count_for_region(samfile, chromosome, start, end, resolution=1):
+def get_read_count_for_region(samfile, chromosome, start, end, resolution=1, extend_to=None):
     '''
         Returns read count data for a samfile.
         Chromosome, start, and end all describe a region of the data.
@@ -272,12 +290,30 @@ def get_read_count_for_region(samfile, chromosome, start, end, resolution=1):
     data_buffer = np.zeros(data_len)
 
     # Fetch all alignments from samfile
-    alignments = samfile.fetch(chromosome, start, end)
+    if extend_to is None or extend_to == 0:
+        read_start = start
+        read_end   = end
+    elif extend_to > 0:
+        read_start = start-extend_to+1 # +1 because extended reads should overlap with at least one pixel
+        read_end   = start+extend_to-1
+    else:
+        raise ValueError('extend_to should be >= 0')
+
+    alignments = samfile.fetch(chromosome, read_start, read_end)
 
     for alignment in alignments:
         assert(alignment.aend > alignment.pos)
-        start_bin = max(0, (alignment.pos-start) / resolution)
-        end_bin   = min(data_len -1, (alignment.aend-start - 1) / resolution)
+
+        if extend_to is not None and extend_to > 0:
+            alignment_start, alignment_end = extend_read_to(alignment, extend_to)
+            if alignment_end < start or alignment_start >= end:
+                continue
+        else:
+            alignment_start = alignment.pos
+            alignment_end   = alignment.aend
+
+        start_bin = max(0, (alignment_start-start) / resolution)
+        end_bin   = min(data_len -1, (alignment_end-start - 1) / resolution)
 
         data_buffer[start_bin:end_bin+1] += 1
 
