@@ -10,9 +10,11 @@ class StubAlignedRead(object):
     def __init__(self, pos, alen, is_reverse):
         self.pos = pos
         self.alen = alen
-        self.aend = self.pos + alen
-
         self.is_reverse = is_reverse
+
+    @property
+    def aend(self):
+        return self.pos + self.alen
 
 class StubSamfile(object):
     __fetch_response = None
@@ -20,10 +22,10 @@ class StubSamfile(object):
     def __init__(self, fetch_response):
         self.__fetch_response = fetch_response
 
-
     def fetch(self, chromosome, start, end):
         for item in self.__fetch_response:
-            yield item
+            if item.pos < end and item.aend >= start:
+                yield item
 
 class TestReadExtendFunctions(unittest.TestCase):
     def test_extend_regular_read(self):
@@ -86,6 +88,7 @@ class TestReadCountForRegionReading(unittest.TestCase):
         correct = np.array([0,0,2,2,2,2,2,2,2,2,2,2,3,3,3,3,3,1,1,1,1,1,2,2,2,2,2,1,1,1,1,1,1,1,1,1,1])
         assert_array_equal(correct, peak_data)
 
+
     def test_extended_read_binning(self):
         peak_data = helpers.get_read_count_for_region(self.samfile, 'chr1', 3, 43, resolution=5, extend_to=15)
 
@@ -98,6 +101,7 @@ class TestReadCountForRegionReading(unittest.TestCase):
         assert_array_equal(correct, peak_data)
 
     def test_extended_read_no_binning_extended_boundaries(self):
+
         #0123456789012345[67]8901234567890123456789
         #.....aaaaaAAAAAA[AA]AA....................
         #...............b[bb]bbBBBBBBBBBB..........
