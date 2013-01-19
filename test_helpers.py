@@ -143,5 +143,17 @@ class TestReadCountForRegionReading(unittest.TestCase):
         correct = np.array([0,0,0,0,0])
         assert_array_equal(correct, peak_data)
 
+    def test_extended_reads_extended_boundaries_binning(self):
+
+        #012345678901234567[8901234|5678901|2345678]90123
+        #.....aaaaaAAAAAAAA[AA.....|.......|.......].....
+        #...............bbb[bbBBBBB|BBBBB..|.......].....
+        #.....CCCCCCCCCCccc[cc.....|DDDDDDD|DDDdddd]d....
+
+        peak_data = helpers.get_read_count_for_region(self.samfile, 'chr1',18, 39, resolution=7, extend_to=15)
+        correct = np.array([3,2,1])
+        assert_array_equal(correct, peak_data)
+
+
 if __name__ == '__main__':
     unittest.main()
