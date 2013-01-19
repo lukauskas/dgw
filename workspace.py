@@ -45,6 +45,32 @@ def xticks_rel_to_tss(resolution, window):
     plt.gca().set_xticklabels(xtick_labels)
     plt.gca().set_xlabel('Position relative to TSS')
 
+def plot_cluster(sub_data, cluster_id, plots=['heatmap', 'mean'], resolution=None, window=None):
+    plt.figure()
+
+    plot_count = len(plots)
+    if plot_count == 0:
+        raise ValueError('Nothing to plot - plots is empty')
+
+    for j, plot in enumerate(plots):
+        plt.subplot(1, plot_count, j+1)
+        if plot == 'heatmap':
+            heatmap.plot(sub_data)
+            if resolution is not None and window is not None:
+                xticks_rel_to_tss(resolution, window)
+        elif plot == 'mean':
+            sub_data.mean().plot()
+            if resolution is not None and window is not None:
+                xticks_rel_to_tss(resolution, window)
+        elif plot == 'dba':
+            dba, _ = dtw.dba(sub_data.values, sub_data.values[0])
+            plt.plot(dba)
+            if resolution is not None and window is not None:
+                xticks_rel_to_tss(resolution, window)
+
+    plt.suptitle('Cluster {0} ({1} items)'.format(cluster_id, len(sub_data)))
+
+
 
 def plot_clusters(clusters, data, plots=['heatmap', 'mean'], resolution=None, window=None, filter=None):
 
@@ -54,9 +80,6 @@ def plot_clusters(clusters, data, plots=['heatmap', 'mean'], resolution=None, wi
             raise ValueError('Unknown plot {0}'.format(plot))
 
     nclusters = clusters.max()
-    plot_count = len(plots)
-    if plot_count == 0:
-        raise ValueError('Nothing to plot - plots is empty')
 
     if (resolution is not None and window is None) or (resolution is None and window is not None):
         raise ValueError('Both resolution and window should be provided, not just one of them')
@@ -69,25 +92,7 @@ def plot_clusters(clusters, data, plots=['heatmap', 'mean'], resolution=None, wi
             if not filter(sub_data):
                 continue
 
-        plt.figure()
-
-        for j, plot in enumerate(plots):
-            plt.subplot(1, plot_count, j+1)
-            if plot == 'heatmap':
-                heatmap.plot(sub_data)
-                if resolution is not None and window is not None:
-                    xticks_rel_to_tss(resolution, window)
-            elif plot == 'mean':
-                sub_data.mean().plot()
-                if resolution is not None and window is not None:
-                    xticks_rel_to_tss(resolution, window)
-            elif plot == 'dba':
-                dba, _ = dtw.dba(sub_data.values, sub_data.values[0])
-                plt.plot(dba)
-                if resolution is not None and window is not None:
-                    xticks_rel_to_tss(resolution, window)
-
-        plt.suptitle('Cluster {0} ({1} items)'.format(i, len(sub_data)))
+        plot_cluster(sub_data, i, plots=plots, resolution=resolution, window=window)
 
 def cut(linkage, t, criterion='distance',  *args, **kwargs):
     return pd.Series(hierarchy.fcluster(linkage, t=t, criterion='distance', *args, **kwargs), index=peak_data.index)
