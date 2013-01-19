@@ -6,6 +6,8 @@ import scipy.spatial.distance
 from itertools import combinations, izip
 from scipy.spatial.distance import num_obs_dm, num_obs_y
 
+from logging import debug, warn
+
 
 def get_read_counts_distribution(regions, samfile):
     def safe_samfile_count(*args, **kwargs):
@@ -295,7 +297,7 @@ def get_read_count_for_region(samfile, chromosome, start, end, resolution=1, ext
         read_end   = end
     elif extend_to > 0:
         read_start = start-extend_to+1 # +1 because extended reads should overlap with at least one pixel
-        read_end   = start+extend_to-1
+        read_end   = end+extend_to-1
     else:
         raise ValueError('extend_to should be >= 0')
 
@@ -355,7 +357,7 @@ def compare_distance_matrices(dm1, dm2):
 
     return pd.DataFrame(overlaps, index=df_dm1.index)
 
-def read_peak_data_from_bam(alignments_file, peaks, resolution=1):
+def read_peak_data_from_bam(alignments_file, peaks, resolution=1, extend_to=0):
     '''
     Returns data from bam for the specified peaks.
     Peaks should be a pandas.DataFrame object that has 'chromosome', 'start' and 'end' columns.
@@ -380,9 +382,11 @@ def read_peak_data_from_bam(alignments_file, peaks, resolution=1):
                                                         peak['chromosome'],
                                                         peak['start'],
                                                         peak['end'],
-                                                        resolution)
-        except ValueError:
+                                                        resolution=resolution,
+                                                        extend_to=extend_to)
+        except ValueError, e:
             # Most likely caused due to a chromosome not existing in BAM
+            debug('Ignoring {0!r} because of {1!r}'.format(peak, e))
             continue
 
         peak_data.append(current_peak_data)
