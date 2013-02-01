@@ -184,5 +184,34 @@ class TestClipToFitResolution(unittest.TestCase):
         self.assertEquals(0, clipped_df.ix[0]['start'])
         self.assertEquals(20, clipped_df.ix[0]['end'])
 
+    def test_clipping_multiple_bins(self):
+        df = pd.DataFrame( {'chromosome' : ['chr1', 'chr10'], 'start' : [100, 200], 'end' : [117, 220]} )
+
+        clipped_df = parsers.clip_to_fit_resolution(df, resolution=5)
+
+        self.assertEquals('chr1', clipped_df.ix[0]['chromosome'])
+        self.assertEquals(99, clipped_df.ix[0]['start'])
+        self.assertEquals(119, clipped_df.ix[0]['end'])
+
+        self.assertEquals('chr10', clipped_df.ix[1]['chromosome'])
+        self.assertEquals(200, clipped_df.ix[1]['start'])
+        self.assertEquals(220, clipped_df.ix[1]['end'])
+
+    def test_clipping_res_1(self):
+
+        df = pd.DataFrame( {'chromosome' : ['chr1', 'chr10'], 'start' : [100, 200], 'end' : [117, 220]} )
+
+        clipped_df = parsers.clip_to_fit_resolution(df, resolution=1)
+
+        self.assertEquals('chr1', clipped_df.ix[0]['chromosome'])
+        self.assertEquals(100, clipped_df.ix[0]['start'])
+        self.assertEquals(117, clipped_df.ix[0]['end'])
+
+        self.assertEquals('chr10', clipped_df.ix[1]['chromosome'])
+        self.assertEquals(200, clipped_df.ix[1]['start'])
+        self.assertEquals(220, clipped_df.ix[1]['end'])
+
+
+
 if __name__ == '__main__':
     unittest.main()
