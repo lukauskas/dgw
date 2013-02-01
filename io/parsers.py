@@ -23,18 +23,23 @@ def read_bed(bed_file, resolution=1):
     return peaks
 
 
-def clip_to_fit_resolution(peaks, resolution=1):
+def clip_to_fit_resolution(regions, resolution=1):
+    '''
+    Clips the regions provided to be of correct size so they can be segmented into a number of resolution sized bins
+    :param regions:
+    :param resolution:
+    :return:
+    '''
     if resolution == 1:
-        return peaks
+        return regions
 
-    lens = peaks['end'] - peaks['start']
+    lens = regions['end'] - regions['start']
     lens.name = 'length'
-    peaks = peaks.join(lens)
+    regions = regions.join(lens)
 
-    new_peaks_data = []
-    new_peaks_index = []
+    new_regions_data = []
 
-    for ix, row in peaks.iterrows():
+    for ix, row in regions.iterrows():
         remainder = row['length'] % resolution
 
         if remainder == 0:
@@ -45,20 +50,18 @@ def clip_to_fit_resolution(peaks, resolution=1):
         add_left = offset_needed / 2
         add_right = offset_needed / 2 + offset_needed % 2
 
-
         row['start'] -= add_left
 
         if row['start'] < 0:
             # Check if we accidentally went sub zero
             add_right += -row['start']
             row['start'] = 0
-            
+
         row['end']   += add_right
 
-        new_peaks_data.append(row[['chromosome', 'start', 'end']])
-        new_peaks_index.append(ix)
+        new_regions_data.append(row[['chromosome', 'start', 'end']])
 
-    new_peaks = pd.DataFrame(new_peaks_data, index=new_peaks_index)
+    new_peaks = pd.DataFrame(new_regions_data, index=regions.index)
     return new_peaks
 
 def read_samfile_region(samfile, chromosome, start, end, resolution=1, extend_to=200):
