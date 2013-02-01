@@ -2,9 +2,10 @@ __author__ = 'saulius'
 import unittest
 from numpy.testing import *
 import numpy as np
-
+import pandas as pd
 import parsers
 
+# -- Stub classes to simulate pysam behaviour ---
 class StubAlignedRead(object):
     def __init__(self, pos, alen, is_reverse):
         self.pos = pos
@@ -25,6 +26,8 @@ class StubSamfile(object):
         for item in self.__fetch_response:
             if item.pos < end and item.aend >= start:
                 yield item
+
+# -- Tests ------------------------------------------------------------
 
 class TestReadExtendFunctions(unittest.TestCase):
     def test_extend_regular_read(self):
@@ -157,6 +160,29 @@ class TestReadCountForRegionReading(unittest.TestCase):
         correct = np.array([3,2,1])
         assert_array_equal(correct, peak_data)
 
+class TestClipToFitResolution(unittest.TestCase):
+
+    def test_clipping_when_only_one_bin_present(self):
+        df = pd.DataFrame( {'chromosome' : ['chr1', 'chr10'], 'start' : [100, 200], 'end' : [117, 220]} )
+
+        clipped_df = parsers.clip_to_fit_resolution(df, resolution=20)
+
+        self.assertEquals('chr1', clipped_df.ix[0]['chromosome'])
+        self.assertEquals(99, clipped_df.ix[0]['start'])
+        self.assertEquals(119, clipped_df.ix[0]['end'])
+
+        self.assertEquals('chr10', clipped_df.ix[1]['chromosome'])
+        self.assertEquals(200, clipped_df.ix[1]['start'])
+        self.assertEquals(220, clipped_df.ix[1]['end'])
+
+    def test_clipping_always_greater_or_equal_than_0(self):
+        df = pd.DataFrame( {'chromosome' : ['chr1'], 'start' : [5], 'end' : [7]} )
+
+        clipped_df = parsers.clip_to_fit_resolution(df, resolution=20)
+
+        self.assertEquals('chr1', clipped_df.ix[0]['chromosome'])
+        self.assertEquals(0, clipped_df.ix[0]['start'])
+        self.assertEquals(20, clipped_df.ix[0]['end'])
 
 if __name__ == '__main__':
     unittest.main()

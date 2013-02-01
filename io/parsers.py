@@ -47,13 +47,16 @@ def clip_to_fit_resolution(peaks, resolution=1):
 
 
         row['start'] -= add_left
+
+        if row['start'] < 0:
+            # Check if we accidentally went sub zero
+            add_right += -row['start']
+            row['start'] = 0
+            
         row['end']   += add_right
 
         new_peaks_data.append(row[['chromosome', 'start', 'end']])
         new_peaks_index.append(ix)
-
-        assert((row['end'] - row['start']) % resolution == 0)
-
 
     new_peaks = pd.DataFrame(new_peaks_data, index=new_peaks_index)
     return new_peaks
