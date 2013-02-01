@@ -4,11 +4,14 @@ import pysam
 from logging import debug
 import numpy as np
 
-def read_bed(bed_file):
+def read_bed(bed_file, resolution=1):
     '''
-    Parses the specified bed file into :class:`~pandas.DataFrame`.
+    Parses the bed file specified.
+    If resolution is provided it will automatically adjust the start and end tags as to be able to further
+    split the file into bins of resolution width.
 
     :param bed_file:
+    :param resolution:
     :return:
     '''
     peaks = pd.read_csv(bed_file, sep="\t", header=None)
@@ -16,9 +19,46 @@ def read_bed(bed_file):
     peaks.columns = ['chromosome', 'start', 'end', 'name', 'score']
     peaks = peaks.set_index('name')
 
+    peaks = clip_to_fit_resolution(peaks, resolution)
     return peaks
 
-def read_samfile_region(samfile, chromosome, start, end, resolution=1, extend_to=None):
+
+def clip_to_fit_resolution(peaks, resolution=1):
+    if resolution == 1:
+        return peaks
+
+    lens = peaks['end'] - peaks['start']
+    lens.name = 'length'
+    peaks = peaks.join(lens)
+
+    new_peaks_data = []
+    new_peaks_index = []
+
+    for ix, row in peaks.iterrows():
+        remainder = row['length'] % resolution
+
+        if remainder == 0:
+            offset_needed = 0
+        else:
+            offset_needed = resolution - remainder
+
+        add_left = offset_needed / 2
+        add_right = offset_needed / 2 + offset_needed % 2
+
+
+        row['start'] -= add_left
+        row['end']   += add_right
+
+        new_peaks_data.append(row[['chromosome', 'start', 'end']])
+        new_peaks_index.append(ix)
+
+        assert((row['end'] - row['start']) % resolution == 0)
+
+
+    new_peaks = pd.DataFrame(new_peaks_data, index=new_peaks_index)
+    return new_peaks
+
+def read_samfile_region(samfile, chromosome, start, end, resolution=1, extend_to=200):
     '''
         Returns read count data for a samfile.
         Chromosome, start, and end all describe a region of the data.
@@ -36,8 +76,6 @@ def read_samfile_region(samfile, chromosome, start, end, resolution=1, extend_to
     :param resolution:
     :return:
     '''
-
-
     if (end - start) % resolution != 0:
         raise ValueError('The resolution {0} is not valid for peak of length {1}'.format(resolution, end-start))
 

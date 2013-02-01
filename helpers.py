@@ -62,15 +62,6 @@ def get_variance_of_stack_heights_distribution(regions, samfile, resolution=1):
 
 
 
-def read_bed(bed_file, resolution=1):
-    peaks = pd.read_csv(bed_file, sep="\t", header=None)
-
-    peaks.columns = ['chromosome', 'start', 'end', 'name', 'score']
-    peaks = peaks.set_index('name')
-
-    peaks = clip_to_fit_resolution2(peaks, resolution)
-    return peaks
-
 def join_with_length_information(peaks_df):
 
     lens = peaks_df['end'] - peaks_df['start']
@@ -197,51 +188,6 @@ def join_peaks_that_are_close(peaks_df, proximity_threshold):
         new_peaks_idx = []
 
     return pd.DataFrame(new_peaks_df_data, index=new_peaks_df_index)
-
-def clip_to_fit_resolution(peaks, resolution=1):
-
-    if resolution == 1:
-        return peaks
-
-    peaks['start'] = peaks['start'].map(lambda x : resolution * int(floor(float(x) / resolution)) )
-    peaks['end']   = peaks['end'].map(lambda x : resolution * int(ceil(float(x) / resolution)) )
-
-    return peaks
-
-def clip_to_fit_resolution2(peaks, resolution=1):
-    if resolution == 1:
-        return peaks
-
-    lens = peaks['end'] - peaks['start']
-    lens.name = 'length'
-    peaks = peaks.join(lens)
-
-    new_peaks_data = []
-    new_peaks_index = []
-
-    for ix, row in peaks.iterrows():
-        remainder = row['length'] % resolution
-
-        if remainder == 0:
-            offset_needed = 0
-        else:
-            offset_needed = resolution - remainder
-
-        add_left = offset_needed / 2
-        add_right = offset_needed / 2 + offset_needed % 2
-
-
-        row['start'] -= add_left
-        row['end']   += add_right
-
-        new_peaks_data.append(row[['chromosome', 'start', 'end']])
-        new_peaks_index.append(ix)
-
-        assert((row['end'] - row['start']) % resolution == 0)
-
-
-    new_peaks = pd.DataFrame(new_peaks_data, index=new_peaks_index)
-    return new_peaks
 
 def compare_distance_matrices(dm1, dm2):
 
