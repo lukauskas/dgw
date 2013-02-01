@@ -3,8 +3,7 @@ import unittest
 from numpy.testing import *
 import numpy as np
 
-import helpers
-
+import parsers
 
 class StubAlignedRead(object):
     def __init__(self, pos, alen, is_reverse):
@@ -30,14 +29,14 @@ class StubSamfile(object):
 class TestReadExtendFunctions(unittest.TestCase):
     def test_extend_regular_read(self):
         aligned_read = StubAlignedRead(100, 36, False)
-        start, end = helpers.extend_read_to(aligned_read, 100)
+        start, end = parsers.extend_read_to(aligned_read, 100)
 
         self.assertEqual(100, start)
         self.assertEqual(200, end)
 
     def test_extend_reverse_read(self):
         aligned_read = StubAlignedRead(164, 36, True)
-        start, end = helpers.extend_read_to(aligned_read, 100)
+        start, end = parsers.extend_read_to(aligned_read, 100)
 
         self.assertEqual(100, start)
         self.assertEqual(200, end)
@@ -46,7 +45,7 @@ class TestReadExtendFunctions(unittest.TestCase):
         aligned_read = StubAlignedRead(100, 36, True)
 
         with self.assertRaises(ValueError):
-            helpers.extend_read_to(aligned_read, 10) # 0 < 36
+            parsers.extend_read_to(aligned_read, 10) # 0 < 36
 
 class TestReadCountForRegionReading(unittest.TestCase):
 
@@ -65,20 +64,20 @@ class TestReadCountForRegionReading(unittest.TestCase):
         self.samfile = StubSamfile(aligned_reads)
 
     def test_non_extended_read_no_binning(self):
-        peak_data = helpers.get_read_count_for_region(self.samfile, 'chr1', 3, 40, resolution=1, extend_to=None)
+        peak_data = parsers.read_samfile_region(self.samfile, 'chr1', 3, 40, resolution=1, extend_to=None)
         correct = np.array([0,0,1,1,1,1,1,2,2,2,2,2,1,1,1,1,1,1,1,1,1,1,2,2,2,2,2,1,1,1,1,1,0,0,0,0,0])
 
         assert_array_equal(correct, peak_data)
 
     def test_non_extended_read_binning(self):
 
-        peak_data = helpers.get_read_count_for_region(self.samfile, 'chr1', 3, 43, resolution=5, extend_to=None)
+        peak_data = parsers.read_samfile_region(self.samfile, 'chr1', 3, 43, resolution=5, extend_to=None)
         correct = np.array([1,2,2,2,2,2,1,0])
 
         assert_array_equal(correct, peak_data)
 
     def test_extended_read_no_binning(self):
-        peak_data = helpers.get_read_count_for_region(self.samfile, 'chr1', 3, 40, resolution=1, extend_to=15)
+        peak_data = parsers.read_samfile_region(self.samfile, 'chr1', 3, 40, resolution=1, extend_to=15)
 
         #012|3456789012345678901234567890123456789|
         #...|..aaaaaAAAAAAAAAA....................|
@@ -90,7 +89,7 @@ class TestReadCountForRegionReading(unittest.TestCase):
 
 
     def test_extended_read_binning(self):
-        peak_data = helpers.get_read_count_for_region(self.samfile, 'chr1', 3, 43, resolution=5, extend_to=15)
+        peak_data = parsers.read_samfile_region(self.samfile, 'chr1', 3, 43, resolution=5, extend_to=15)
 
         #012[34567|89012|34567|89012|34567|89012|34567|89012]
         #...[..aaa|aaAAA|AAAAA|AA...|.....|.....|.....|.....]
@@ -107,7 +106,7 @@ class TestReadCountForRegionReading(unittest.TestCase):
         #...............b[bb]bbBBBBBBBBBB..........
         #.....CCCCCCCCCCc[cc]cc.....DDDDDDDDDDddddd
 
-        peak_data = helpers.get_read_count_for_region(self.samfile, 'chr1', 16, 18, resolution=1, extend_to=15)
+        peak_data = parsers.read_samfile_region(self.samfile, 'chr1', 16, 18, resolution=1, extend_to=15)
         correct = np.array([3,3])
         assert_array_equal(correct, peak_data)
 
@@ -116,7 +115,7 @@ class TestReadCountForRegionReading(unittest.TestCase):
         #...............bbbbbBBBBBBBBBB.........[....]
         #.....CCCCCCCCCCccccc.....DDDDDDDDDDdddd[d...]
 
-        peak_data = helpers.get_read_count_for_region(self.samfile, 'chr1', 39, 43, resolution=1, extend_to=15)
+        peak_data = parsers.read_samfile_region(self.samfile, 'chr1', 39, 43, resolution=1, extend_to=15)
         correct = np.array([1,0,0,0])
         assert_array_equal(correct, peak_data)
 
@@ -125,7 +124,7 @@ class TestReadCountForRegionReading(unittest.TestCase):
         #...............bbbbbBBBBBBBBBB...........[...]
         #.....CCCCCCCCCCccccc.....DDDDDDDDDDddddd[....]
 
-        peak_data = helpers.get_read_count_for_region(self.samfile, 'chr1', 41, 44, resolution=1, extend_to=15)
+        peak_data = parsers.read_samfile_region(self.samfile, 'chr1', 41, 44, resolution=1, extend_to=15)
         correct = np.array([0,0,0])
         assert_array_equal(correct, peak_data)
 
@@ -134,7 +133,7 @@ class TestReadCountForRegionReading(unittest.TestCase):
         #[......].........bbbbbBBBBBBBBBB..............
         #[.....C]CCCCCCCCCccccc.....DDDDDDDDDDddddd....
 
-        peak_data = helpers.get_read_count_for_region(self.samfile, 'chr1', 0, 6, resolution=1, extend_to=15)
+        peak_data = parsers.read_samfile_region(self.samfile, 'chr1', 0, 6, resolution=1, extend_to=15)
         correct = np.array([0,0,0,0,0,2])
         assert_array_equal(correct, peak_data)
 
@@ -143,7 +142,7 @@ class TestReadCountForRegionReading(unittest.TestCase):
         #[.....]..........bbbbbBBBBBBBBBB..............
         #[.....]CCCCCCCCCCccccc.....DDDDDDDDDDddddd....
 
-        peak_data = helpers.get_read_count_for_region(self.samfile, 'chr1', 0, 5, resolution=1, extend_to=15)
+        peak_data = parsers.read_samfile_region(self.samfile, 'chr1', 0, 5, resolution=1, extend_to=15)
         correct = np.array([0,0,0,0,0])
         assert_array_equal(correct, peak_data)
 
@@ -154,7 +153,7 @@ class TestReadCountForRegionReading(unittest.TestCase):
         #...............bbb[bbBBBBB|BBBBB..|.......].....
         #.....CCCCCCCCCCccc[cc.....|DDDDDDD|DDDdddd]d....
 
-        peak_data = helpers.get_read_count_for_region(self.samfile, 'chr1',18, 39, resolution=7, extend_to=15)
+        peak_data = parsers.read_samfile_region(self.samfile, 'chr1',18, 39, resolution=7, extend_to=15)
         correct = np.array([3,2,1])
         assert_array_equal(correct, peak_data)
 
