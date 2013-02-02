@@ -6,3 +6,6 @@
 .DS_Store
 *~
 dm_*
+*.pd
+*.pandas
+*.npy
