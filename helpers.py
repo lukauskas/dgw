@@ -7,7 +7,7 @@ from itertools import combinations, izip
 from scipy.spatial.distance import num_obs_dm, num_obs_y
 
 from logging import debug, warn
-from io.parsers import read_samfile_region as get_read_count_for_region
+from data.parsers import read_samfile_region as get_read_count_for_region
 
 def get_read_counts_distribution(regions, samfile):
     def safe_samfile_count(*args, **kwargs):
