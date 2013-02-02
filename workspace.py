@@ -1,3 +1,5 @@
+from data import genes
+
 __author__ = 'saulius'
 
 KNOWN_GENES = '../data/knownGenes'
@@ -8,17 +10,12 @@ MACS_MACS_H3K4ME3_REP1 = '../data/interesting/broad/K562/K56H3k4me3Rep1_peaks.be
 RESOLUTION = 25
 
 import helpers
-import genes
 import pandas as pd
-import numpy as np
 import matplotlib.pyplot as plt
 import view.heatmap as heatmap
 import cluster.distance.dtw.std as dtw
-import fastcluster
 import scipy.cluster.hierarchy as hierarchy
 import webbrowser
-
-import random
 
 CLEAN_VALID_GENE_REGIONS_FILENAME = 'clean_valid_gene_regions.pandas'
 
@@ -129,7 +126,7 @@ if __name__ == '__main__':
         known_genes = known_genes.ix[peak_data.index]
     elif sys.argv[1] == '--macs':
         regions =  helpers.read_bed(MACS_MACS_H3K4ME3_REP1, resolution=RESOLUTION)
-        peak_data = helpers.read_peak_data_from_bam(K562_H3K4ME3_REP1, regions, resolution=RESOLUTION)
+        peak_data = helpers.read_peak_data_from_bam(K562_H3K4ME3_REP1, regions, resolution=RESOLUTION, extend_to=100)
         norm_peak_data = peak_data.div(peak_data.T.sum(), axis='index')
 
 

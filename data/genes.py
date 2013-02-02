@@ -1,9 +1,8 @@
 __author__ = 'saulius'
 
 import pandas as pd
-import helpers
 
-def read_known_genes_file(known_genes_filename):
+def read_known_genes(known_genes_filename):
     '''
     Reads known_genes file.
     The file can be obtained from the
@@ -36,7 +35,7 @@ def read_known_genes_file(known_genes_filename):
 
     return known_genes
 
-def tss_tse_locations(known_genes):
+def tss_locations(known_genes):
     '''
     Returns locations of TSS. Either uses gene['start'] or gene['end'] depending on whether the gene is on '+' or '-' strand.
 
@@ -52,7 +51,6 @@ def tss_tse_locations(known_genes):
 def get_regions_around_tss(known_genes, window, resolution=1):
     '''
     Returns regions that are around transcription starting sites.
-    For genes on a negative strand, transcription end sites are used.
 
     :param known_genes: parsed known_genes file, see read_known_genes_file
     :param window: window of the number of base pairs to add to region. A window of 2000 would return from -2000 to +2000
@@ -61,7 +59,7 @@ def get_regions_around_tss(known_genes, window, resolution=1):
     :return:
     '''
     # Get the locations of tss. Note that they coinside with Transcription End Site for peaks on negative strand
-    tss_locations = tss_tse_locations(known_genes)
+    tss_locations = tss_locations(known_genes)
 
     # Add window around these
     starts = tss_locations - window
@@ -78,7 +76,7 @@ def get_regions_around_tss(known_genes, window, resolution=1):
 def genes_that_may_overlap_region(known_genes, region, overlap_window=2000):
     chr_genes = known_genes[known_genes.chromosome == region['chromosome']]
 
-    transcription_starts = tss_tse_locations(chr_genes)
+    transcription_starts = tss_locations(chr_genes)
     overlaps = transcription_starts[transcription_starts.between(region['start'] - overlap_window,
                                                                      region['end'] + overlap_window)]
 
@@ -98,6 +96,11 @@ def overlapping_gene_counts(known_genes, regions, overlap_window=2000):
     return pd.Series(counts, index=ixs)
 
 def read_gtf(gtf_location):
+    '''
+        Reads GTF File
+    :param gtf_location:
+    :return:
+    '''
 
     def parse_attribute(attribute_str):
         attribute = attribute_str.split(';')
