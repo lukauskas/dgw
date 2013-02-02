@@ -198,7 +198,7 @@ def get_read_count_for_region(samfile, chromosome, start, end, resolution=1, ext
     return data_buffer
 
 
-def read_bam(alignments_file, peaks, resolution=1, extend_to=0):
+def read_bam(alignments_file, peaks, resolution=25, extend_to=200):
     '''
     Returns data from bam for the specified peaks.
     Peaks should be a pandas.DataFrame object that has 'chromosome', 'start' and 'end' columns.
