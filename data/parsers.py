@@ -198,7 +198,7 @@ def get_read_count_for_region(samfile, chromosome, start, end, resolution=1, ext
     return data_buffer
 
 
-def read_bam(alignments_file, peaks, resolution=25, extend_to=200):
+def read_bam(alignments_file, regions, resolution=25, extend_to=200):
     '''
     Returns data from bam for the specified peaks.
     Peaks should be a pandas.DataFrame object that has 'chromosome', 'start' and 'end' columns.
@@ -206,18 +206,20 @@ def read_bam(alignments_file, peaks, resolution=25, extend_to=200):
         This follows BED format of data.
 
     :param alignments_file:
-    :param peaks:
+    :param regions:
     :param resolution:
     :return:
     '''
+
+    regions = clip_to_fit_resolution(regions, resolution=resolution)
 
     samfile = pysam.Samfile(alignments_file, 'rb')
 
     peak_data = []
     new_index = []
 
-    assert(isinstance(peaks, pd.DataFrame))
-    for index,peak in peaks.iterrows():
+    assert(isinstance(regions, pd.DataFrame))
+    for index,peak in regions.iterrows():
         try:
             current_peak_data = read_samfile_region(samfile,
                 peak['chromosome'],
