@@ -13,9 +13,10 @@ import helpers
 import pandas as pd
 import matplotlib.pyplot as plt
 import view.heatmap as heatmap
-import cluster.distance.dtw.std as dtw
 import scipy.cluster.hierarchy as hierarchy
 import webbrowser
+import numpy as np
+from data.parsers import *
 
 CLEAN_VALID_GENE_REGIONS_FILENAME = 'clean_valid_gene_regions.pandas'
 
@@ -113,19 +114,19 @@ def open_in_genome_browser(region):
 if __name__ == '__main__':
     print '> Initialising..'
 
-    known_genes = genes.read_known_genes_file(KNOWN_GENES)
-
+    known_genes = genes.read_known_genes(KNOWN_GENES)
 
     import sys
     if len(sys.argv) == 1 or sys.argv[1] == '--tss':
         # Initialise
         clean_valid_gene_regions = pd.load(CLEAN_VALID_GENE_REGIONS_FILENAME)
-        peak_data = pd.load('peak_data.pandas')
-        #peak_data = helpers.read_peak_data_from_bam(K562_H3K4ME3_REP1, clean_valid_gene_regions, resolution=25)
-        norm_peak_data = peak_data.div(peak_data.T.sum(), axis='index')
+        peak_data = pd.load('peak_data_50-200.pandas')
+#        peak_data = read_bam(K562_H3K4ME3_REP1, clean_valid_gene_regions, resolution=50)
+        log_peak_data = (peak_data + 1).apply(np.log)
         known_genes = known_genes.ix[peak_data.index]
     elif sys.argv[1] == '--macs':
         regions =  helpers.read_bed(MACS_MACS_H3K4ME3_REP1, resolution=RESOLUTION)
+
         peak_data = helpers.read_peak_data_from_bam(K562_H3K4ME3_REP1, regions, resolution=RESOLUTION, extend_to=100)
         norm_peak_data = peak_data.div(peak_data.T.sum(), axis='index')
 
