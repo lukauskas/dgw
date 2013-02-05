@@ -26,7 +26,7 @@ def parallel_pdist(two_dim_array, metric='sqeuclidean'):
     size_dm = factorial(len(two_dim_array)) / (2 * factorial(len(two_dim_array) - 2))
     combs = combinations(xrange(len(two_dim_array)), 2)
 
-    step_size = 30000000
+    step_size = 30000000 # TODO: this should be related to total/free memory somehow
 
     ans_container = np.empty(size_dm)
     curr_step_offset = 0
