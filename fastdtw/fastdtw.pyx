@@ -5,10 +5,15 @@ Created on 13 Nov 2012
 '''
 from sys import maxint as MAXINT
 import numpy as np
+cimport numpy as np
+
+cdef extern from "math.h":
+    double round(double)
 
 from mlpy.dtw import dtw_std as mlpy_dtw_std
 
-def dtw_std(a, b, metric='sqeuclidean', distance_only=True):
+cpdef dtw_std(np.ndarray[np.float_t, ndim=1] a, np.ndarray[np.float_t, ndim=1] b,
+             metric='sqeuclidean', distance_only=True):
     if metric == 'sqeuclidean':
         squared = True
     elif metric == 'euclidean':
@@ -162,7 +167,7 @@ def constrained_dtw(x, y, window, metric='sqeuclidean', distance_only=True):
         min_cost_path = traceback_path(x, y, cost_matrix)
         return min_cost, cost_matrix, min_cost_path
 
-def shrink_time_series(x, shrink_factor):
+cpdef shrink_time_series2(np.ndarray[dtype=np.float_t, ndim=1] x, float shrink_factor):
     '''
     Shrinks time series x by a factor specified as shrink_factor.
     The series is shrunk by averaging components.
@@ -181,6 +186,9 @@ def shrink_time_series(x, shrink_factor):
     '''
 
     #assert(shrink_factor > 1)
+    cdef int original_size
+    cdef int reduced_size
+    cdef float reduced_point_size
 
     original_size = len(x)
     # Get the size of shrunk time series
@@ -190,8 +198,73 @@ def shrink_time_series(x, shrink_factor):
     reduced_point_size = float(original_size) / reduced_size
 
     # Keep track of points being averaged
-    read_from = 0
-    read_to   = None
+
+    cdef Py_ssize_t read_from = 0
+    cdef Py_ssize_t read_to   = 0 # this shoudl be "undefined" at this stage
+
+    cdef np.ndarray[dtype=np.float_t, ndim=1] ans = np.empty(reduced_size, dtype=float)
+    cdef np.ndarray[dtype=Py_ssize_t, ndim=1] aggregate_sizes = np.zeros(reduced_size, dtype=int)
+
+    cdef int counter = 0
+
+    cdef int points_to_read
+    cdef float val_sum
+
+    while read_from < original_size:
+        read_to = int(round(reduced_point_size*(counter+1)) -1 )
+        points_to_read = read_to - read_from +1
+
+        val_sum = 0
+        for i in range(read_from, read_to+1):
+            val_sum += x[i]
+
+        val_sum /= points_to_read
+
+        ans[counter] = val_sum
+        aggregate_sizes[counter] = points_to_read
+
+        counter += 1
+        read_from = read_to + 1
+
+    assert(counter == reduced_size)
+    return ans, aggregate_sizes
+
+
+
+cpdef shrink_time_series(np.ndarray[dtype=np.float_t, ndim=1] x, float shrink_factor):
+    '''
+    Shrinks time series x by a factor specified as shrink_factor.
+    The series is shrunk by averaging components.
+
+    Examples:
+    >>> shrink_time_series([1,2,3,4,5,6,7,8,9], 2.0)
+    [1.5, 4.0, 6.5, 8.5]
+    >>> shrink_time_series([1,2,3,4,5,6], 3.0)
+    [2.0, 5.0]
+
+    This is direct translation from a similar function in PAA.java in FastDTW implementation.
+
+    @param x: time series to be shrunk. should be list like and support direct element access
+    @param shrink_factor: ratio to reduce the size by. E.g
+    @type shrink_factor: float
+    '''
+
+    #assert(shrink_factor > 1)
+    cdef int original_size
+    cdef int reduced_size
+    cdef float reduced_point_size
+
+    original_size = len(x)
+    # Get the size of shrunk time series
+    reduced_size = int(float(original_size) / shrink_factor)
+
+    # Determine size of a sampled font (might be fractional)
+    reduced_point_size = float(original_size) / reduced_size
+
+    # Keep track of points being averaged
+
+    cdef int read_from = 0
+    cdef int read_to   = -1
 
     ans = []
     aggregate_sizes = []
@@ -211,6 +284,7 @@ def shrink_time_series(x, shrink_factor):
         aggregate_sizes.append(points_to_read)
         read_from = read_to + 1
 
+    assert(len(ans) == reduced_size)
     return ans, aggregate_sizes
 
 def expanded_res_window(x, y, shrunk_x, shrunk_y,
@@ -389,9 +463,9 @@ def fast_dtw(x, y, metric='sqeuclidean', distance_only = True):
         return dtw_std(x, y, metric, distance_only=distance_only)
     else:
         SHRINK_FACTOR = 2.0
-        shrunk_x, agg_x = shrink_time_series(x, SHRINK_FACTOR)
+        shrunk_x, agg_x = shrink_time_series2(x, SHRINK_FACTOR)
         #assert(sum(agg_x) == len(x))
-        shrunk_y, agg_y = shrink_time_series(y, SHRINK_FACTOR)
+        shrunk_y, agg_y = shrink_time_series2(y, SHRINK_FACTOR)
         #assert(sum(agg_y) == len(y))
 
         _, _, low_res_path = fast_dtw(shrunk_x, shrunk_y, metric, distance_only=False)
