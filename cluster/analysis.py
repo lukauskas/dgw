@@ -142,6 +142,8 @@ class ClusterAssignments(object):
     _hierarchical_clustering_object = None
     _cluster_assignments = None
 
+    _clusters = None
+
     def __init__(self, hierarchical_clustering_object, cluster_assignments):
         self._hierarchical_clustering_object = hierarchical_clustering_object
 
@@ -167,17 +169,23 @@ class ClusterAssignments(object):
         Returns the data clusters in decreasing order of number of elements
         :return:
         """
-        ans = []
-        cluster_assignments = self._cluster_assignments
-        hco = self.hierarchical_clustering_object
-        for cluster_i in cluster_assignments.value_counts().index:
-            indices = cluster_assignments[cluster_assignments==cluster_i].index
-            ans.append(Cluster(hco, indices))
 
-        return ans
+        if self._clusters is None:
+            clusters = []
+            cluster_assignments = self._cluster_assignments
+            hco = self.hierarchical_clustering_object
+            for cluster_i in cluster_assignments.value_counts().index:
+                indices = cluster_assignments[cluster_assignments==cluster_i].index
+                clusters.append(Cluster(hco, indices))
+            self._clusters = clusters
+
+        return self._clusters
 
     def __iter__(self):
         return iter(self.clusters)
+
+    def __getitem__(self, key):
+        return self.clusters[key]
 
 class Cluster(object):
     _hierarchical_clustering_object = None
