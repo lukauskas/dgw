@@ -18,8 +18,7 @@ import scipy.cluster.hierarchy as hierarchy
 import webbrowser
 import numpy as np
 from data.parsers import *
-from cluster.analysis import *
-import fastcluster
+import cluster.analysis
 
 CLEAN_VALID_GENE_REGIONS_FILENAME = 'clean_valid_gene_regions.pandas'
 
