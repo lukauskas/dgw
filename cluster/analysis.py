@@ -231,7 +231,16 @@ class Cluster(object):
     _hierarchical_clustering_object = None
     _item_indices = None
 
+    _item_dms = None
+
     def __init__(self, hierarchical_clustering_object, item_indices):
+        """
+
+        :param hierarchical_clustering_object:
+        :type hierarchical_clustering_object: HierarchicalClustering
+        :param item_indices:
+        :return:
+        """
         self._hierarchical_clustering_object = hierarchical_clustering_object
         self._item_indices = item_indices
 
@@ -257,6 +266,18 @@ class Cluster(object):
         :return:
         """
         return self.hierarchical_clustering_object.data.ix[self.item_indices]
+
+    def prototype_item(self):
+        if self._item_dms is None:
+            self._item_dms = map(self.hierarchical_clustering_object.pairwise_distances_to_index, self.item_indices)
+
+        sums = map(lambda x : x.sum(), self._item_dms)
+        min_index_i = np.argmin(sums)
+
+        items = self.items
+        min_index = items.index[min_index_i]
+
+        return items.ix[min_index]
 
     def __repr__(self):
         return '<Cluster n_items={0} >'.format(self.n_items)
