@@ -9,27 +9,46 @@ import matplotlib.pyplot as plt
 class InteractiveDendrogramCutter(object):
     _linkage = None
     _figure = None
+    _axis = None
 
     _cut_value = None
+    _line = None
+
+    def _onmotion_listener(self, event):
+        if event.inaxes != self._axis or event.ydata is None:
+            if self._line.get_visible():
+                # Hide line
+                self._line.set_visible(False)
+                self._figure.canvas.draw()
+                return
+        else:
+            self._line.set_ydata(event.ydata)
+            self._line.set_visible(True)
+            self._figure.canvas.draw()
 
     def _onclick_listener(self, event):
         # Allow only double-click, only in axis, only the left button and only regions with value
-        if not event.dblclick or event.inaxes is None or event.button != 1 or event.ydata is None:
+        if not event.dblclick or event.inaxes != self._axis or event.button != 1 or event.ydata is None:
             return
 
         self._cut_value = event.ydata
         plt.close(self._figure)
 
-    def __init__(self, linkage, figure=None):
+    def __init__(self, linkage):
         self._linkage = linkage
-        if figure is None:
-            figure = plt.figure()
-        self._figure = figure
 
-        self._figure.canvas.mpl_connect('button_press_event', self._onclick_listener)
 
     def show(self):
+
+        figure = plt.figure()
+        self._figure = figure
+        self._axis = plt.gca() # Get axis
+
+        self._figure.canvas.mpl_connect('button_press_event', self._onclick_listener)
+        self._figure.canvas.mpl_connect('motion_notify_event', self._onmotion_listener)
         hierarchy.dendrogram(self._linkage, no_labels=True)
+        self._line = self._axis.axhline(linestyle='--', y=0, visible=False)
+
         plt.title('Double click on the dendrogram to cut it')
         plt.show()
 
@@ -116,7 +135,7 @@ class HierarchicalClustering(object):
             value = float(value)
         except TypeError, ValueError:
             raise ValueError('Incorrect back from the interactive cut routine. Did you double-click it?')
-        
+
         return self.cut(value, criterion='distance')
 
 class ClusterAssignments(object):
