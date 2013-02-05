@@ -6,8 +6,8 @@ import pandas as pd
 
 
 class HierarchicalClustering(object):
-    dm = None
-    data = None
+    _condensed_distance_matrix = None
+    _data = None
     _linkage_matrix = None
 
     def __init__(self, data, condensed_distance_matrix, linkage_matrix=None):
@@ -18,7 +18,7 @@ class HierarchicalClustering(object):
         :param linkage_matrix: (optional) linkage_matrix computed by fastcluster.linkage. Will be computed automatically if not provided
         :return:
         """
-        self.dm = condensed_distance_matrix
+        self._condensed_distance_matrix = condensed_distance_matrix
         if not isinstance(data, pd.DataFrame):
             raise ValueError('Data should be instance of pd.DataFrame')
 
@@ -27,8 +27,16 @@ class HierarchicalClustering(object):
                              'in the condensed distance matrix and the data provided: '
                              '{0} != {1}'.format(num_obs_y(condensed_distance_matrix), len(data)))
 
-        self.data = data
+        self._data = data
         self._linkage_matrix = linkage_matrix
+
+    @property
+    def data(self):
+        return self._data
+
+    @property
+    def condensed_distance_matrix(self):
+        return self._condensed_distance_matrix
 
     @property
     def linkage(self):
@@ -38,7 +46,7 @@ class HierarchicalClustering(object):
         """
         if self._linkage_matrix is None:
             # If we haven't already, compute complete linkage matrix
-            self._linkage_matrix = fastcluster.complete(self.dm)
+            self._linkage_matrix = fastcluster.complete(self._condensed_distance_matrix)
 
         return self._linkage_matrix
 
@@ -54,7 +62,7 @@ class HierarchicalClustering(object):
 
     def cut(self, t, criterion='distance', *args, **kwargs):
         cluster_assignments = hierarchy.fcluster(self.linkage, t=t, criterion=criterion, *args, **kwargs)
-        clusters = pd.Series(cluster_assignments, index=self.data.index)
+        clusters = pd.Series(cluster_assignments, index=self._data.index)
         return clusters
 
 
