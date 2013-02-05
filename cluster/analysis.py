@@ -63,8 +63,69 @@ class HierarchicalClustering(object):
     def cut(self, t, criterion='distance', *args, **kwargs):
         cluster_assignments = hierarchy.fcluster(self.linkage, t=t, criterion=criterion, *args, **kwargs)
         clusters = pd.Series(cluster_assignments, index=self._data.index)
-        return clusters
+        return ClusterAssignments(self, clusters)
+
+class ClusterAssignments(object):
+    _hierarchical_clustering_object = None
+    _cluster_assignments = None
+
+    def __init__(self, hierarchical_clustering_object, cluster_assignments):
+        self._hierarchical_clustering_object = hierarchical_clustering_object
+
+        if not isinstance(cluster_assignments, pd.Series):
+            cluster_assignments = pd.Series(cluster_assignments, self._hierarchical_clustering_object.data.index)
+
+        self._cluster_assignments = cluster_assignments
+
+    @property
+    def n(self):
+        return len(self._cluster_assignments.value_counts())
+
+    @property
+    def hierarchical_clustering_object(self):
+        return self._hierarchical_clustering_object
+
+    def __repr__(self):
+        return '<ClusterAssignments n={0} for {1!r}>'.format(self.n, self._hierarchical_clustering_object)
+
+    @property
+    def clusters(self):
+        ans = []
+        cluster_assignments = self._cluster_assignments
+        hco = self.hierarchical_clustering_object
+        for cluster_i in cluster_assignments:
+            indices = cluster_assignments[cluster_assignments==cluster_i].index
+            ans.append(Cluster(hco, indices))
+
+        return ans
+
+class Cluster(object):
+    _hierarchical_clustering_object = None
+    _item_indices = None
+
+    def __init__(self, hierarchical_clustering_object, item_indices):
+        self._hierarchical_clustering_object = hierarchical_clustering_object
+        self._item_indices = item_indices
+
+    @property
+    def hierarchical_clustering_object(self):
+        return self._hierarchical_clustering_object
 
 
+    @property
+    def item_indices(self):
+        return self._item_indices
 
+    @property
+    def n_items(self):
+        return len(self._item_indices)
 
+    def __len__(self):
+        return self.n_items
+
+    @property
+    def items(self):
+        return self.hierarchical_clustering_object.data.ix[self.item_indices]
+
+    def __repr__(self):
+        '<Cluster n_items={0} >'.format(self.n_items)
