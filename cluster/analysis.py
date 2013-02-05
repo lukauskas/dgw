@@ -4,6 +4,38 @@ import scipy.cluster.hierarchy as hierarchy
 from scipy.spatial.distance import num_obs_y
 import pandas as pd
 
+import matplotlib.pyplot as plt
+
+class InteractiveDendrogramCutter(object):
+    _linkage = None
+    _figure = None
+
+    _cut_value = None
+
+    def _onclick_listener(self, event):
+        # Allow only double-click, only in axis, only the left button and only regions with value
+        if not event.dblclick or event.inaxes is None or event.button != 1 or event.ydata is None:
+            return
+
+        self._cut_value = event.ydata
+        plt.close(self._figure)
+
+    def __init__(self, linkage, figure=None):
+        self._linkage = linkage
+        if figure is None:
+            figure = plt.figure()
+        self._figure = figure
+
+        self._figure.canvas.mpl_connect('button_press_event', self._onclick_listener)
+
+    def show(self):
+        hierarchy.dendrogram(self._linkage, no_labels=True)
+        plt.title('Double click on the dendrogram to cut it')
+        plt.show()
+
+    @property
+    def value(self):
+        return self._cut_value
 
 class HierarchicalClustering(object):
     _condensed_distance_matrix = None
@@ -74,6 +106,19 @@ class HierarchicalClustering(object):
         clusters = pd.Series(cluster_assignments, index=self._data.index)
         return ClusterAssignments(self, clusters)
 
+    def interactive_cut(self):
+        cutter = InteractiveDendrogramCutter(self.linkage)
+
+        cutter.show()
+        value = cutter.value
+
+        try:
+            value = float(value)
+        except TypeError, ValueError:
+            raise ValueError('Incorrect back from the interactive cut routine. Did you double-click it?')
+        
+        return self.cut(value, criterion='distance')
+
 class ClusterAssignments(object):
     _hierarchical_clustering_object = None
     _cluster_assignments = None
@@ -114,7 +159,7 @@ class ClusterAssignments(object):
 
     def __iter__(self):
         return iter(self.clusters)
-    
+
 class Cluster(object):
     _hierarchical_clustering_object = None
     _item_indices = None
