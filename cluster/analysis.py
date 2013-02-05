@@ -3,6 +3,7 @@ import fastcluster
 import scipy.cluster.hierarchy as hierarchy
 from scipy.spatial.distance import num_obs_y
 import pandas as pd
+import numpy as np
 
 import matplotlib.pyplot as plt
 
@@ -137,6 +138,44 @@ class HierarchicalClustering(object):
             raise ValueError('Incorrect back from the interactive cut routine. Did you double-click it?')
 
         return self.cut(value, criterion='distance')
+
+    def pairwise_distances_to_index(self, query_index):
+        """
+        Reads the pairwise distances of an index to other indices from the condensed distance matrix
+        :param index:
+        :return:
+        """
+        if query_index not in self.data:
+            raise ValueError('No index {0} in data'.format(query_index))
+
+        data_index = self.data.index
+        n = len(data_index)
+        # Find the query index in the full index
+        query_index_pos = list(data_index).index(query_index)
+
+        dm = self.condensed_distance_matrix
+
+        distances = np.empty(n-1)
+
+        start = 0
+        for i in range(query_index_pos + 1):
+            # Each i will have to be compared with n_compared to items:
+            n_compared_to = n - i - 1
+
+            if i < query_index_pos:
+                # the comparisons will be in this order
+                # (i, i+1), (i, i+2), (i, i+3)
+                # So if index == i+1 then offset = 0
+                # If index == i+2, offset = 1
+                # So on, so offset = index - i - 1
+                query_index_offset = query_index - i-1
+                distances[i] = dm[start + query_index_offset]
+
+                start += n_compared_to
+            elif i == query_index_pos:
+                distances[query_index_pos:n-1] = dm[start:start+n_compared_to]
+
+        return distances
 
 class ClusterAssignments(object):
     _hierarchical_clustering_object = None
