@@ -61,6 +61,15 @@ class HierarchicalClustering(object):
         return hierarchy.dendrogram(linkage, no_labels=no_labels, *args, **kwargs)
 
     def cut(self, t, criterion='distance', *args, **kwargs):
+        """
+        Cuts the dendrogram at specified threshold t.
+        See scipy.cluster.hierarchy.fcluster
+        :param t: threshold
+        :param criterion:
+        :param args:
+        :param kwargs:
+        :return:
+        """
         cluster_assignments = hierarchy.fcluster(self.linkage, t=t, criterion=criterion, *args, **kwargs)
         clusters = pd.Series(cluster_assignments, index=self._data.index)
         return ClusterAssignments(self, clusters)
@@ -90,15 +99,22 @@ class ClusterAssignments(object):
 
     @property
     def clusters(self):
+        """
+        Returns the data clusters in decreasing order of number of elements
+        :return:
+        """
         ans = []
         cluster_assignments = self._cluster_assignments
         hco = self.hierarchical_clustering_object
-        for cluster_i in cluster_assignments:
+        for cluster_i in cluster_assignments.value_counts().index:
             indices = cluster_assignments[cluster_assignments==cluster_i].index
             ans.append(Cluster(hco, indices))
 
         return ans
 
+    def __iter__(self):
+        return iter(self.clusters)
+    
 class Cluster(object):
     _hierarchical_clustering_object = None
     _item_indices = None
@@ -110,7 +126,6 @@ class Cluster(object):
     @property
     def hierarchical_clustering_object(self):
         return self._hierarchical_clustering_object
-
 
     @property
     def item_indices(self):
@@ -125,7 +140,11 @@ class Cluster(object):
 
     @property
     def items(self):
+        """
+        Returns a pd.Dataframe of the items in the cluster
+        :return:
+        """
         return self.hierarchical_clustering_object.data.ix[self.item_indices]
 
     def __repr__(self):
-        '<Cluster n_items={0} >'.format(self.n_items)
+        return '<Cluster n_items={0} >'.format(self.n_items)
