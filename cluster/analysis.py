@@ -145,10 +145,10 @@ class HierarchicalClustering(object):
         :param index:
         :return:
         """
-        if query_index not in self.data.index:
+        data_index = self.data.index
+        if query_index not in data_index:
             raise ValueError('No index {0} in data'.format(query_index))
 
-        data_index = self.data.index
         n = len(data_index)
         # Find the query index in the full index
         query_index_pos = list(data_index).index(query_index)
