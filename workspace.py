@@ -18,6 +18,7 @@ import scipy.cluster.hierarchy as hierarchy
 import webbrowser
 import numpy as np
 from data.parsers import *
+from cluster.analysis import *
 import fastcluster
 
 CLEAN_VALID_GENE_REGIONS_FILENAME = 'clean_valid_gene_regions.pandas'
@@ -135,4 +136,8 @@ if __name__ == '__main__':
         cpgs = data.cpgs.read_cpgs(CPG_ISLANDS)
         cpg_regions = pd.DataFrame({'chromosome' : cpgs['chromosome'], 'start' : cpgs['start'] - 2000, 'end' : cpgs['end'] - 2000})
         cpg_data = pd.load('cpg_data.pandas')
+        cpg_data_log = (cpg_data + 1).apply(np.log)
+        dm = np.load('dm_cpg_data_log_50.npy')
+
+
 
