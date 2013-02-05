@@ -145,7 +145,7 @@ class HierarchicalClustering(object):
         :param index:
         :return:
         """
-        if query_index not in self.data:
+        if query_index not in self.data.index:
             raise ValueError('No index {0} in data'.format(query_index))
 
         data_index = self.data.index
@@ -168,14 +168,15 @@ class HierarchicalClustering(object):
                 # So if index == i+1 then offset = 0
                 # If index == i+2, offset = 1
                 # So on, so offset = index - i - 1
-                query_index_offset = query_index - i-1
+                query_index_offset = query_index_pos - i-1
                 distances[i] = dm[start + query_index_offset]
 
                 start += n_compared_to
             elif i == query_index_pos:
                 distances[query_index_pos:n-1] = dm[start:start+n_compared_to]
 
-        return distances
+        data_without_query_index = data_index - [query_index]
+        return pd.Series(distances, index=data_without_query_index)
 
 class ClusterAssignments(object):
     _hierarchical_clustering_object = None
