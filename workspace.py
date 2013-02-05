@@ -6,8 +6,9 @@ KNOWN_GENES = '../data/knownGenes'
 K562_H3K4ME3_REP1 = '../data/interesting/broad/K562/wgEncodeBroadHistoneK562H3k4me3StdAlnRep1.bam'
 K562_H3K4ME3_REP2 = '../data/interesting/broad/K562/wgEncodeBroadHistoneK562H3k4me3StdAlnRep2.bam'
 MACS_MACS_H3K4ME3_REP1 = '../data/interesting/broad/K562/K56H3k4me3Rep1_peaks.bed'
-
-RESOLUTION = 25
+CPG_ISLANDS = '../data/cpg_islands'
+import data.cpgs
+RESOLUTION = 50
 
 import helpers
 import pandas as pd
@@ -17,6 +18,7 @@ import scipy.cluster.hierarchy as hierarchy
 import webbrowser
 import numpy as np
 from data.parsers import *
+import fastcluster
 
 CLEAN_VALID_GENE_REGIONS_FILENAME = 'clean_valid_gene_regions.pandas'
 
@@ -117,7 +119,7 @@ if __name__ == '__main__':
     known_genes = genes.read_known_genes(KNOWN_GENES)
 
     import sys
-    if len(sys.argv) == 1 or sys.argv[1] == '--tss':
+    if sys.argv[1] == '--tss':
         # Initialise
         clean_valid_gene_regions = pd.load(CLEAN_VALID_GENE_REGIONS_FILENAME)
         peak_data = pd.load('peak_data_50-200.pandas')
@@ -125,9 +127,12 @@ if __name__ == '__main__':
         log_peak_data = (peak_data + 1).apply(np.log)
         known_genes = known_genes.ix[peak_data.index]
     elif sys.argv[1] == '--macs':
-        regions =  helpers.read_bed(MACS_MACS_H3K4ME3_REP1, resolution=RESOLUTION)
-
-        peak_data = helpers.read_peak_data_from_bam(K562_H3K4ME3_REP1, regions, resolution=RESOLUTION, extend_to=100)
-        norm_peak_data = peak_data.div(peak_data.T.sum(), axis='index')
-
+        regions =  read_bed(MACS_MACS_H3K4ME3_REP1, resolution=RESOLUTION)
+        peak_data = pd.load('macs_peak_data_50.pandas')
+        #peak_data = read_bam(K562_H3K4ME3_REP1, regions, resolution=RESOLUTION, extend_to=200)
+        #norm_peak_data = peak_data.div(peak_data.T.sum(), axis='index')
+    elif sys.argv[1] == '--cpgs':
+        cpgs = data.cpgs.read_cpgs(CPG_ISLANDS)
+        cpg_regions = pd.DataFrame({'chromosome' : cpgs['chromosome'], 'start' : cpgs['start'] - 2000, 'end' : cpgs['end'] - 2000})
+        cpg_data = pd.load('cpg_data.pandas')
 
