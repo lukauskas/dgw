@@ -57,3 +57,13 @@ def dtw_projection_multi(sequences, base, *args, **kwargs):
         return pd.DataFrame(projected_sequences, index=index)
     else:
         return projected_sequences
+
+def dtw_path_averaging(sequence_a, sequence_b, *args, **kwargs):
+
+    distance, cost, path = dtw_std(sequence_a, sequence_b, dist_only=False, *args, **kwargs)
+
+    path_base, path_other = path
+
+    avg = np.array([ (sequence_a[i] + sequence_b[j]) / 2.0 for i, j in zip(path_base, path_other) ])
+
+    return avg
