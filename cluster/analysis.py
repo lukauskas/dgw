@@ -250,7 +250,7 @@ class Cluster(object):
         return self._hierarchical_clustering_object
 
     @property
-    def item_indices(self):
+    def index(self):
         return self._item_indices
 
     @property
@@ -266,14 +266,26 @@ class Cluster(object):
         Returns a pd.Dataframe of the items in the cluster
         :return:
         """
-        return self.hierarchical_clustering_object.data.ix[self.item_indices]
+        return self.hierarchical_clustering_object.data.ix[self.index]
 
-    def prototype_item(self):
+    @property
+    def distances(self):
+        """
+        Returns a DataFrame that lists the distance between each of the clusters
+        :return:
+        """
         if self._item_dms is None:
-            self._item_dms = map(self.hierarchical_clustering_object.pairwise_distances_to_index, self.item_indices)
+            pairwise_distances = map(self.hierarchical_clustering_object.pairwise_distances_to_index, self.index)
+            pairwise_distances = map( lambda x: x[self.index], pairwise_distances)
+            self._item_dms = pd.DataFrame(pairwise_distances, index=self.index)
 
-        sums = map(lambda x : x.sum(), self._item_dms)
-        min_index_i = np.argmin(sums)
+
+        return self._item_dms
+
+    def prototype_item(self): # TODO: Consider renaming to prototype
+        means = self.distances.T.mean()
+
+        min_index_i = np.argmin(means)
 
         items = self.items
         min_index = items.index[min_index_i]
