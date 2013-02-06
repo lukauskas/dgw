@@ -4,7 +4,6 @@ import scipy.cluster.hierarchy as hierarchy
 from scipy.spatial.distance import num_obs_y
 import pandas as pd
 import numpy as np
-
 import matplotlib.pyplot as plt
 
 class InteractiveDendrogramCutter(object):
@@ -155,7 +154,7 @@ class HierarchicalClustering(object):
 
         dm = self.condensed_distance_matrix
 
-        dm_indices = np.empty(n-1)
+        dm_indices = np.empty(n-1, dtype=int)
         start = 0
         for i in xrange(query_index_pos):
             # Each i will have to be compared with n_compared to items:
@@ -172,8 +171,8 @@ class HierarchicalClustering(object):
             start += n_compared_to
 
         # Add all other items
+        n_compared_to = n - query_index_pos - 1
         dm_indices[query_index_pos:n-1] = np.arange(start,start+n_compared_to)
-
         distances = dm[dm_indices]
 
         data_without_query_index = data_index - [query_index]
