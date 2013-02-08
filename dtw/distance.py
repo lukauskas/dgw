@@ -9,7 +9,9 @@ def _strip_nans(sequence):
     :param sequence:
     :return:
     '''
-    return sequence[~np.isnan(sequence)]
+    ndim = sequence.shape[1]
+
+    return sequence[~np.isnan(sequence)].reshape(-1, ndim)
 
 def dtw_std(x, y, metric='sqeuclidean', *args, **kwargs):
     '''
