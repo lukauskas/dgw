@@ -273,4 +273,4 @@ def read_multiple_bams(alignments_files, regions, resolution=25, extend_to=200):
         bam_data = read_bam(alignments_file, regions, resolution=resolution, extend_to=extend_to)
         panel_dict[name] = bam_data
 
-    return AlignmentsPanel(panel_dict).transpose(1,2,0)
+    return AggregatedAlignmentsPanel(panel_dict).transpose(1,2,0)
