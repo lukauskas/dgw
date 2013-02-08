@@ -1,6 +1,6 @@
 from collections import defaultdict
 import numpy as np
-from mlpy import dtw_std as mlpy_dtw_std
+from mlpy.dtw import dtw_std as mlpy_dtw_std
 
 
 import gc
@@ -73,7 +73,9 @@ def _strip_nans(sequence):
     :param sequence:
     :return:
     '''
-    return sequence[np.invert(np.isnan(sequence))]
+    ndim = sequence.shape[1]
+
+    return sequence[~np.isnan(sequence)].reshape(-1, ndim)
 
 #-----------------------------------------------------------------------------------------------------------------------
 def barycenter_average(base_sequence, sequences, metric='sqeuclidean', return_total_distance=False):
@@ -198,7 +200,7 @@ def min_dist_to_others(dm, n):
 
     return min_i, min_val
 
-def parallel_pdist(two_dim_array, metric='sqeuclidean', sakoe_chiba_band_parameter=-1):
+def parallel_pdist(two_dim_array, metric='sqeuclidean'):
     '''
     Calculates pairwise DTW distance for all the rows in
     two_dim_array using all CPUs of the computer.
@@ -210,9 +212,9 @@ def parallel_pdist(two_dim_array, metric='sqeuclidean', sakoe_chiba_band_paramet
     @param two_dim_array: a numpy data array.
     @return: condensed distance matrix. See pdist documentation in scipy
     '''
-
+    two_dim_array = np.asarray(two_dim_array)
     p = Pool()
-    smd = _shared_mem_dtw(two_dim_array, metric=metric, sakoe_chiba_band_parameter=sakoe_chiba_band_parameter)
+    smd = _shared_mem_dtw(two_dim_array, metric=metric)
 
     size_dm = factorial(len(two_dim_array)) / (2 * factorial(len(two_dim_array) - 2))
     combs = combinations(xrange(len(two_dim_array)), 2)
@@ -252,12 +254,10 @@ class _shared_mem_dtw:
     '''
     shared_mem_matrix = None
     metric = None
-    sakoe_chiba_band_parameter = None
-    def __init__(self, shared_mem_matrix, metric='sqeuclidean', sakoe_chiba_band_parameter=-1):
+    def __init__(self, shared_mem_matrix, metric='sqeuclidean'):
 
         self.metric = metric
         self.shared_mem_matrix = shared_mem_matrix
-        self.sakoe_chiba_band_parameter = sakoe_chiba_band_parameter
 
     def __call__(self, args):
 
@@ -267,7 +267,7 @@ class _shared_mem_dtw:
         a = self.shared_mem_matrix[x]
         b = self.shared_mem_matrix[y]
 
-        return dtw_std(a,b, metric=self.metric, sakoe_chiba_band_parameter=self.sakoe_chiba_band_parameter)
+        return dtw_std(a,b, metric=self.metric)
 
 def take(iterable, n):
     '''
