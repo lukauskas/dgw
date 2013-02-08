@@ -3,6 +3,7 @@ import pandas as pd
 import pysam
 from logging import debug
 import numpy as np
+from containers import AggregatedAlignmentsPanel
 
 import os
 
@@ -256,13 +257,6 @@ def read_bam(alignments_file, regions, resolution=25, extend_to=200):
     del peak_data
 
     return sdf
-
-class AlignmentsPanel(pd.Panel):
-
-    def mean(self, axis='items', skipna=True):
-        # Override axis parameter in the pd.Panel mena function
-        return super(AlignmentsPanel, self).mean(axis=axis, skipna=skipna)
-
 
 def read_multiple_bams(alignments_files, regions, resolution=25, extend_to=200):
     panel_dict = {}
