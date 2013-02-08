@@ -4,6 +4,8 @@ import pysam
 from logging import debug
 import numpy as np
 
+import os
+
 def read_bed(bed_file, resolution=1):
     '''
     Parses the bed file specified.
@@ -212,6 +214,7 @@ def read_bam(alignments_file, regions, resolution=25, extend_to=200):
     '''
 
     regions = clip_to_fit_resolution(regions, resolution=resolution)
+    source = os.path.basename(alignments_file)
 
     samfile = pysam.Samfile(alignments_file, 'rb')
 
@@ -254,3 +257,20 @@ def read_bam(alignments_file, regions, resolution=25, extend_to=200):
 
     return sdf
 
+
+def read_multiple_bams(alignments_files, regions, resolution=25, extend_to=200):
+    panel_dict = {}
+
+    if len(alignments_files) != len(set(alignments_files)):
+        raise ValueError, 'Some name in alignments_files provided is duplicated. Do you really want to read the file twice?'
+
+    for alignments_file in alignments_files:
+        name = os.path.basename(alignments_file)
+        if name in panel_dict:
+            # In case there are files with the same name in differet dirs, use full path
+            name = alignments_file
+
+        bam_data = read_bam(alignments_file, regions, resolution=resolution, extend_to=extend_to)
+        panel_dict[name] = bam_data
+  
+    return pd.Panel(panel_dict).transpose(1,2,0)
