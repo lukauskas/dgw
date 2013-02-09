@@ -1,71 +1,26 @@
+# coding=utf-8
 __author__ = 'saulius'
 import pandas as pd
 import pysam
 from logging import debug
 import numpy as np
-from containers import AggregatedAlignmentsPanel
+from containers import AggregatedAlignmentsPanel, Regions
 
 import os
 
-def read_bed(bed_file, resolution=1):
+def read_bed(bed_file):
     '''
     Parses the bed file specified.
-    If resolution is provided it will automatically adjust the start and end tags as to be able to further
-    split the file into bins of resolution width.
 
     :param bed_file:
-    :param resolution:
     :return:
     '''
-    peaks = pd.read_csv(bed_file, sep="\t", header=None)
+    regions = pd.read_csv(bed_file, sep="\t", header=None)
 
-    peaks.columns = ['chromosome', 'start', 'end', 'name', 'score']
-    peaks = peaks.set_index('name')
+    regions.columns = ['chromosome', 'start', 'end', 'name', 'score']
+    regions = regions.set_index('name')
 
-    peaks = clip_to_fit_resolution(peaks, resolution)
-    return peaks
-
-
-def clip_to_fit_resolution(regions, resolution=1):
-    '''
-    Clips the regions provided to be of correct size so they can be segmented into a number of resolution sized bins
-    :param regions:
-    :param resolution:
-    :return:
-    '''
-    if resolution == 1:
-        return regions
-
-    lens = regions['end'] - regions['start']
-    lens.name = 'length'
-    regions = regions.join(lens)
-
-    new_regions_data = []
-
-    for ix, row in regions.iterrows():
-        remainder = row['length'] % resolution
-
-        if remainder == 0:
-            offset_needed = 0
-        else:
-            offset_needed = resolution - remainder
-
-        add_left = offset_needed / 2
-        add_right = offset_needed / 2 + offset_needed % 2
-
-        row['start'] -= add_left
-
-        if row['start'] < 0:
-            # Check if we accidentally went sub zero
-            add_right += -row['start']
-            row['start'] = 0
-
-        row['end']   += add_right
-
-        new_regions_data.append(row[['chromosome', 'start', 'end']])
-
-    new_peaks = pd.DataFrame(new_regions_data, index=regions.index)
-    return new_peaks
+    return Regions(regions)
 
 def read_samfile_region(samfile, chromosome, start, end, resolution=1, extend_to=200):
     '''
@@ -201,23 +156,27 @@ def get_read_count_for_region(samfile, chromosome, start, end, resolution=1, ext
     return data_buffer
 
 
-def read_bam(alignments_file, regions, resolution=25, extend_to=200):
-    '''
-    Returns data from bam for the specified peaks.
-    Peaks should be a pandas.DataFrame object that has 'chromosome', 'start' and 'end' columns.
-        Both start and end should be zero-indexed. End coordinate is not included
-        This follows BED format of data.
+def __read_bam(alignments_filename, regions, resolution=25, extend_to=200):
+    """
+    Returns data from bam for the regions specified.
 
-    :param alignments_file:
-    :param regions:
-    :param resolution:
-    :return:
-    '''
+    :param alignments_filename: filename of the alignments file to read ss
+    :param regions:  `Regions` object defining the regions of interest in the alignments files
+    :type regions: Regions
+    :param resolution: Resolution at which to read the data
+    :type resolution: int
+    :param extend_to: The length of alignments will be extended to. Use `None` if no extending needed
+    :type extend_to: int or None
+    :return: A DataFrame of aggregated reads from BAM file.
+    :rtype: pd.DataFrame
+    """
 
-    regions = clip_to_fit_resolution(regions, resolution=resolution)
-    source = os.path.basename(alignments_file)
+    assert(isinstance(regions, Regions))
+    regions = regions.clip_to_resolution(resolution)
 
-    samfile = pysam.Samfile(alignments_file, 'rb')
+    source = os.path.basename(alignments_filename)
+
+    samfile = pysam.Samfile(alignments_filename, 'rb')
 
     peak_data = []
     new_index = []
@@ -258,19 +217,31 @@ def read_bam(alignments_file, regions, resolution=25, extend_to=200):
 
     return sdf
 
-def read_multiple_bams(alignments_files, regions, resolution=25, extend_to=200):
+def read_bam(alignment_filenames, regions, resolution=25, extend_to=200):
+    """
+    Reads provided bam files for the data in the specified regions
+    :param alignment_filenames: Filenames of the files to read
+    :param regions:         Regions to be explored within these files
+    :param resolution:      Resolution at which to read the files
+    :param extend_to:       Reads will be extended to extend_to base pairs of length, if not None
+    :return:
+    """
+    # Allow passing either a list of filenames or a single filename
+    if type(alignment_filenames) == type('str'):
+        alignment_filenames = [alignment_filenames]
+
     panel_dict = {}
 
-    if len(alignments_files) != len(set(alignments_files)):
+    if len(alignment_filenames) != len(set(alignment_filenames)):
         raise ValueError, 'Some name in alignments_files provided is duplicated. Do you really want to read the file twice?'
 
-    for alignments_file in alignments_files:
+    for alignments_file in alignment_filenames:
         name = os.path.basename(alignments_file)
         if name in panel_dict:
             # In case there are files with the same name in differet dirs, use full path
             name = alignments_file
 
-        bam_data = read_bam(alignments_file, regions, resolution=resolution, extend_to=extend_to)
+        bam_data = __read_bam(alignments_file, regions, resolution=resolution, extend_to=extend_to)
         panel_dict[name] = bam_data
 
     return AggregatedAlignmentsPanel(panel_dict).transpose(1,2,0)
