@@ -1,10 +1,34 @@
 __author__ = 'saulius'
 import pandas as pd
+import data.visualisation.heatmap as heatmap
+import matplotlib.pyplot as plt
 
 class AggregatedAlignmentsPanel(pd.Panel):
     def mean(self, axis='items', skipna=True):
         # Override axis parameter in the pd.Panel mean function
         return super(AggregatedAlignmentsPanel, self).mean(axis=axis, skipna=skipna)
+
+    @property
+    def number_of_datasets(self):
+        return len(self.minor_axis)
+
+    def plot_heatmap(self, *args, **kwargs):
+        """
+        Plots heatmap of the data stored in the panel.
+
+        :param args: args to be passed into `data.visualisation.heatmap.plot`
+        :param kwargs: kwargs to be passed into `data.visualisation.heatmap.plot`
+        :return:
+        """
+        number_of_datasets = self.number_of_datasets
+
+        for i, title in enumerate(self.minor_axis):
+            if number_of_datasets > 1:
+                plt.subplot(1, number_of_datasets, i+1) # TODO: consider doing sublot with multiple lines
+
+            data_to_plot = self.minor_xs(title, copy=False).T
+            heatmap.plot(data_to_plot, *args, **kwargs)
+            plt.title(title)
 
 class Regions(pd.DataFrame):
     REQUIRED_COLUMNS = frozenset(['chromosome', 'start', 'end'])
