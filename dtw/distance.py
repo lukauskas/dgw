@@ -9,9 +9,18 @@ def _strip_nans(sequence):
     :param sequence:
     :return:
     '''
-    ndim = sequence.shape[1]
 
-    return sequence[~np.isnan(sequence)].reshape(-1, ndim)
+    try:
+        lookup = np.all(np.isnan(sequence), axis=1)
+    except ValueError:
+        # Will get thrown for one-dimensional arrays
+        return sequence[~np.isnan(sequence)]
+
+    sequence = sequence[~lookup]
+    if np.any(np.isnan(sequence)):
+        raise ValueError('Inconsistent NaNs between dimensions')
+
+    return sequence
 
 def dtw_std(x, y, metric='sqeuclidean', *args, **kwargs):
     '''
