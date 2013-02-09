@@ -47,21 +47,6 @@ def parallel_pdist(three_dim_array, metric='sqeuclidean'):
     p.join()
     return np.array(ans)
 
-def take(iterable, n):
-    '''
-    Take first n elements from iterable
-    @param iterable:
-    @param n:
-    @return:
-    '''
-    counter = 0
-
-    for x in iterable:
-        counter += 1
-        yield x
-        if counter >= n:
-            break
-
 class _shared_mem_dtw:
     '''
         Dtw function that keeps the data matrix in memory
