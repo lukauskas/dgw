@@ -17,6 +17,7 @@ class Regions(pd.DataFrame):
             if column not in self.columns:
                 raise ValueError('No such column {0!r} in provided DataFrame'.format(column))
 
+    @property
     def lengths(self):
         """
         Returns a `pd.Series` containing the lengths of all the regions contained
