@@ -3,54 +3,49 @@ __author__ = 'saulius'
 from distance import dtw_std
 from multiprocessing import Pool
 from math import factorial
-from itertools import combinations
+import itertools
 import numpy as np
 import gc
 
-def parallel_pdist(two_dim_array, metric='sqeuclidean'):
-    '''
-    Calculates pairwise DTW distance for all the rows in
-    two_dim_array using all CPUs of the computer.
+class combinations_with_len(itertools.combinations):
+    """
+    Extends itertools.combinations by providing __len__ attribute.
+    This allows better integration with multiprocessing.Pool
+    but it means that all iterables passed to __init__ method must have the __len__ attribute as well
+    """
+    __length = None
 
-    Note: if using pandas dataframes, call the function as follows:
-        parallel_pdist(df.values)
-    otherwise some weird behaviour will happen.
+    def __calculate_length(self, iterable_len):
+        return factorial(iterable_len) / (2 * factorial(iterable_len - 2))
 
-    @param two_dim_array: a numpy data array.
-    @return: condensed distance matrix. See pdist documentation in scipy
-    '''
-    two_dim_array = np.asarray(two_dim_array)
+    def __init__(self, iterable_with_len, r):
+        super(combinations_with_len, self).__init__(iterable_with_len, r)
+        iterable_length = len(iterable_with_len) # Should raise TypeError if iterable does not have __len__
+        self.__length = self.__calculate_length(iterable_length)
+
+    def __len__(self):
+        return self.__length
+
+def parallel_pdist(three_dim_array, metric='sqeuclidean'):
+    """
+    Calculates pairwise DTW distance for all the rows in three_dim_array provided.
+    This module is similar to scipy.spatial.distance.pdist, but uses all CPU cores available, rather than one.
+    :param three_dim_array: numpy data array [observations x max(sequence_lengths) x ndim ]
+    :param metric: either 'euclidean' or 'sqeuclidean'
+    :return: condensed distance matrix (just as pdist)
+    """
+
+    three_dim_array = np.asarray(three_dim_array)
     p = Pool()
-    smd = _shared_mem_dtw(two_dim_array, metric=metric)
+    smd = _shared_mem_dtw(three_dim_array, metric=metric)
 
-    size_dm = factorial(len(two_dim_array)) / (2 * factorial(len(two_dim_array) - 2))
-    combs = combinations(xrange(len(two_dim_array)), 2)
-
-    step_size = 30000000 # TODO: this should be related to total/free memory somehow
-
-    ans_container = np.empty(size_dm)
-    curr_step_offset = 0
-    while True:
-        items_to_process = take(combs, step_size)
-
-        items_to_process = list(items_to_process)
-        if not items_to_process:
-            break
-
-        ans = p.map(smd, items_to_process)
-
-        start = curr_step_offset*step_size
-        end   = start + len(items_to_process)
-
-        ans_container[start:end] = ans
-        curr_step_offset += 1
-
-        del items_to_process
-        gc.collect()
+    n_items = three_dim_array.shape[0]
+    combs = combinations_with_len(range(n_items), 2)
+    ans = p.map(smd, combs)
 
     p.close()
     p.join()
-    return ans_container
+    return np.array(ans)
 
 def take(iterable, n):
     '''
