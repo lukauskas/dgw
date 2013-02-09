@@ -1,7 +1,8 @@
 import unittest
 import numpy as np
 from numpy.testing import *
-from distance import _strip_nans
+from distance import _strip_nans, dtw_std
+from math import sqrt
 
 class TestStripNans(unittest.TestCase):
 
@@ -29,3 +30,22 @@ class TestStripNans(unittest.TestCase):
 
         x = np.array([[1,2,3,4,5,np.nan], [7,8,9,10,11,np.nan], [13,14,15,16,np.nan,18]], dtype=float).T
         self.assertRaises(ValueError, _strip_nans, x)
+
+class TestDTWStd(unittest.TestCase):
+
+    def test_multidimensional_dtw(self):
+
+        a = np.array([[1,2,3, np.nan], [7,8,9,np.nan]]).T
+        b = np.array([[10,12,14], [13,15,17]]).T
+
+        # DTW should match the points:
+        # (1,7) to (10,13) (distance: sqrt(81 + 36 = 117))
+        # (2,8) to (12,15) (distance: sqrt(100 + 49 = 149))
+        # (3,9) to (14,17) (distance: sqrt(121 + 64 = 185))
+
+        # Euclidean distance is the one worth testing for, as sqeuclidean will be the same
+        # for a.T and b.T as well.
+        euclid_distance   = sqrt(117)  + sqrt(149) + (sqrt(185))
+        self.assertAlmostEqual(euclid_distance, dtw_std(a,b, metric='euclidean'))
+
+
