@@ -2,6 +2,7 @@ __author__ = 'saulius'
 import pandas as pd
 import data.visualisation.heatmap as heatmap
 import matplotlib.pyplot as plt
+import numpy as np
 
 class AggregatedAlignmentsPanel(pd.Panel):
     def mean(self, axis='items', skipna=True):
@@ -30,7 +31,21 @@ class AggregatedAlignmentsPanel(pd.Panel):
             heatmap.plot(data_to_plot, *args, **kwargs)
             plt.title(title)
 
-class Regions(pd.DataFrame):
+class PatchedDataFrame(pd.DataFrame):
+    """
+    Workaround for classes extending pd.DataFrame that is needed till Issue #2859 is fixed
+    and accepted to the main tree of pandas.
+    """
+
+    def __getitem__(self, item):
+        ans = super(PatchedDataFrame, self).__getitem__(item)
+        if isinstance(item, slice):
+            return self.__class__(ans)
+        else:
+            return ans
+
+
+class Regions(PatchedDataFrame):
     REQUIRED_COLUMNS = frozenset(['chromosome', 'start', 'end'])
 
     def __init__(self, *args, **kwargs):
@@ -50,6 +65,8 @@ class Regions(pd.DataFrame):
         series = self['end'] - self['start']
         series.name = 'length'
         return series
+
+
 
     def clip_to_resolution(self, resolution):
         """
@@ -94,9 +111,11 @@ class Regions(pd.DataFrame):
                 add_right += -row['start']
                 row['start'] = 0
 
-            row['end']   += add_right
+            row['end'] += add_right
 
             new_regions_data.append(row[['chromosome', 'start', 'end']])
 
         new_regions = Regions(new_regions_data, index=self.index)
         return new_regions
+
+
