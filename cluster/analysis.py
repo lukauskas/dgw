@@ -60,6 +60,7 @@ class HierarchicalClustering(object):
     _condensed_distance_matrix = None
     _data = None
     _linkage_matrix = None
+    _distance_threshold = None
 
     def __init__(self, data, condensed_distance_matrix, linkage_matrix=None):
         """
@@ -101,6 +102,13 @@ class HierarchicalClustering(object):
 
         return self._linkage_matrix
 
+    @property
+    def num_obs(self):
+        return len(self.data)
+
+    def as_tree(self):
+        return hierarchy.to_tree(self.linkage)
+
     def dendrogram(self, *args, **kwargs):
         """
         Plots the dendrogram for the hieararchical clustering
@@ -109,20 +117,29 @@ class HierarchicalClustering(object):
         linkage = self.linkage
         no_labels = kwargs.pop('no_labels', True)
 
-        return hierarchy.dendrogram(linkage, no_labels=no_labels, *args, **kwargs)
+        color_threshold = kwargs.pop('color_threshold', self._distance_threshold)
+        return hierarchy.dendrogram(linkage, no_labels=no_labels, color_threshold=color_threshold, *args, **kwargs)
 
-    def cut(self, t, criterion='distance', *args, **kwargs):
+    def cut(self, t):
         """
         Cuts the dendrogram at specified threshold t.
-        See scipy.cluster.hierarchy.fcluster
         :param t: threshold
-        :param criterion:
-        :param args:
-        :param kwargs:
-        :return:
+           :return:
         """
-        cluster_assignments = hierarchy.fcluster(self.linkage, t=t, criterion=criterion, *args, **kwargs)
-        clusters = pd.Series(cluster_assignments, index=self._data.index)
+
+        self._distance_threshold = t
+        root = self.as_tree()
+
+        queue = set([root])
+
+        clusters = set()
+        while queue:
+            current_node = queue.pop()
+            if current_node.dist > t:
+                queue.add(current_node.get_left())
+                queue.add(current_node.get_right())
+            else:
+                clusters.add(current_node)
         return ClusterAssignments(self, clusters)
 
     def interactive_cut(self):
@@ -136,7 +153,7 @@ class HierarchicalClustering(object):
         except TypeError, ValueError:
             raise ValueError('Incorrect back from the interactive cut routine. Did you double-click it?')
 
-        return self.cut(value, criterion='distance')
+        return self.cut(value)
 
     def pairwise_distances_to_index(self, query_index):
         """
@@ -180,21 +197,23 @@ class HierarchicalClustering(object):
 
 class ClusterAssignments(object):
     _hierarchical_clustering_object = None
-    _cluster_assignments = None
+    _cluster_roots = None
 
     _clusters = None
 
-    def __init__(self, hierarchical_clustering_object, cluster_assignments):
+    def __init__(self, hierarchical_clustering_object, cluster_roots):
         self._hierarchical_clustering_object = hierarchical_clustering_object
+        self._cluster_roots = cluster_roots
 
-        if not isinstance(cluster_assignments, pd.Series):
-            cluster_assignments = pd.Series(cluster_assignments, self._hierarchical_clustering_object.data.index)
-
-        self._cluster_assignments = cluster_assignments
+        clusters = []
+        # Store clusters in decreasing number of elements
+        for cluster_root in sorted(self._cluster_roots, key=lambda x: x.count, reverse=True):
+            clusters.append(Cluster(hierarchical_clustering_object, cluster_root))
+        self._clusters = clusters
 
     @property
     def n(self):
-        return len(self._cluster_assignments.value_counts())
+        return len(self._cluster_roots)
 
     @property
     def hierarchical_clustering_object(self):
@@ -203,22 +222,33 @@ class ClusterAssignments(object):
     def __repr__(self):
         return '<ClusterAssignments n={0} for {1!r}>'.format(self.n, self._hierarchical_clustering_object)
 
+    def flatten(self):
+        """
+        Flattens the data into a `pd.Series` object that gives a cluster number to every element in original data.
+        :return:
+        """
+        buffer = np.empty(self._hierarchical_clustering_object.num_obs)
+
+        for i, cluster in enumerate(self.clusters):
+            queue = set([cluster.root])
+
+            while queue:
+                node = queue.pop()
+
+                if node.is_leaf():
+                    buffer[node.id] = i + 1
+                else:
+                    queue.add(node.get_left())
+                    queue.add(node.get_right())
+
+        return pd.Series(buffer, index=self.hierarchical_clustering_object.data.index)
+
     @property
     def clusters(self):
         """
-        Returns the data clusters in decreasing order of number of elements
+        Returns the data clusters in decreasing number of elements
         :return:
         """
-
-        if self._clusters is None:
-            clusters = []
-            cluster_assignments = self._cluster_assignments
-            hco = self.hierarchical_clustering_object
-            for cluster_i in cluster_assignments.value_counts().index:
-                indices = cluster_assignments[cluster_assignments==cluster_i].index
-                clusters.append(Cluster(hco, indices))
-            self._clusters = clusters
-
         return self._clusters
 
     def __iter__(self):
@@ -230,31 +260,61 @@ class ClusterAssignments(object):
 class Cluster(object):
     _hierarchical_clustering_object = None
     _item_indices = None
+    _item_ids = None
+
+    _cluster_root = None
 
     _item_dms = None
 
-    def __init__(self, hierarchical_clustering_object, item_indices):
+    def __init__(self, hierarchical_clustering_object, cluster_root):
         """
 
         :param hierarchical_clustering_object:
         :type hierarchical_clustering_object: HierarchicalClustering
-        :param item_indices:
+        :param cluster_root:
         :return:
         """
         self._hierarchical_clustering_object = hierarchical_clustering_object
-        self._item_indices = item_indices
+        self._cluster_root = cluster_root
+
+        self._item_ids = self._get_item_ids()
 
     @property
     def hierarchical_clustering_object(self):
         return self._hierarchical_clustering_object
 
     @property
+    def root(self):
+        return self._cluster_root
+
+    def _get_item_ids(self):
+
+        ids = np.empty(self._cluster_root.count, dtype=int)
+        queue = set([self._cluster_root])
+
+        counter = 0
+        while queue:
+            node = queue.pop()
+
+            if node.is_leaf():
+                ids[counter] = node.id
+                counter += 1
+            else:
+                queue.add(node.get_left())
+                queue.add(node.get_right())
+
+        return ids
+
+    @property
     def index(self):
+        if self._item_indices is None:
+            self._item_indices = self._hierarchical_clustering_object.data.index[self._item_ids]
+
         return self._item_indices
 
     @property
     def n_items(self):
-        return len(self._item_indices)
+        return len(self.index)
 
     def __len__(self):
         return self.n_items
@@ -281,8 +341,8 @@ class Cluster(object):
 
         return self._item_dms
 
-    def prototype_item(self): # TODO: Consider renaming to prototype
-        means = self.distances.T.mean()
+    def prototype(self):
+        means = self.distances.T.sum()
 
         min_index_i = np.argmin(means)
 
