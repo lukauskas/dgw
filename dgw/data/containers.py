@@ -64,6 +64,8 @@ class AlignmentsData(object):
             heatmap.plot(data_to_plot, *args, **kwargs)
             plt.title(title)
 
+    def __repr__(self):
+        return '{0} containing\n{1!r}'.format(self.__class__, self.data)
 
 class Regions(object):
     REQUIRED_COLUMNS = frozenset(['chromosome', 'start', 'end'])
@@ -85,6 +87,10 @@ class Regions(object):
     def data(self):
         return self._data
 
+    def __repr__(self):
+        return '{0} containing \n{1!r}'.format(self.__class__, self.data)
+
+
     # --- Initialisation ----------------------------------------------------------------------------------------------
     @classmethod
     def from_bed(cls, bed_file):
@@ -92,10 +98,27 @@ class Regions(object):
 
     # --- Functions that provide direct access to the DataFrame behind all this ----------------------------------------
     def __getitem__(self, item):
-        return self.data[item]
+        result = self.data[item]
+        if isinstance(result, pd.DataFrame):
+            return Regions(result)
+        return result
 
     def iterrows(self):
         return self.data.iterrows()
+
+    def head(self, *args, **kwargs):
+        return Regions(self.data.head(*args, **kwargs))
+
+    def index(self, *args, **kwargs):
+        return self.data.index(*args, **kwargs)
+
+    @property
+    def ix(self):
+        return self.data.ix
+    
+    @property
+    def columns(self):
+        return self.data.columns
 
     # --- Functions special to Regions ---------------------------------------------------------------------------------
     @property
