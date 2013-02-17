@@ -1,8 +1,11 @@
+from itertools import izip
+
 __author__ = 'saulius'
 from distance import dtw_std
 import pandas as pd
 import numpy as np
 from math import ceil, floor
+from distance import _strip_nans
 
 def uniform_scaling_by_a_factor(sequence, scaling_factor):
     """
@@ -120,3 +123,65 @@ def dtw_path_averaging(sequence_a, sequence_b, *args, **kwargs):
     avg = np.array([(sequence_a[i] + sequence_b[j]) / 2.0 for i, j in zip(path_base, path_other)])
 
     return avg
+
+def sdtw_averaging(sequence_a, sequence_b, weight_a, weight_b, *args, **kwargs):
+    """
+    Implements Scaled Dynamic Time Warping Path Averaging as described in [#Niennattrakul:2009ep]
+
+    .. [#Niennattrakul:2009ep] Vit Niennattrakul and Chotirat Ann Ratanamahatana "Shape averaging under Time Warping",
+       2009 6th International Conference on Electrical Engineering/Electronics, Computer, Telecommunications and Information Technology (ECTI-CON)
+    :param sequence_a: sequence A
+    :param sequence_b: sequence B
+    :param weight_a: weight of sequence A
+    :param weight_b: weight of sequence B
+    :param args:
+    :param kwargs:
+    :return:
+    """
+
+    distance, cost, path = dtw_std(sequence_a, sequence_b, dist_only=False, *args, **kwargs)
+
+    path = izip(path[0], path[1]) # Rezip this for easier traversal
+
+    averaged_path = []
+
+    prev = None
+
+    diagonal_coefficient = int((weight_a + weight_b) / 2.0)  # The paper does not explicitly say how to round this
+    for a,b in path:
+
+        item = float(weight_a * sequence_a[a] + weight_b * sequence_b[b]) / (weight_a + weight_b)
+        if prev is None:
+            extension_coefficient = diagonal_coefficient
+        else:
+            # TODO: remove assertions
+            if prev[0] == a:  # The path moved from (i,j-1) to (i,j)
+                assert(prev[1] + 1 == b)
+                extension_coefficient = weight_a
+            elif prev[1] == b:  # The path moved from (i-1,j) to (i,j)
+                assert(prev[0] + 1 == a)
+                extension_coefficient = weight_b
+            else:  # Path moved diagonally from (i-1,j-1) to (i,j)
+                assert(prev[0] + 1 == a)
+                assert(prev[1] + 1 == b)
+                extension_coefficient = diagonal_coefficient
+
+        new_items = [item] * extension_coefficient
+        averaged_path.extend(new_items)
+        prev = (a, b)
+    return shrink_to_length(averaged_path, max(len(_strip_nans(sequence_a)), len(_strip_nans(sequence_b))))
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
