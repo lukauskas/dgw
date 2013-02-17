@@ -1,3 +1,5 @@
+from dgw.data.containers import Regions
+
 __author__ = 'saulius'
 import pandas as pd
 
@@ -20,4 +22,4 @@ def read_cpgs(cpgs_filename):
 
     cpgs.columns = new_cols
 
-    return cpgs
+    return Regions(cpgs)
