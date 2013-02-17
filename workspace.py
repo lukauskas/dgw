@@ -1,4 +1,4 @@
-from data import genes
+from dgw.data import genes
 
 __author__ = 'saulius'
 
@@ -8,16 +8,16 @@ K562_H3K4ME3_REP2 = '../data/interesting/broad/K562/wgEncodeBroadHistoneK562H3k4
 K562_CONTROL_REP1 = '../data/interesting/broad/K562/wgEncodeBroadHistoneK562ControlStdAlnRep1.bam'
 MACS_MACS_H3K4ME3_REP1 = '../data/interesting/broad/K562/K56H3k4me3Rep1_peaks.bed'
 CPG_ISLANDS = '../data/cpg_islands'
-import data.cpgs
+import dgw.data.cpgs
 RESOLUTION = 50
 
 import pandas as pd
 import matplotlib.pyplot as plt
-import data.visualisation.heatmap as heatmap
+import dgw.data.visualisation.heatmap as heatmap
 import webbrowser
 import numpy as np
-from data.parsers import *
-import dtw.transformations
+from dgw.data.parsers import *
+import dgw.dtw.transformations
 
 CLEAN_VALID_GENE_REGIONS_FILENAME = 'clean_valid_gene_regions.pandas'
 
@@ -104,7 +104,7 @@ def plot_cluster(cluster):
     plt.title('Prototype')
     plt.subplot(2,2,3)
     base = cluster.prototype()
-    projections = dtw.transformations.dtw_projection_multi(cluster.items, base)
+    projections = dgw.dtw.transformations.dtw_projection_multi(cluster.items, base)
     heatmap.plot(projections)
     plt.title('Items projected onto prototype')
     plt.subplot(2,2,4)
@@ -136,7 +136,7 @@ if __name__ == '__main__':
         #peak_data = read_bam(K562_H3K4ME3_REP1, regions, resolution=RESOLUTION, extend_to=200)
         #norm_peak_data = peak_data.div(peak_data.T.sum(), axis='index')
     elif sys.argv[1] == '--cpgs':
-        cpgs = data.cpgs.read_cpgs(CPG_ISLANDS)
+        cpgs = dgw.data.cpgs.read_cpgs(CPG_ISLANDS)
         cpg_regions = pd.DataFrame({'chromosome' : cpgs['chromosome'], 'start' : cpgs['start'] - 2000, 'end' : cpgs['end'] - 2000})
 #        cpg_data = pd.load('cpg_data.pandas')
 #        cpg_data_log = (cpg_data + 1).apply(np.log)

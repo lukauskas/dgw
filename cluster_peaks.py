@@ -3,21 +3,22 @@ Created on 13 Nov 2012
 
 @author: saulius
 '''
-import pysam
-from peak import Peak
 from itertools import izip
-from tss_peak_analyser import read_tss, KNOWNGENES_FILE
-from view.average import plot as plot_average
-from matplotlib import pyplot
-from cluster.distance.dtw import dtw_distance_matrix
-from cluster.cluster import hierarchical_cluster
 import math
-from cache import cached
 import os
-from data.visualisation.heatmap import plot as plot_heatmap
-
 from math import floor, ceil
 import random
+
+import pysam
+from matplotlib import pyplot
+
+from peak import Peak
+from tss_peak_analyser import read_tss, KNOWNGENES_FILE
+from view.average import plot as plot_average
+from cluster.distance.dtw import dtw_distance_matrix
+from cluster.cluster import hierarchical_cluster
+from cache import cached
+from dgw.data.visualisation.heatmap import plot as plot_heatmap
 
 
 def parse_peak_from_bam_line(line, resolution = 1):

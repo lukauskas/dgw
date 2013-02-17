@@ -1,13 +1,9 @@
-from math import floor, ceil, factorial
+from math import factorial
 import pandas as pd
-import pysam
 import numpy as np
-import scipy.spatial.distance
-from itertools import combinations, izip
-from scipy.spatial.distance import num_obs_dm, num_obs_y
+from scipy.spatial.distance import num_obs_y
 
-from logging import debug, warn
-from data.parsers import read_samfile_region as get_read_count_for_region
+from dgw.data.parsers import read_samfile_region as get_read_count_for_region
 
 def get_read_counts_distribution(regions, samfile):
     def safe_samfile_count(*args, **kwargs):
