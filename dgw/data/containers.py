@@ -5,14 +5,48 @@ import matplotlib.pyplot as plt
 import dgw.data.visualisation.heatmap as heatmap
 
 
-class AlignmentsData(pd.Panel):
+class AlignmentsData(object):
+
+    _panel = None
+    def __init__(self, panel):
+        """
+        Initialises `AlignmentsData` with a `panel` provided.
+        The panel is assumed to have data sets on the minor axis
+        See `dgw.data.parsers.read_bam` for how to generate this data.
+
+        :param panel: `pd.Panel` object `AlignmentsData` will be initialised on, or `pd.DataFrame` that will be converted
+                     to Panel
+        :return:
+        """
+        if isinstance(panel, pd.DataFrame):
+            # Create a panel from the DataFrame by giving it a generic name and making sure it is on the minor axis
+            self._panel = pd.Panel({'Dataset 1'}).transpose(1, 2, 0)
+        elif isinstance(panel, pd.Panel):
+            self._panel = panel
+        else:
+            raise Exception('Invalid type of data provided for AlignmentsData: {0!r}, expected pd.Panel or pd.Dataframe'
+                            .format(type(panel)))
+
+    @classmethod
+    def from_bam(cls, bam_files):
+        # TODO: implement
+        pass
+
+    @property
+    def panel(self):
+        return self._panel
+
     def mean(self, axis='items', skipna=True):
         # Override axis parameter in the pd.Panel mean function
-        return super(AlignmentsData, self).mean(axis=axis, skipna=skipna)
+        return self._panel.mean(axis=axis, skipna=skipna)
 
     @property
     def number_of_datasets(self):
-        return len(self.minor_axis)
+        return len(self.dataset_axis)
+
+    @property
+    def dataset_axis(self):
+        return self.panel.minor_axis
 
     def plot_heatmap(self, *args, **kwargs):
         """
@@ -24,11 +58,11 @@ class AlignmentsData(pd.Panel):
         """
         number_of_datasets = self.number_of_datasets
 
-        for i, title in enumerate(self.minor_axis):
+        for i, title in enumerate(self.dataset_axis):
             if number_of_datasets > 1:
                 plt.subplot(1, number_of_datasets, i+1) # TODO: consider doing sublot with multiple lines
 
-            data_to_plot = self.minor_xs(title, copy=False).T
+            data_to_plot = self.dataset_axis(title, copy=False).T
             heatmap.plot(data_to_plot, *args, **kwargs)
             plt.title(title)
 

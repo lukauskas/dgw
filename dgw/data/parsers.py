@@ -246,4 +246,8 @@ def read_bam(alignment_filenames, regions, resolution=25, extend_to=200):
         bam_data = __read_bam(alignments_file, regions, resolution=resolution, extend_to=extend_to)
         panel_dict[name] = bam_data
 
-    return AlignmentsData(panel_dict).transpose(1,2,0)
+    panel = pd.Panel(panel_dict)
+    # Transpose the panel so the datasets are on the minor axis
+    panel.transpose(1, 2, 0)
+
+    return AlignmentsData(panel)
