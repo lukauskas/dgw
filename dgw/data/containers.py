@@ -121,6 +121,17 @@ class Regions(object):
     def columns(self):
         return self.data.columns
 
+    def __getattr__(self, name):
+        """
+        Emulate the behaviour in `pd.DataFrame` to return one of the columns as an attribute.
+        :param name:
+        :return:
+        """
+        # Partially stolen from pandas implementation.
+        if name in self.columns:
+            return self[name]
+        raise AttributeError("{0!r} has no attribute {1|r}".format(type(self).__name__, name))
+
     # --- Functions special to Regions ---------------------------------------------------------------------------------
     @property
     def lengths(self):
