@@ -5,10 +5,10 @@ import matplotlib.pyplot as plt
 import dgw.data.visualisation.heatmap as heatmap
 
 
-class AggregatedAlignmentsPanel(pd.Panel):
+class AlignmentsData(pd.Panel):
     def mean(self, axis='items', skipna=True):
         # Override axis parameter in the pd.Panel mean function
-        return super(AggregatedAlignmentsPanel, self).mean(axis=axis, skipna=skipna)
+        return super(AlignmentsData, self).mean(axis=axis, skipna=skipna)
 
     @property
     def number_of_datasets(self):

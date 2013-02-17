@@ -7,7 +7,7 @@ import pandas as pd
 import pysam
 import numpy as np
 
-from dgw.data.containers import AggregatedAlignmentsPanel, Regions
+from dgw.data.containers import AlignmentsData, Regions
 
 
 def read_bed(bed_file):
@@ -246,4 +246,4 @@ def read_bam(alignment_filenames, regions, resolution=25, extend_to=200):
         bam_data = __read_bam(alignments_file, regions, resolution=resolution, extend_to=extend_to)
         panel_dict[name] = bam_data
 
-    return AggregatedAlignmentsPanel(panel_dict).transpose(1,2,0)
+    return AlignmentsData(panel_dict).transpose(1,2,0)
