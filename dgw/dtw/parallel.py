@@ -1,11 +1,13 @@
 __author__ = 'saulius'
 
-from distance import dtw_std
 from multiprocessing import Pool
 from math import factorial
 import itertools
+
 import numpy as np
-import gc
+
+from dgw.dtw.distance import dtw_std
+
 
 class combinations_with_len(itertools.combinations):
     """

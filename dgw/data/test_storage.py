@@ -1,9 +1,12 @@
 import unittest
 import StringIO
-from storage import ChunkedIO
 import cPickle as pickle
 import tempfile
+
 import numpy as np
+
+from dgw.data.storage import ChunkedIO
+
 
 class TestChunkedIOWithFakeFiles(unittest.TestCase):
 

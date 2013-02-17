@@ -1,12 +1,14 @@
 # coding=utf-8
 __author__ = 'saulius'
+from logging import debug
+import os
+
 import pandas as pd
 import pysam
-from logging import debug
 import numpy as np
-from containers import AggregatedAlignmentsPanel, Regions
 
-import os
+from dgw.data.containers import AggregatedAlignmentsPanel, Regions
+
 
 def read_bed(bed_file):
     '''

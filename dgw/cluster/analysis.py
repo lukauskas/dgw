@@ -5,7 +5,7 @@ from scipy.spatial.distance import num_obs_y
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
-import dtw.transformations
+import dgw.dtw.transformations
 
 def _reduce_tree(tree, reduce_func, map_function=lambda node: node.id):
     """
@@ -442,7 +442,7 @@ class Cluster(object):
         def reduce_function(x, y):
             sequence_a, weight_a = x
             sequence_b, weight_b = y
-            return dtw.transformations.sdtw_averaging(sequence_a, sequence_b, weight_a, weight_b),\
+            return dgw.dtw.transformations.sdtw_averaging(sequence_a, sequence_b, weight_a, weight_b),\
                    weight_a + weight_b
 
         items_ix = self.items.ix

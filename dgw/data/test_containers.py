@@ -1,6 +1,6 @@
 import unittest
 import pandas as pd
-from containers import Regions
+from dgw.data.containers import Regions
 
 class TestRegionsClipToResolution(unittest.TestCase):
 

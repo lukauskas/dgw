@@ -1,8 +1,9 @@
 __author__ = 'saulius'
 import pandas as pd
-import data.visualisation.heatmap as heatmap
 import matplotlib.pyplot as plt
-import numpy as np
+
+import dgw.data.visualisation.heatmap as heatmap
+
 
 class AggregatedAlignmentsPanel(pd.Panel):
     def mean(self, axis='items', skipna=True):

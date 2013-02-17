@@ -1,7 +1,7 @@
 __author__ = 'saulius'
 
 import pandas as pd
-from containers import Regions
+from dgw.data.containers import Regions
 
 class Genes(Regions):
 

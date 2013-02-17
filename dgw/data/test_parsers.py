@@ -1,9 +1,9 @@
+from dgw.data import parsers
+
 __author__ = 'saulius'
 import unittest
 from numpy.testing import *
 import numpy as np
-import pandas as pd
-import parsers
 
 # -- Stub classes to simulate pysam behaviour ---
 class StubAlignedRead(object):

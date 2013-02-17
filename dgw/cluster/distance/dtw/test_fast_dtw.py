@@ -1,8 +1,11 @@
-import numpy
 import random
-from dtw import dtw, fast_dtw
+
+import numpy
 from scipy.spatial.distance import cityblock
-from datetime import datetime
+
+from dgw.dtw import fast_dtw
+from dgw import dtw
+
 
 def main(count, seed = None):
     if seed is not None:

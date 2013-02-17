@@ -1,11 +1,11 @@
 from itertools import izip
 
 __author__ = 'saulius'
-from distance import dtw_std
+from dgw.dtw.distance import dtw_std
 import pandas as pd
 import numpy as np
 from math import ceil, floor
-from distance import _strip_nans
+from dgw.dtw.distance import _strip_nans
 
 def uniform_scaling_by_a_factor(sequence, scaling_factor):
     """

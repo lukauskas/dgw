@@ -1,8 +1,11 @@
 import unittest
+from math import sqrt
+
 import numpy as np
 from numpy.testing import *
-from distance import _strip_nans, dtw_std
-from math import sqrt
+
+from dgw.dtw.distance import _strip_nans, dtw_std
+
 
 class TestStripNans(unittest.TestCase):
 
