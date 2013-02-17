@@ -1,9 +1,8 @@
-__author__ = 'saulius'
 import pandas as pd
 import matplotlib.pyplot as plt
 
 import dgw.data.visualisation.heatmap as heatmap
-
+from dgw.data.parsers import read_bed, read_bam
 
 class AlignmentsData(object):
 
@@ -29,8 +28,7 @@ class AlignmentsData(object):
 
     @classmethod
     def from_bam(cls, bam_files):
-        # TODO: implement
-        pass
+        return AlignmentsData(read_bam(bam_files))
 
     @property
     def data(self):
@@ -72,17 +70,25 @@ class Regions(object):
 
     _data = None
     def __init__(self, data, *args, **kwargs):
-        data = pd.DataFrame(data, *args, **kwargs)
-        # Verify that all required columns are in the DF
-        for column in self.REQUIRED_COLUMNS:
-            if column not in data.columns:
-                raise ValueError('No such column {0!r} in provided DataFrame'.format(column))
+        if isinstance(data, Regions):
+            self._data = data.data
+        else:
+            data = pd.DataFrame(data, *args, **kwargs)
+            # Verify that all required columns are in the DF
+            for column in self.REQUIRED_COLUMNS:
+                if column not in data.columns:
+                    raise ValueError('No such column {0!r} in provided DataFrame'.format(column))
 
-        self._data = data
+            self._data = data
 
     @property
     def data(self):
         return self._data
+
+    # --- Initialisation ----------------------------------------------------------------------------------------------
+    @classmethod
+    def from_bed(cls, bed_file):
+        return cls(read_bed(bed_file))
 
     # --- Functions that provide direct access to the DataFrame behind all this ----------------------------------------
     def __getitem__(self, item):
