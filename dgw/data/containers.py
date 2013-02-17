@@ -2,7 +2,6 @@ import pandas as pd
 import matplotlib.pyplot as plt
 
 import dgw.data.visualisation.heatmap as heatmap
-from dgw.data.parsers import read_bed, read_bam
 
 class AlignmentsData(object):
 
@@ -28,7 +27,8 @@ class AlignmentsData(object):
 
     @classmethod
     def from_bam(cls, bam_files):
-        return AlignmentsData(read_bam(bam_files))
+        from dgw.data.parsers import read_bam
+        return cls(read_bam(bam_files))
 
     @property
     def data(self):
@@ -94,6 +94,7 @@ class Regions(object):
     # --- Initialisation ----------------------------------------------------------------------------------------------
     @classmethod
     def from_bed(cls, bed_file):
+        from dgw.data.parsers import read_bed
         return cls(read_bed(bed_file))
 
     # --- Functions that provide direct access to the DataFrame behind all this ----------------------------------------
@@ -115,7 +116,7 @@ class Regions(object):
     @property
     def ix(self):
         return self.data.ix
-    
+
     @property
     def columns(self):
         return self.data.columns

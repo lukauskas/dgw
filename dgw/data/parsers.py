@@ -6,7 +6,7 @@ import os
 import pandas as pd
 import pysam
 import numpy as np
-
+from dgw.data.containers import Regions, AlignmentsData
 
 def read_bed(bed_file):
     '''
@@ -20,7 +20,7 @@ def read_bed(bed_file):
     regions.columns = ['chromosome', 'start', 'end', 'name', 'score']
     regions = regions.set_index('name')
 
-    return regions
+    return Regions(regions)
 
 def read_samfile_region(samfile, chromosome, start, end, resolution=1, extend_to=200):
     '''
@@ -249,4 +249,4 @@ def read_bam(alignment_filenames, regions, resolution=25, extend_to=200):
     # Transpose the panel so the datasets are on the minor axis
     panel.transpose(1, 2, 0)
 
-    return panel
+    return AlignmentsData(panel)
