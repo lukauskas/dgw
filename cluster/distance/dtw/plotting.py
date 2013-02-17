@@ -16,7 +16,7 @@ def plot_dtw_cost_and_path(cost_matrix, path, ax=None):
     if ax is None:
         ax = plt.gca()
 
-    plot1 = ax.imshow(cost_matrix.T, origin='lower', cmap=cm.jet, aspect='auto')
+    plot1 = ax.imshow(cost_matrix.T, origin='lower', cmap=cm.gray, aspect='auto')
     plt.colorbar(plot1)
     plot2 = ax.plot(path[0], path[1], 'w')
     xlim = ax.set_xlim((-0.5, cost_matrix.shape[0]-0.5))
