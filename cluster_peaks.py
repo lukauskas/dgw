@@ -14,11 +14,9 @@ from cluster.cluster import hierarchical_cluster
 import math
 from cache import cached
 import os
-from mlpy import dtw_std
-from view.heatmap import plot as plot_heatmap
+from data.visualisation.heatmap import plot as plot_heatmap
 
 from math import floor, ceil
-import numpy
 import random
 
 
