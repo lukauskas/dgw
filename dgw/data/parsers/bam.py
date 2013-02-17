@@ -6,21 +6,7 @@ import os
 import pandas as pd
 import pysam
 import numpy as np
-from dgw.data.containers import Regions, AlignmentsData
-
-def read_bed(bed_file):
-    '''
-    Parses the bed file specified into `pd.DataFrame`
-    :param bed_file:
-    :return:
-    :rtype: `pd.DataFrame`
-    '''
-    regions = pd.read_csv(bed_file, sep="\t", header=None)
-
-    regions.columns = ['chromosome', 'start', 'end', 'name', 'score']
-    regions = regions.set_index('name')
-
-    return Regions(regions)
+from dgw.data.containers import AlignmentsData
 
 def read_samfile_region(samfile, chromosome, start, end, resolution=1, extend_to=200):
     '''

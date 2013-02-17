@@ -1,4 +1,4 @@
-from dgw.data import genes
+from dgw.data.parsers import genes
 
 __author__ = 'saulius'
 
@@ -8,7 +8,7 @@ K562_H3K4ME3_REP2 = '../data/interesting/broad/K562/wgEncodeBroadHistoneK562H3k4
 K562_CONTROL_REP1 = '../data/interesting/broad/K562/wgEncodeBroadHistoneK562ControlStdAlnRep1.bam'
 MACS_MACS_H3K4ME3_REP1 = '../data/interesting/broad/K562/K56H3k4me3Rep1_peaks.bed'
 CPG_ISLANDS = '../data/cpg_islands'
-import dgw.data.cpgs
+import dgw.data.parsers.cpgs
 RESOLUTION = 50
 
 import pandas as pd
@@ -16,7 +16,6 @@ import matplotlib.pyplot as plt
 import dgw.data.visualisation.heatmap as heatmap
 import webbrowser
 import numpy as np
-from dgw.data.parsers import *
 import dgw.dtw.transformations
 
 CLEAN_VALID_GENE_REGIONS_FILENAME = 'clean_valid_gene_regions.pandas'
@@ -120,7 +119,7 @@ def open_in_genome_browser(region):
 if __name__ == '__main__':
     print '> Initialising..'
 
-    known_genes = genes.read_known_genes(KNOWN_GENES)
+    known_genes = genes.read_encode_known_genes(KNOWN_GENES)
 
     import sys
     if sys.argv[1] == '--tss':
@@ -136,7 +135,7 @@ if __name__ == '__main__':
         #peak_data = read_bam(K562_H3K4ME3_REP1, regions, resolution=RESOLUTION, extend_to=200)
         #norm_peak_data = peak_data.div(peak_data.T.sum(), axis='index')
     elif sys.argv[1] == '--cpgs':
-        cpgs = dgw.data.cpgs.read_cpgs(CPG_ISLANDS)
+        cpgs = dgw.data.parsers.cpgs.read_cpgs(CPG_ISLANDS)
         cpg_regions = pd.DataFrame({'chromosome' : cpgs['chromosome'], 'start' : cpgs['start'] - 2000, 'end' : cpgs['end'] - 2000})
 #        cpg_data = pd.load('cpg_data.pandas')
 #        cpg_data_log = (cpg_data + 1).apply(np.log)

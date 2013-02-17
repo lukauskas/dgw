@@ -101,17 +101,25 @@ class Regions(object):
     def __getitem__(self, item):
         result = self.data[item]
         if isinstance(result, pd.DataFrame):
-            return Regions(result)
+            return self.__class__(result)
         return result
 
     def iterrows(self):
         return self.data.iterrows()
 
     def head(self, *args, **kwargs):
-        return Regions(self.data.head(*args, **kwargs))
+        return self.__class__(self.data.head(*args, **kwargs))
 
     def index(self, *args, **kwargs):
         return self.data.index(*args, **kwargs)
+
+    def join(self, *args, **kwargs):
+        new_data = self.data.join(*args, **kwargs)
+        return self.__class__(new_data)
+
+    def append(self, *args, **kwargs):
+        new_data = self.data.append(*args, **kwargs)
+        return self.__class__(new_data)
 
     @property
     def ix(self):
@@ -130,7 +138,7 @@ class Regions(object):
         # Partially stolen from pandas implementation.
         if name in self.columns:
             return self[name]
-        raise AttributeError("{0!r} has no attribute {1|r}".format(type(self).__name__, name))
+        raise AttributeError("{0!r} has no attribute {1!r}".format(type(self).__name__, name))
 
     # --- Functions special to Regions ---------------------------------------------------------------------------------
     @property
@@ -196,4 +204,51 @@ class Regions(object):
         df = pd.DataFrame(new_regions_data, index=self.index)
         return Regions(df)
 
+class Genes(Regions):
+
+    def transcription_start_sites(self):
+        """
+        Returns transcription start site locations for the current set of Genes.
+        Pays attention to the strand of the gene and returns the start of the gene for positive strand genes
+        and the end of the gene for the negative strand genes.
+
+        :rtype: `pd.Series`
+        """
+        start_sites = self[self.strand=='+']['start'].append(self[self.strand=='-']['end'])
+        start_sites = start_sites.ix[self.index] # reindex the data using original order
+
+        return start_sites
+
+    def regions_around_transcription_start_sites(self, window_width):
+        """
+        Returns a `Regions` object corresponding to the locations from -window_width to +window_width around the
+        transcription start sites for these genes
+
+        :param window_width: the width of the window
+        :type window_width: int
+        :return: regions around tss
+        :rtype: `Regions`
+        """
+
+        tss_locations = self.transcription_start_sites()
+
+        # Add window around these
+        starts = tss_locations - window_width
+        ends = tss_locations + window_width
+
+        regions_df = pd.DataFrame({'chromosome' : self['chromosome'],
+                                   'start' : starts,
+                                   'end' : ends}, index=self.index)
+
+        return Regions(regions_df)
+
+    @classmethod
+    def from_encode_known_genes(cls, encode_known_genes_filename):
+        from dgw.data.parsers import read_encode_known_genes
+        return read_encode_known_genes(encode_known_genes_filename)
+
+    @classmethod
+    def from_gtf(cls, gtf_filename):
+        from dgw.data.parsers import read_gtf
+        return read_gtf(gtf_filename)
 
