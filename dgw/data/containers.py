@@ -7,7 +7,7 @@ import dgw.data.visualisation.heatmap as heatmap
 
 class AlignmentsData(object):
 
-    _panel = None
+    _data = None
     def __init__(self, panel):
         """
         Initialises `AlignmentsData` with a `panel` provided.
@@ -20,9 +20,9 @@ class AlignmentsData(object):
         """
         if isinstance(panel, pd.DataFrame):
             # Create a panel from the DataFrame by giving it a generic name and making sure it is on the minor axis
-            self._panel = pd.Panel({'Dataset 1'}).transpose(1, 2, 0)
+            self._data = pd.Panel({'Dataset 1'}).transpose(1, 2, 0)
         elif isinstance(panel, pd.Panel):
-            self._panel = panel
+            self._data = panel
         else:
             raise Exception('Invalid type of data provided for AlignmentsData: {0!r}, expected pd.Panel or pd.Dataframe'
                             .format(type(panel)))
@@ -33,12 +33,12 @@ class AlignmentsData(object):
         pass
 
     @property
-    def panel(self):
-        return self._panel
+    def data(self):
+        return self._data
 
     def mean(self, axis='items', skipna=True):
         # Override axis parameter in the pd.Panel mean function
-        return self._panel.mean(axis=axis, skipna=skipna)
+        return self._data.mean(axis=axis, skipna=skipna)
 
     @property
     def number_of_datasets(self):
@@ -46,7 +46,7 @@ class AlignmentsData(object):
 
     @property
     def dataset_axis(self):
-        return self.panel.minor_axis
+        return self.data.minor_axis
 
     def plot_heatmap(self, *args, **kwargs):
         """
@@ -66,31 +66,32 @@ class AlignmentsData(object):
             heatmap.plot(data_to_plot, *args, **kwargs)
             plt.title(title)
 
-class PatchedDataFrame(pd.DataFrame):
-    """
-    Workaround for classes extending pd.DataFrame that is needed till Issue #2859 is fixed
-    and accepted to the main tree of pandas.
-    """
 
-    def __getitem__(self, item):
-        ans = super(PatchedDataFrame, self).__getitem__(item)
-        if isinstance(item, slice):
-            return self.__class__(ans)
-        else:
-            return ans
-
-
-class Regions(PatchedDataFrame):
+class Regions(object):
     REQUIRED_COLUMNS = frozenset(['chromosome', 'start', 'end'])
 
-    def __init__(self, *args, **kwargs):
-        super(Regions, self).__init__(*args, **kwargs)
-
+    _data = None
+    def __init__(self, data, *args, **kwargs):
+        data = pd.DataFrame(data, *args, **kwargs)
         # Verify that all required columns are in the DF
         for column in self.REQUIRED_COLUMNS:
-            if column not in self.columns:
+            if column not in data.columns:
                 raise ValueError('No such column {0!r} in provided DataFrame'.format(column))
 
+        self._data = data
+
+    @property
+    def data(self):
+        return self._data
+
+    # --- Functions that provide direct access to the DataFrame behind all this ----------------------------------------
+    def __getitem__(self, item):
+        return self.data[item]
+
+    def iterrows(self):
+        return self.data.iterrows()
+
+    # --- Functions special to Regions ---------------------------------------------------------------------------------
     @property
     def lengths(self):
         """
@@ -102,11 +103,12 @@ class Regions(PatchedDataFrame):
         return series
 
 
-
     def clip_to_resolution(self, resolution):
         """
-        Adjusts the region boundaries to fit the resolution by extending the regions boundaries as to length of the regions
-        is divisible from resolution.
+        Adjusts the region boundaries to fit the resolution by extending the regions boundaries as to length of the
+        regions is divisible from resolution.
+
+        Returns a new `Regions` object rather than clipping this one in place
 
         Please note that the new `Regions` object this function returns will not include any other fields but
         the ones listed in `Regions.REQUIRED_COLUMNS`.
@@ -124,7 +126,7 @@ class Regions(PatchedDataFrame):
         elif resolution <= 0:
             raise ValueError('Resolution should be > 0 ({0!r} given)'.format(resolution))
 
-        self_with_lens = self.join(self.lengths)
+        self_with_lens = self.data.join(self.lengths)
 
         new_regions_data = []
 
@@ -150,7 +152,7 @@ class Regions(PatchedDataFrame):
 
             new_regions_data.append(row[['chromosome', 'start', 'end']])
 
-        new_regions = Regions(new_regions_data, index=self.index)
-        return new_regions
+        df = pd.DataFrame(new_regions_data, index=self.index)
+        return Regions(df)
 
 
