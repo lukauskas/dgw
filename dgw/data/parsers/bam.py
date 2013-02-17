@@ -6,23 +6,7 @@ import os
 import pandas as pd
 import pysam
 import numpy as np
-
-from dgw.data.containers import AggregatedAlignmentsPanel, Regions
-
-
-def read_bed(bed_file):
-    '''
-    Parses the bed file specified.
-
-    :param bed_file:
-    :return:
-    '''
-    regions = pd.read_csv(bed_file, sep="\t", header=None)
-
-    regions.columns = ['chromosome', 'start', 'end', 'name', 'score']
-    regions = regions.set_index('name')
-
-    return Regions(regions)
+from dgw.data.containers import AlignmentsData
 
 def read_samfile_region(samfile, chromosome, start, end, resolution=1, extend_to=200):
     '''
@@ -227,6 +211,7 @@ def read_bam(alignment_filenames, regions, resolution=25, extend_to=200):
     :param resolution:      Resolution at which to read the files
     :param extend_to:       Reads will be extended to extend_to base pairs of length, if not None
     :return:
+    :rtype: pd.Panel
     """
     # Allow passing either a list of filenames or a single filename
     if type(alignment_filenames) == type('str'):
@@ -246,4 +231,8 @@ def read_bam(alignment_filenames, regions, resolution=25, extend_to=200):
         bam_data = __read_bam(alignments_file, regions, resolution=resolution, extend_to=extend_to)
         panel_dict[name] = bam_data
 
-    return AggregatedAlignmentsPanel(panel_dict).transpose(1,2,0)
+    panel = pd.Panel(panel_dict)
+    # Transpose the panel so the datasets are on the minor axis
+    panel.transpose(1, 2, 0)
+
+    return AlignmentsData(panel)

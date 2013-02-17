@@ -1,48 +1,9 @@
 __author__ = 'saulius'
 
 import pandas as pd
-from dgw.data.containers import Regions
+from dgw.data.containers import Genes
 
-class Genes(Regions):
-
-    def transcription_start_sites(self):
-        """
-        Returns transcription start site locations for the current set of Genes.
-        Pays attention to the strand of the gene and returns the start of the gene for positive strand genes
-        and the end of the gene for the negative strand genes.
-
-        :rtype: `pd.Series`
-        """
-        start_sites = self[self.strand=='+']['start'].append(self[self.strand=='-']['end'])
-        start_sites = start_sites.ix[self.index] # reindex the data using original order
-
-        return start_sites
-
-    def regions_around_transcription_start_sites(self, window_width):
-        """
-        Returns a `Regions` object corresponding to the locations from -window_width to +window_width around the
-        transcription start sites for these genes
-
-        :param window_width: the width of the window
-        :type window_width: int
-        :return: regions around tss
-        :rtype: `Regions`
-        """
-
-        tss_locations = self.transcription_start_sites()
-
-        # Add window around these
-        starts = tss_locations - window_width
-        ends   = tss_locations + window_width
-
-        regions_df = pd.DataFrame({'chromosome' : self['chromosome'],
-                                'start' : starts,
-                                'end' : ends}, index=self.index)
-
-        return Regions(regions_df)
-
-
-def read_known_genes(known_genes_filename):
+def read_encode_known_genes(known_genes_filename):
     """
     Reads known_genes file.
     The file can be obtained from the
