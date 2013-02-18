@@ -60,6 +60,10 @@ def argument_parser():
     parser.add_argument('--metric', help='Local distance metric to be used in DTW',
                         choices=['sqeuclidean', 'euclidean'], default='sqeuclidean')
 
+    parser.add_argument('-n', '--n-cpus', metavar='N', type=int,
+                        help='Use up to N CPUs when calculating pairwise distances.'
+                             ' Defaults to the maximum number available.')
+
     return parser
 
 #-- Actual execution of the program
@@ -149,7 +153,10 @@ def main():
     if not args.blank:
         # --- actual work ---------------------------
         print '> Calculating pairwise distances (this might take a while) ...'
-        dm = parallel_pdist(datasets, metric=args.metric)
+        if args.n_cpus is not None:
+            print '> Using {0} processes'.format(args.n_cpus)
+
+        dm = parallel_pdist(datasets, metric=args.metric, n_cpus=args.n_cpus)
 
         # --- Saving of the work --------------
         print '> Saving the pairwise distance matrix to {0!r}'.format(configuration.pairwise_distances_filename)

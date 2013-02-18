@@ -1,6 +1,6 @@
 __author__ = 'saulius'
 
-from multiprocessing import Pool
+from multiprocessing import Pool, cpu_count
 from math import factorial
 import itertools
 
@@ -27,17 +27,23 @@ class combinations_with_len(itertools.combinations):
     def __len__(self):
         return self.__length
 
-def parallel_pdist(three_dim_array, metric='sqeuclidean'):
+def parallel_pdist(three_dim_array, metric='sqeuclidean', n_cpus=None):
     """
     Calculates pairwise DTW distance for all the rows in three_dim_array provided.
     This module is similar to scipy.spatial.distance.pdist, but uses all CPU cores available, rather than one.
     :param three_dim_array: numpy data array [observations x max(sequence_lengths) x ndim ]
     :param metric: either 'euclidean' or 'sqeuclidean'
+    :param n_cpus: limit CPU usage to the number specified. Will default to the maximum available if not set
     :return: condensed distance matrix (just as pdist)
     """
 
     three_dim_array = np.asarray(three_dim_array)
-    p = Pool()
+    if n_cpus is None:
+        n_cpus = cpu_count()
+    elif n_cpus > cpu_count():
+        raise Exception('The specified number of CPUs to use, {0} is greater than the number of available CPUs, {1}'
+                        .format(n_cpus, cpu_count()))
+    p = Pool(processes=n_cpus)
     smd = _shared_mem_dtw(three_dim_array, metric=metric)
 
     n_items = three_dim_array.shape[0]
