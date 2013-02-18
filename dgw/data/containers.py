@@ -29,6 +29,7 @@ class AlignmentsData(object):
                             .format(type(panel)))
 
         self._scale = scale
+
     @property
     def data(self):
         return self._data
@@ -59,6 +60,9 @@ class AlignmentsData(object):
     @property
     def major_axis(self):
         return self.data.major_axis
+
+    def __len__(self):
+        return self.data.__len__()
 
 
     #-- Additional transformations not visible in default pd.Panel  ----------------------------------------
@@ -163,9 +167,13 @@ class Regions(object):
         :return:
         """
         # Partially stolen from pandas implementation.
-        if name in self.columns:
-            return self[name]
+        if name in self.data.columns:
+            return self.data[name]
+
         raise AttributeError("{0!r} has no attribute {1!r}".format(type(self).__name__, name))
+
+    def __len__(self):
+        return self.data.__len__()
 
     # --- Functions special to Regions ---------------------------------------------------------------------------------
     @property
@@ -177,6 +185,18 @@ class Regions(object):
         series = self['end'] - self['start']
         series.name = 'length'
         return series
+
+    def regions_not_in_dataset(self, dataset):
+        """
+        Returns all regions that are not in the dataset provided.
+
+        :param dataset:
+        :type dataset: AlignmentsData
+        :return:
+        """
+        missing_indices = self.index[~self.index.isin(dataset.items)]
+        return Regions(self.data.ix[missing_indices])
+
 
 
     def clip_to_resolution(self, resolution):

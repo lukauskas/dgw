@@ -66,9 +66,10 @@ def argument_parser():
 
 def read_regions(regions_filename, truncate_regions):
     regions = Regions.from_bed(regions_filename)
+    print '> {0} regions of interest read'.format(len(regions))
 
     if truncate_regions:
-        print 'Using only first {0} regions from {1!r}'.format(truncate_regions, regions_filename)
+        print '> Using only first {0} regions from {1!r}'.format(truncate_regions, regions_filename)
         regions = regions.head(truncate_regions)
 
     return regions
@@ -101,10 +102,20 @@ class Configuration(object):
     def dataset_filename(self):
         return '{0}_datasets.pd'.format(self.args.prefix)
 
+    @property
+    def missing_regions_filename(self):
+        return '{0}_missing_regions.pd'.format(self.args.prefix)
+
 def serialise(object, filename):
     f = open(filename, 'w')
     pickle.dump(object, f, protocol=pickle.HIGHEST_PROTOCOL)
     f.close()
+
+def compare_datasets_and_regions(regions, datasets):
+    missing_regions = regions.regions_not_in_dataset(datasets)
+    print '> {0} regions were not found in the dataset'.format(len(missing_regions))
+
+    return missing_regions
 
 def main():
     # --- Argument parsing -----------------------
@@ -127,6 +138,9 @@ def main():
     datasets = read_datasets(args.datasets, regions, args.resolution, args.extend_to)
     datasets = datasets.to_log_scale()
 
+    missing_regions = compare_datasets_and_regions(regions, datasets)
+    serialise(missing_regions, configuration.missing_regions_filename)
+
     # --- Saving of datasets -------------------
     print '> Saving datasets to {0}'.format(configuration.dataset_filename)
     # TODO: Pickle is likely to fuck-up here (not 64bit safe), and this is not strictly necessary!
@@ -142,7 +156,7 @@ def main():
         np.save(configuration.pairwise_distances_filename, dm)
     else:
         print '> Skipping pairwise distances step because of --blank option set'
-        
+
     print '> Saving configuration to {0!r}'.format(configuration.configuration_filename)
     f = open(configuration.configuration_filename, 'w')
     serialise(configuration, configuration.configuration_filename)
