@@ -9,3 +9,5 @@ dm_*
 *.pd
 *.pandas
 *.npy
+*.pyo
+*.pickle
