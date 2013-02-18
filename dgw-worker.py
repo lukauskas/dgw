@@ -8,6 +8,7 @@ Designed to be run on a multi-core machine with a lot of memory, e.g. a supercom
 import argparse
 import os
 import numpy as np
+import pandas as pd
 import cPickle as pickle
 
 from dgw.data.containers import Regions
@@ -53,6 +54,9 @@ def argument_parser():
     parser.add_argument('-res', '--resolution', help='Read resolution', type=int, default=50)
     parser.add_argument('-ext', '--extend_to', help='Extend reads to specified length', type=int, default=200)
 
+    parser.add_argument('--blank', action='store_const', const=True, default=False,
+                        help='Do a blank run - just process the dataset.but do not calculate the pairwise distances')
+
     parser.add_argument('--metric', help='Local distance metric to be used in DTW',
                         choices=['sqeuclidean', 'euclidean'], default='sqeuclidean')
 
@@ -89,6 +93,18 @@ class Configuration(object):
     def configuration_filename(self):
         return '{0}_config.pickle'.format(self.args.prefix)
 
+    @property
+    def parsed_regions_filename(self):
+        return '{0}_regions.pd'.format(self.args.prefix)
+
+    @property
+    def dataset_filename(self):
+        return '{0}_datasets.pd'.format(self.args.prefix)
+
+def serialise(object, filename):
+    f = open(filename, 'w')
+    pickle.dump(object, f, protocol=pickle.HIGHEST_PROTOCOL)
+    f.close()
 
 def main():
     # --- Argument parsing -----------------------
@@ -103,22 +119,33 @@ def main():
     print '> Reading regions from {0!r} ....'.format(args.regions)
     regions = read_regions(args.regions, args.truncate_regions)
 
+    # --- saving of regions ----------
+    print '> Saving regions to {0}'.format(configuration.parsed_regions_filename)
+    serialise(regions, configuration.parsed_regions_filename)
+
     print '> Reading datasets ...'
     datasets = read_datasets(args.datasets, regions, args.resolution, args.extend_to)
     datasets = datasets.to_log_scale()
 
-    # --- actual work ---------------------------
-    print '> Calculating pairwise distances (this might take a while) ...'
-    dm = parallel_pdist(datasets, metric=args.metric)
+    # --- Saving of datasets -------------------
+    print '> Saving datasets to {0}'.format(configuration.dataset_filename)
+    # TODO: Pickle is likely to fuck-up here (not 64bit safe), and this is not strictly necessary!
+    serialise(datasets, configuration.dataset_filename)
 
-    # --- Saving of the work --------------
-    print '> Saving the pairwise distance matrix to {0!r}'.format(configuration.pairwise_distances_filename)
-    np.save(configuration.pairwise_distances_filename, dm)
+    if not args.blank:
+        # --- actual work ---------------------------
+        print '> Calculating pairwise distances (this might take a while) ...'
+        dm = parallel_pdist(datasets, metric=args.metric)
 
+        # --- Saving of the work --------------
+        print '> Saving the pairwise distance matrix to {0!r}'.format(configuration.pairwise_distances_filename)
+        np.save(configuration.pairwise_distances_filename, dm)
+    else:
+        print '> Skipping pairwise distances step because of --blank option set'
+        
     print '> Saving configuration to {0!r}'.format(configuration.configuration_filename)
     f = open(configuration.configuration_filename, 'w')
-    pickle.dump(configuration, f)
-    f.close()
+    serialise(configuration, configuration.configuration_filename)
 
     print '> Done'
 
