@@ -6,7 +6,7 @@ import os
 import pandas as pd
 import pysam
 import numpy as np
-from dgw.data.containers import AlignmentsData
+from dgw.data.containers import AlignmentsData, Regions
 
 def read_samfile_region(samfile, chromosome, start, end, resolution=1, extend_to=200):
     '''
@@ -167,7 +167,6 @@ def __read_bam(alignments_filename, regions, resolution=25, extend_to=200):
     peak_data = []
     new_index = []
 
-    assert(isinstance(regions, pd.DataFrame))
     for index,peak in regions.iterrows():
         try:
             current_peak_data = read_samfile_region(samfile,
@@ -233,6 +232,6 @@ def read_bam(alignment_filenames, regions, resolution=25, extend_to=200):
 
     panel = pd.Panel(panel_dict)
     # Transpose the panel so the datasets are on the minor axis
-    panel.transpose(1, 2, 0)
+    panel = panel.transpose(1, 2, 0)
 
     return AlignmentsData(panel)

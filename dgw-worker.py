@@ -7,6 +7,12 @@ Designed to be run on a multi-core machine with a lot of memory, e.g. a supercom
 """
 import argparse
 import os
+import numpy as np
+import cPickle as pickle
+
+from dgw.data.containers import Regions
+from dgw.data.parsers import read_bam
+from dgw.dtw.parallel import parallel_pdist
 
 class StoreUniqueFilenameAction(argparse.Action):
     def __call__(self, parser, namespace, values, option_string=None):
@@ -30,9 +36,9 @@ class StoreFilenameAction(argparse.Action):
         setattr(namespace, self.dest, value)
 
 
-def _argument_parser():
+def argument_parser():
 
-    parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument('-r', '--regions', metavar='regions_of_interest.bed', action=StoreFilenameAction,
                         help='A BED file listing genome regions that will be processed', required=True)
     parser.add_argument('-d', '--datasets', metavar='dataset.bam', nargs='+', action=StoreUniqueFilenameAction,
@@ -41,21 +47,81 @@ def _argument_parser():
     parser.add_argument('-p', '--prefix', help='Prefix of the output files generated '
                                                '(defaults to \'dgw\')')
 
-    parser.add_argument('--truncate_regions', metavar='X', type=int, help='Only use first X rows of regions '
+    parser.add_argument('--truncate-regions', metavar='X', type=int, help='Only use first X rows of regions '
                                                                            'rather than the full dataset')
+
+    parser.add_argument('-res', '--resolution', help='Read resolution', type=int, default=50)
+    parser.add_argument('-ext', '--extend_to', help='Extend reads to specified length', type=int, default=200)
+
+    parser.add_argument('--metric', help='Local distance metric to be used in DTW',
+                        choices=['sqeuclidean', 'euclidean'], default='sqeuclidean')
 
     return parser
 
+#-- Actual execution of the program
+
+def read_regions(regions_filename, truncate_regions):
+    regions = Regions.from_bed(regions_filename)
+
+    if truncate_regions:
+        print 'Using only first {0} regions from {1!r}'.format(truncate_regions, regions_filename)
+        regions = regions.head(truncate_regions)
+
+    return regions
+
+def read_datasets(dataset_filenames, regions, resolution, extend_to):
+    return read_bam(dataset_filenames, regions, resolution, extend_to)
+
+class Configuration(object):
+    _args = None
+
+    def __init__(self, args):
+        self._args = args
+
+    @property
+    def args(self):
+        return self._args
+
+    @property
+    def pairwise_distances_filename(self):
+        return '{0}_pairwise_distances.npy'.format(self.args.prefix)
+    @property
+    def configuration_filename(self):
+        return '{0}_config.pickle'.format(self.args.prefix)
+
 
 def main():
-    parser = _argument_parser()
+    # --- Argument parsing -----------------------
+    parser = argument_parser()
     args = parser.parse_args()
     if args.prefix is None:
         args.prefix = 'dgw'
 
+    configuration = Configuration(args)
 
-    print 'Regions: {0!r}'.format(args.regions)
-    print 'Datasets: {0!r}'.format(args.datasets)
-    print 'Prefix: {0!r}'.format(args.prefix)
+    # --- pre-processing ------------------------
+    print '> Reading regions from {0!r} ....'.format(args.regions)
+    regions = read_regions(args.regions, args.truncate_regions)
+
+    print '> Reading datasets ...'
+    datasets = read_datasets(args.datasets, regions, args.resolution, args.extend_to)
+    datasets = datasets.to_log_scale()
+
+    # --- actual work ---------------------------
+    print '> Calculating pairwise distances (this might take a while) ...'
+    dm = parallel_pdist(datasets, metric=args.metric)
+
+    # --- Saving of the work --------------
+    print '> Saving the pairwise distance matrix to {0!r}'.format(configuration.pairwise_distances_filename)
+    np.save(configuration.pairwise_distances_filename, dm)
+
+    print '> Saving configuration to {0!r}'.format(configuration.configuration_filename)
+    f = open(configuration.configuration_filename, 'w')
+    pickle.dump(configuration, f)
+    f.close()
+
+    print '> Done'
+
+
 if __name__ == '__main__':
     main()

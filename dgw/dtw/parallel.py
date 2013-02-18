@@ -8,7 +8,6 @@ import numpy as np
 
 from dgw.dtw.distance import dtw_std
 
-
 class combinations_with_len(itertools.combinations):
     """
     Extends itertools.combinations by providing __len__ attribute.

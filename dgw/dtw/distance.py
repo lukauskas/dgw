@@ -47,4 +47,30 @@ def dtw_std(x, y, metric='sqeuclidean', *args, **kwargs):
 
     return mlpy_dtw_std(x, y, squared=squared, *args, **kwargs)
 
+def dtw_with_reversing(x, y, dist_only=True, *args, **kwargs):
+
+    # reverse of x
+    rev_x = x[::-1]
+
+    if dist_only:
+        dist = dtw_std(x, y, dist_only=True, *args, **kwargs)
+        dist_rev = dtw_std(rev_x, y, dist_only=True, *args, **kwargs)
+
+        if dist >= dist_rev:
+            return dist, False
+        else:
+            return dist_rev, True
+
+    else:
+        dist, cost, path = dtw_std(x, y, dist_only=False, *args, **kwargs)
+        dist_rev, cost_rev, path_rev = dtw_std(rev_x, y, dist_only=True, *args, **kwargs)
+
+        if dist >= dist_rev:
+            return (dist, cost, path), False
+        else:
+            cost_rev = None  # TODO: reverse cost matrix here
+            path_rev = (path_rev[0][::-1], path_rev[1][::-1])
+            return (dist_rev, cost_rev, path_rev), True
+
+
 

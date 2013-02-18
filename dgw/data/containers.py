@@ -1,12 +1,14 @@
 import pandas as pd
 import matplotlib.pyplot as plt
+import numpy as np
 
 import dgw.data.visualisation.heatmap as heatmap
 
 class AlignmentsData(object):
 
     _data = None
-    def __init__(self, panel):
+    _scale = None
+    def __init__(self, panel, scale='raw'):
         """
         Initialises `AlignmentsData` with a `panel` provided.
         The panel is assumed to have data sets on the minor axis
@@ -14,6 +16,7 @@ class AlignmentsData(object):
 
         :param panel: `pd.Panel` object `AlignmentsData` will be initialised on, or `pd.DataFrame` that will be converted
                      to Panel
+        :param scale: the scale of data
         :return:
         """
         if isinstance(panel, pd.DataFrame):
@@ -25,18 +28,21 @@ class AlignmentsData(object):
             raise Exception('Invalid type of data provided for AlignmentsData: {0!r}, expected pd.Panel or pd.Dataframe'
                             .format(type(panel)))
 
-    @classmethod
-    def from_bam(cls, bam_files):
-        from dgw.data.parsers import read_bam
-        return cls(read_bam(bam_files))
-
+        self._scale = scale
     @property
     def data(self):
         return self._data
 
+    #-- Functions that simulate pd.Panel behaviour -------------------------------------------------------------------
+
     def mean(self, axis='items', skipna=True):
         # Override axis parameter in the pd.Panel mean function
         return self._data.mean(axis=axis, skipna=skipna)
+
+    @property
+    def values(self):
+        return self.data.values
+
 
     @property
     def number_of_datasets(self):
@@ -45,6 +51,23 @@ class AlignmentsData(object):
     @property
     def dataset_axis(self):
         return self.data.minor_axis
+
+    @property
+    def items(self):
+        return self.data.items
+
+    @property
+    def major_axis(self):
+        return self.data.major_axis
+
+
+    #-- Additional transformations not visible in default pd.Panel  ----------------------------------------
+    def to_log_scale(self):
+        if self._scale == 'log':
+            return self
+
+        new_data = (self.data + 1).apply(np.log)
+        return AlignmentsData(new_data, scale='log')
 
     def plot_heatmap(self, *args, **kwargs):
         """
@@ -66,6 +89,9 @@ class AlignmentsData(object):
 
     def __repr__(self):
         return '{0} containing\n{1!r}'.format(self.__class__, self.data)
+
+    def __array__(self, *args, **kwargs):
+        return self.data.__array__(*args, **kwargs)
 
 class Regions(object):
     REQUIRED_COLUMNS = frozenset(['chromosome', 'start', 'end'])
@@ -110,8 +136,9 @@ class Regions(object):
     def head(self, *args, **kwargs):
         return self.__class__(self.data.head(*args, **kwargs))
 
-    def index(self, *args, **kwargs):
-        return self.data.index(*args, **kwargs)
+    @property
+    def index(self):
+        return self.data.index
 
     def join(self, *args, **kwargs):
         new_data = self.data.join(*args, **kwargs)
