@@ -156,7 +156,7 @@ def main():
         if args.n_cpus is not None:
             print '> Using {0} processes'.format(args.n_cpus)
 
-        dm = parallel_pdist(datasets, metric=args.metric, n_cpus=args.n_cpus)
+        dm = parallel_pdist(datasets, metric=args.metric, n_processes=args.n_cpus)
 
         # --- Saving of the work --------------
         print '> Saving the pairwise distance matrix to {0!r}'.format(configuration.pairwise_distances_filename)
