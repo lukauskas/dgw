@@ -99,7 +99,7 @@ class TestScaling(unittest.TestCase):
                         ((1 - 0.333) * 3 + 4 + 0.666 * 5) / (1 - 0.333 + 1 + 0.666),  # [2.333; 4.666]
                         ((1 - 0.666) * 5 + 6 + 7) / (1 - 0.666 + 1 + 1)])  # [4.666; 7)
 
-        result = uniform_scaling_to_length(b, 3)
+        result = uniform_shrinking_to_length(b, 3)
 
         assert_array_almost_equal(ans, result)
 
@@ -134,8 +134,8 @@ class TestScaling(unittest.TestCase):
 
     def test_uniform_shrinking_to_length_raises_exception_when_extension_needed(self):
 
-        self.assertRaises(ValueError, uniform_shrinking_to_length, np.array([1, 2, 3], 6))
-        self.assertRaises(ValueError, uniform_shrinking_to_length, np.array([1, 2, 3, np.nan, np.nan], 4))
+        self.assertRaises(ValueError, uniform_shrinking_to_length, np.array([1, 2, 3]), 6)
+        self.assertRaises(ValueError, uniform_shrinking_to_length, np.array([1, 2, 3, np.nan, np.nan]), 4)
         self.assertRaises(ValueError, uniform_shrinking_to_length, np.array([np.nan, np.nan, np.nan, np.nan]), 3)
 
     def test_uniform_shrinking_does_nothing_when_lengths_equal(self):
