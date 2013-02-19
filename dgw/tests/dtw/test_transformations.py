@@ -85,7 +85,7 @@ class TestScaling(unittest.TestCase):
         # Harder cases
         b = np.array([1, 2, 3, 4, 5, 6, 7])
 
-        # When scaling from size 6 to size 5
+        # When scaling from size 7 to size 3
         # each scaled element will consist of 7/3 = 2.333 elements in longer sequence:
         # Thus short[0] is equivalent to average between 0 and 2.333 elements in the long sequence
         #      short[1] is average of elements 2.333 - 4.666 in the long seq
@@ -95,9 +95,9 @@ class TestScaling(unittest.TestCase):
         # only fractionally e.g. if the interval is [1.2, 3.6) then the avg should be computed as:
         # (1-0.2) * 2 + 1 * 3 + 0.6 * 4 / (0.8 + 1 + 0.6)
 
-        ans = np.array([(1 + 2 + 0.333 * 3) / (1 + 1 + 0.333),  # [0, 2.333)
-                        ((1 - 0.333) * 3 + 4 + 0.666 * 5) / (1 - 0.333 + 1 + 0.666),  # [2.333; 4.666]
-                        ((1 - 0.666) * 5 + 6 + 7) / (1 - 0.666 + 1 + 1)])  # [4.666; 7)
+        ans = np.array([(1 + 2 + (1 / 3.0) * 3) / (1 + 1 + (1 / 3.0)),  # [0, 2.333)
+                        ((1 - (1 / 3.0)) * 3 + 4 + (2 / 3.0) * 5) / (1 - (1 / 3.0) + 1 + (2 / 3.0)),  # [2.333; 4.666]
+                        ((1 - (2 / 3.0)) * 5 + 6 + 7) / (1 - (2 / 3.0) + 1 + 1)])  # [4.666; 7)
 
         result = uniform_shrinking_to_length(b, 3)
 
@@ -115,7 +115,7 @@ class TestScaling(unittest.TestCase):
         # Harder cases
         b = np.array([[1, 8], [2, 9], [3, 10], [4, 11], [5, 12], [6, 13], [7, 14]])
 
-        # When scaling from size 6 to size 5
+        # When scaling from size 7 to size 3
         # each scaled element will consist of 7/3 = 2.333 elements in longer sequence:
         # Thus short[0] is equivalent to average between 0 and 2.333 elements in the long sequence
         #      short[1] is average of elements 2.333 - 4.666 in the long seq
@@ -125,11 +125,16 @@ class TestScaling(unittest.TestCase):
         # only fractionally e.g. if the interval is [1.2, 3.6) then the avg should be computed as:
         # (1-0.2) * 2 + 1 * 3 + 0.6 * 4 / (0.8 + 1 + 0.6)
 
-        ans = np.array([[(1 + 2 + 0.333 * 3) / (1 + 1 + 0.333), (8 + 9 + 0.333 * 10) / (1 + 1 + 0.333)]  # [0, 2.333)
-                        [((1 - 0.333) * 3 + 4 + 0.666 * 5) / (1 - 0.333 + 1 + 0.666), ((1 - 0.333) * 10 + 11 + 0.666 * 12) / (1 - 0.333 + 1 + 0.666)],  # [2.333; 4.666]
-                        [((1 - 0.666) * 5 + 6 + 7) / (1 - 0.666 + 1 + 1), ((1 - 0.666) * 12 + 13 + 14) / (1 - 0.666 + 1 + 1)]])  # [4.666; 7)
+        one_third = 1 / 3.0
+        two_thirds = 2 / 3.0
+        ans = np.array([[(1 + 2 + one_third * 3) / (1 + 1 + one_third),
+                             (8 + 9 + one_third * 10.0) / (1 + 1 + one_third)], # [0, 2.333)
+                        [((1 - one_third) * 3 + 4 + two_thirds * 5) / (1 - one_third + 1 + two_thirds),
+                             ((1 - one_third) * 10 + 11 + two_thirds * 12) / (1 - one_third + 1 + two_thirds)],  # [2.333; 4.666]
+                        [((1 - two_thirds) * 5 + 6 + 7) / (1 - two_thirds + 1 + 1),
+                             ((1 - two_thirds) * 12 + 13 + 14) / (1 - two_thirds + 1 + 1)]])  # [4.666; 7)
 
-        result = uniform_scaling_to_length(b, 3)
+        result = uniform_shrinking_to_length(b, 3)
         assert_array_almost_equal(ans, result)
 
     def test_uniform_shrinking_to_length_raises_exception_when_extension_needed(self):
