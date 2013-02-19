@@ -218,7 +218,10 @@ class HierarchicalClustering(object):
         return self.data.number_of_items
 
     def as_tree(self):
-        return hierarchy.to_tree(self.linkage)
+        root = hierarchy.to_tree(self.linkage)
+        self._rename_nodes(root)
+
+        return root
 
     def dendrogram(self, *args, **kwargs):
         """
@@ -257,7 +260,6 @@ class HierarchicalClustering(object):
 
         self._distance_threshold = t
         root = self.as_tree()
-        self._rename_nodes(root)
 
         queue = set([root])
 
