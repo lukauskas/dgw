@@ -119,11 +119,24 @@ class AlignmentsData(object):
 
         for i, title in enumerate(self.dataset_axis):
             if number_of_datasets > 1:
-                plt.subplot(1, number_of_datasets, i+1) # TODO: consider doing sublot with multiple lines
+                plt.subplot(number_of_datasets, 1, i+1) # TODO: consider doing sublot with multiple lines
 
             data_to_plot = self.dataset_xs(title, copy=False).T
             heatmap.plot(data_to_plot, *args, **kwargs)
             plt.title(title)
+
+    def plot_random_sample(self, k):
+        import matplotlib.pyplot as plt
+        import random
+
+        items = self.items
+        for i in xrange(k):
+            ax = plt.subplot(1, k, i+1)
+            random_item = self.ix[random.choice(items)]
+            random_item.plot(ax=ax)
+
+
+
 
     def __repr__(self):
         return '{0} containing\n{1!r}'.format(self.__class__, self.data)
