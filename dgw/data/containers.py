@@ -161,6 +161,10 @@ class Regions(object):
         from dgw.data.parsers import read_bed
         return cls(read_bed(bed_file))
 
+    def to_bed(self, bed_file):
+        from dgw.data.parsers import write_bed
+        return write_bed(self, bed_file)
+
     # --- Functions that provide direct access to the DataFrame behind all this ----------------------------------------
     def __getitem__(self, item):
         result = self.data[item]
