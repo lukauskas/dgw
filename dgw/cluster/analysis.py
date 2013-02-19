@@ -363,7 +363,7 @@ class ClusterAssignments(object):
             clusters_repr += '\n...\n'
             clusters_repr += '\n'.join(map(repr, self.clusters[-3:]))
 
-        return '<ClusterAssignments n={0}, cut depth: {1}\n{2}>'.format(self.n, self.cut_depth, clusters_repr)
+        return '<ClusterAssignments n={0}, cut depth: {1}\nClusters: \n{2}>'.format(self.n, self.cut_depth, clusters_repr)
 
     def flatten(self):
         """
