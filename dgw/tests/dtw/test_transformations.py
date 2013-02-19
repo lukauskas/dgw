@@ -258,10 +258,16 @@ class TestSdtwAveraging(unittest.TestCase):
         path = (np.array([0, 1, 2, 2]),
                 np.array([0, 1, 2, 3]))
 
-        correct_ans = np.array([3, 3, 3, 3, 3,  # Diagonal
-                                5, 5, 5, 5, 5,  # Diagonal step
-                                6, 6, 6, 6, 6,  # Diagonal step
-                                7, 7, 7])       # B moved only
+        # Calculate weighted averages for elements between sequences
+        a0 = float(1 * 3 + 5 * 7) / (3 + 7)
+        a1 = float(2 * 3 + 8 * 7) / (3 + 7)
+        a2 = float(3 * 3 + 9 * 7) / (3 + 7)
+        a3 = float(3 * 3 + 11 * 7) / (3 + 7)
+
+        correct_ans = np.array([a0, a0, a0, a0, a0,  # Diagonal
+                                a1, a1, a1, a1, a1,  # Diagonal step
+                                a2, a2, a2, a2, a2,  # Diagonal step
+                                a3, a3, a3])       # B moved only
 
         correct_ans = uniform_shrinking_to_length(correct_ans, 4)
         average_path = sdtw_averaging(a, b, 3, 7, path=path)
@@ -276,12 +282,23 @@ class TestSdtwAveraging(unittest.TestCase):
         path = (np.array([0, 1, 2, 2]),
                 np.array([0, 1, 2, 3]))
 
-        correct_ans = np.array([[3, (35 + 21) / 2.0], [3, (35 + 21) / 2.0], [3, (35 + 21) / 2.0], [3, (35 + 21) / 2.0],
-                                [5, (38 + 22) / 2.0], [5, (38 + 22) / 2.0], [5, (38 + 22) / 2.0], [5, (38 + 22) / 2.0],
-                                [6, ((39 + 23) / 2.0)], [6, ((39 + 23) / 2.0)], [6, ((39 + 23) / 2.0)], [6, ((39 + 23) / 2.0)],
-                                [7, (41 + 23) / 2.0], [7, (41 + 23) / 2.0], [7, (41 + 23) / 2.0]])
+        # Calculate weighted averages for elements between sequences
+        a0 = float(1 * 3 + 5 * 7) / (3 + 7)
+        a1 = float(2 * 3 + 8 * 7) / (3 + 7)
+        a2 = float(3 * 3 + 9 * 7) / (3 + 7)
+        a3 = float(3 * 3 + 11 * 7) / (3 + 7)
+
+        b0 = float(21 * 3 + 35 * 7) / (3 + 7)
+        b1 = float(22 * 3 + 38 * 7) / (3 + 7)
+        b2 = float(23 * 3 + 39 * 7) / (3 + 7)
+        b3 = float(23 * 3 + 41 * 7) / (3 + 7)
+
+        correct_ans = np.array([[a0, b0], [a0, b0], [a0, b0], [a0, b0],
+                                [a1, b1], [a1, b1], [a1, b1], [a1, b1],
+                                [a2, b2], [a2, b2], [a2, b2], [a2, b2],
+                                [a3, b3], [a3, b3], [a3, b3]])
 
         correct_ans = uniform_shrinking_to_length(correct_ans, 4)
-        average_path = sdtw_averaging(a, b, 3, 5, path=path)
+        average_path = sdtw_averaging(a, b, 3, 7, path=path)
         assert_array_equal(correct_ans, average_path)
 
