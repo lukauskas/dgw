@@ -30,8 +30,9 @@ def uniform_scaling_to_length(sequence, desired_length):
     return rescaled_sequence
 
 def uniform_shrinking_to_length(sequence, desired_length):
-    sequence = _strip_nans(sequence)
+
     sequence = np.asarray(sequence, dtype=float)
+    sequence = _strip_nans(sequence)
 
     current_length = len(sequence)
 
@@ -79,7 +80,6 @@ def uniform_shrinking_to_length(sequence, desired_length):
         right_bound_input = end - floor(end)
 
         if right_bound_input > 0:
-            print right_bound, right_bound_input, sequence[right_bound], sequence[right_bound] * right_bound_input
             s += sequence[right_bound] * right_bound_input
             d += right_bound_input
 

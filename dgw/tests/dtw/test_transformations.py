@@ -163,14 +163,14 @@ class TestPathAveraging(unittest.TestCase):
         path = (np.array([0, 1, 2, 2]),
                 np.array([0, 1, 2, 3]))
 
-        correct_ans = np.array([4, 5, 6, 7])
+        correct_ans = np.array([3, 5, 6, 7])
         average_path = dtw_path_averaging(a, b, path=path)
         assert_array_equal(correct_ans, average_path)
 
         path2 = (np.array([0, 1, 1, 2]),
                  np.array([0, 1, 2, 3]))
 
-        correct_ans2 = np.array([4, 5, (2 + 9) / 2.0, 7])
+        correct_ans2 = np.array([3, 5, (2 + 9) / 2.0, 7])
         average_path2 = dtw_path_averaging(a, b, path=path2)
         assert_array_equal(correct_ans2, average_path2)
 
@@ -182,7 +182,7 @@ class TestPathAveraging(unittest.TestCase):
         path = (np.array([0, 1, 2, 2]),
                 np.array([0, 1, 2, 3]))
 
-        correct_ans = np.array([[4, (35 + 21) / 2.0],
+        correct_ans = np.array([[3, (35 + 21) / 2.0],
                                 [5, (38 + 22) / 2.0],
                                 [6, ((39 + 23) / 2.0)],
                                 [7, (41 + 23) / 2.0]])
@@ -193,7 +193,7 @@ class TestPathAveraging(unittest.TestCase):
         path2 = (np.array([0, 1, 1, 2]),
                  np.array([0, 1, 2, 3]))
 
-        correct_ans2 = np.array([[4, (35 + 21) / 2.0],
+        correct_ans2 = np.array([[3, (35 + 21) / 2.0],
                                 [5, (38 + 22) / 2.0],
                                 [(2 + 9) / 2.0, ((39 + 22) / 2.0)],
                                 [7, (41 + 23) / 2.0]])
@@ -211,7 +211,7 @@ class TestSdtwAveraging(unittest.TestCase):
                 np.array([0, 1, 2, 3]))
 
         # Should be the same as scaled regular path averaging when weights = 1
-        correct_ans = uniform_shrinking_to_length(np.array([4, 5, 6, 7]), 4)
+        correct_ans = uniform_shrinking_to_length(np.array([3, 5, 6, 7]), 4)
         average_path = sdtw_averaging(a, b, 1, 1, path=path)
 
         assert_array_equal(correct_ans, average_path)
@@ -219,7 +219,7 @@ class TestSdtwAveraging(unittest.TestCase):
         path2 = (np.array([0, 1, 1, 2]),
                  np.array([0, 1, 2, 3]))
 
-        correct_ans2 = uniform_shrinking_to_length(np.array([4, 5, (2 + 9) / 2.0, 7]), 4)
+        correct_ans2 = uniform_shrinking_to_length(np.array([3, 5, (2 + 9) / 2.0, 7]), 4)
         average_path2 = sdtw_averaging(a, b, 1, 1, path=path2)
         assert_array_equal(correct_ans2, average_path2)
 
@@ -231,7 +231,7 @@ class TestSdtwAveraging(unittest.TestCase):
         path = (np.array([0, 1, 2, 2]),
                 np.array([0, 1, 2, 3]))
 
-        correct_ans = np.array([[4, (35 + 21) / 2.0],
+        correct_ans = np.array([[3, (35 + 21) / 2.0],
                                 [5, (38 + 22) / 2.0],
                                 [6, ((39 + 23) / 2.0)],
                                 [7, (41 + 23) / 2.0]])
@@ -243,7 +243,7 @@ class TestSdtwAveraging(unittest.TestCase):
         path2 = (np.array([0, 1, 1, 2]),
                  np.array([0, 1, 2, 3]))
 
-        correct_ans2 = np.array([[4, (35 + 21) / 2.0],
+        correct_ans2 = np.array([[3, (35 + 21) / 2.0],
                                  [5, (38 + 22) / 2.0],
                                  [(2 + 9) / 2.0, ((39 + 22) / 2.0)],
                                  [7, (41 + 23) / 2.0]])
@@ -258,7 +258,7 @@ class TestSdtwAveraging(unittest.TestCase):
         path = (np.array([0, 1, 2, 2]),
                 np.array([0, 1, 2, 3]))
 
-        correct_ans = np.array([4, 4, 4, 4, 4,  # Diagonal
+        correct_ans = np.array([3, 3, 3, 3, 3,  # Diagonal
                                 5, 5, 5, 5, 5,  # Diagonal step
                                 6, 6, 6, 6, 6,  # Diagonal step
                                 7, 7, 7])       # B moved only
@@ -276,7 +276,7 @@ class TestSdtwAveraging(unittest.TestCase):
         path = (np.array([0, 1, 2, 2]),
                 np.array([0, 1, 2, 3]))
 
-        correct_ans = np.array([[4, (35 + 21) / 2.0], [4, (35 + 21) / 2.0], [4, (35 + 21) / 2.0], [4, (35 + 21) / 2.0],
+        correct_ans = np.array([[3, (35 + 21) / 2.0], [3, (35 + 21) / 2.0], [3, (35 + 21) / 2.0], [3, (35 + 21) / 2.0],
                                 [5, (38 + 22) / 2.0], [5, (38 + 22) / 2.0], [5, (38 + 22) / 2.0], [5, (38 + 22) / 2.0],
                                 [6, ((39 + 23) / 2.0)], [6, ((39 + 23) / 2.0)], [6, ((39 + 23) / 2.0)], [6, ((39 + 23) / 2.0)],
                                 [7, (41 + 23) / 2.0], [7, (41 + 23) / 2.0], [7, (41 + 23) / 2.0]])
