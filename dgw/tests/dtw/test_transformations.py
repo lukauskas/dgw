@@ -131,3 +131,19 @@ class TestScaling(unittest.TestCase):
 
         result = uniform_scaling_to_length(b, 3)
         assert_array_almost_equal(ans, result)
+
+    def test_uniform_shrinking_to_length_raises_exception_when_extension_needed(self):
+
+        self.assertRaises(ValueError, uniform_shrinking_to_length, np.array([1, 2, 3], 6))
+        self.assertRaises(ValueError, uniform_shrinking_to_length, np.array([1, 2, 3, np.nan, np.nan], 4))
+        self.assertRaises(ValueError, uniform_shrinking_to_length, np.array([np.nan, np.nan, np.nan, np.nan]), 3)
+    def test_uniform_shrinking_does_nothing_when_lengths_equal(self):
+        a = np.array([1, 2, 3])
+        assert_array_equal(a, uniform_shrinking_to_length(a, 3))
+
+        b = np.array([1,2,3,np.nan, np.nan])
+        assert_array_equal(a, uniform_shrinking_to_length(b, 3))
+        
+    def test_uniform_shrinking_raises_exception_on_invalid_length(self):
+        self.assertRaises(ValueError, uniform_shrinking_to_length, np.array([1, 2, 3]), 0)
+
