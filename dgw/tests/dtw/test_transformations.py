@@ -153,3 +153,51 @@ class TestScaling(unittest.TestCase):
     def test_uniform_shrinking_raises_exception_on_invalid_length(self):
         self.assertRaises(ValueError, uniform_shrinking_to_length, np.array([1, 2, 3]), 0)
 
+
+class TestPathAveraging(unittest.TestCase):
+
+    def test_one_dim(self):
+        a = np.array([1, 2, 3])
+        b = np.array([5, 8, 9, 11])
+
+        path = (np.array([0, 1, 2, 2]),
+                np.array([0, 1, 2, 3]))
+
+        correct_ans = np.array([4, 5, 6, 7])
+        average_path = dtw_path_averaging(a, b, path=path)
+        assert_array_equal(correct_ans, average_path)
+
+        path2 = (np.array([0, 1, 1, 2]),
+                 np.array([0, 1, 2, 3]))
+
+        correct_ans2 = np.array([4, 5, (2 + 9) / 2.0, 7])
+        average_path2 = dtw_path_averaging(a, b, path=path2)
+        assert_array_equal(correct_ans2, average_path2)
+
+    def test_multi_dim(self):
+
+        a = np.array([[1, 21], [2, 22], [3, 23]])
+        b = np.array([[5, 35], [8, 38], [9, 39], [11, 41]])
+
+        path = (np.array([0, 1, 2, 2]),
+                np.array([0, 1, 2, 3]))
+
+        correct_ans = np.array([[4, (35 + 21) / 2.0],
+                                [5, (38 + 22) / 2.0],
+                                [6, ((39 + 23) / 2.0)],
+                                [7, (41 + 23) / 2.0]])
+
+        average_path = dtw_path_averaging(a, b, path=path)
+        assert_array_equal(correct_ans, average_path)
+
+        path2 = (np.array([0, 1, 1, 2]),
+                 np.array([0, 1, 2, 3]))
+
+        correct_ans2 = np.array([[4, (35 + 21) / 2.0],
+                                [5, (38 + 22) / 2.0],
+                                [(2 + 9) / 2.0, ((39 + 22) / 2.0)],
+                                [7, (41 + 23) / 2.0]])
+        average_path2 = dtw_path_averaging(a, b, path=path2)
+        assert_array_equal(correct_ans2, average_path2)
+
+

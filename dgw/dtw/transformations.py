@@ -32,7 +32,7 @@ def uniform_scaling_to_length(sequence, desired_length):
 def uniform_shrinking_to_length(sequence, desired_length):
     sequence = _strip_nans(sequence)
     sequence = np.asarray(sequence, dtype=float)
-    
+
     current_length = len(sequence)
 
     if current_length == 0:
@@ -151,19 +151,23 @@ def dtw_projection_multi(sequences, base, *args, **kwargs):
     else:
         return projected_sequences
 
-def dtw_path_averaging(sequence_a, sequence_b, *args, **kwargs):
+def dtw_path_averaging(sequence_a, sequence_b, path=None, *args, **kwargs):
     """
     Averages the path computed between the two DTW sequences.
     Computes the DTW distance in order to do so.
 
     :param sequence_a: first sequence to be averaged
     :param sequence_b: second sequence to be averaged
+    :param path: (optional) computed mapped path between the sequences. Will be computed if not provided
     :param args: positional arguments passed into `dtw_std`
     :param kwargs: keyword arguments to be passed into  `dtw_std`
     :return:
     """
+    sequence_a = np.asarray(sequence_a, dtype=float)
+    sequence_b = np.asarray(sequence_b, dtype=float)
 
-    distance, cost, path = dtw_std(sequence_a, sequence_b, dist_only=False, *args, **kwargs)
+    if path is None:
+        distance, cost, path = dtw_std(sequence_a, sequence_b, dist_only=False, *args, **kwargs)
 
     path_base, path_other = path
 
