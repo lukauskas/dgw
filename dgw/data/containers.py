@@ -53,6 +53,9 @@ class AlignmentsData(object):
     def dataset_axis(self):
         return self.data.minor_axis
 
+    def dataset_xs(self, *args, **kwargs):
+        return self.data.minor_xs(*args, **kwargs)
+
     @property
     def items(self):
         return self.data.items
@@ -87,7 +90,7 @@ class AlignmentsData(object):
             if number_of_datasets > 1:
                 plt.subplot(1, number_of_datasets, i+1) # TODO: consider doing sublot with multiple lines
 
-            data_to_plot = self.dataset_axis(title, copy=False).T
+            data_to_plot = self.dataset_xs(title, copy=False).T
             heatmap.plot(data_to_plot, *args, **kwargs)
             plt.title(title)
 
