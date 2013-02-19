@@ -4,6 +4,25 @@ import numpy as np
 
 import dgw.data.visualisation.heatmap as heatmap
 
+class AlignmentsDataIndexer(object):
+    """
+    A wrapper around `_NDFrameIndexer` that would return `AlignmentsData` objects instead of `pd.Panel` objects
+    """
+    _ndframe_indexer = None
+
+    def __init__(self, ndframe_indexer):
+        self._ndframe_indexer = ndframe_indexer
+
+    def __getitem__(self, key):
+        result = self._ndframe_indexer.__getitem__(key)
+        if isinstance(result, pd.Panel):
+            return AlignmentsData(result)
+        else:
+            return result
+
+    def __setitem__(self, key, value):
+        self._ndframe_indexer.__setitem__(self, key, value)
+
 class AlignmentsData(object):
 
     _data = None
@@ -50,6 +69,10 @@ class AlignmentsData(object):
         return len(self.dataset_axis)
 
     @property
+    def number_of_items(self):
+        return len(self.items)
+
+    @property
     def dataset_axis(self):
         return self.data.minor_axis
 
@@ -61,14 +84,22 @@ class AlignmentsData(object):
         return self.data.items
 
     @property
+    def ix(self):
+        return AlignmentsDataIndexer(self.data.ix)
+
+
+    def head(self, n=5):
+        return self.ix[:n]
+
+    @property
     def major_axis(self):
         return self.data.major_axis
 
-    def __len__(self):
-        return self.data.__len__()
-
 
     #-- Additional transformations not visible in default pd.Panel  ----------------------------------------
+    def __len__(self):
+        return self.number_of_items
+
     def to_log_scale(self):
         if self._scale == 'log':
             return self

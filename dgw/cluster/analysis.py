@@ -1,3 +1,5 @@
+from dgw.data.containers import AlignmentsData
+
 __author__ = 'saulius'
 import fastcluster
 import scipy.cluster.hierarchy as hierarchy
@@ -125,15 +127,16 @@ class HierarchicalClustering(object):
         """
         Initialises hierarchical clustering analyser.
         :param data: a pd.DataFrame object of the data in clusters
+        :type data: AlignmentsData
         :param condensed_distance_matrix: a condensed distance matrix of this clustering computed by pdist
         :param linkage_matrix: (optional) linkage_matrix computed by fastcluster.linkage. Will be computed automatically if not provided
         :return:
         """
         self._condensed_distance_matrix = condensed_distance_matrix
-        if not isinstance(data, pd.DataFrame):
-            raise ValueError('Data should be instance of pd.DataFrame')
+        if not isinstance(data, AlignmentsData):
+            raise ValueError('Data should be instance of {0}'.format(AlignmentsData.__name__))
 
-        if not num_obs_y(condensed_distance_matrix) == len(data):
+        if not num_obs_y(condensed_distance_matrix) == data.number_of_items:
             raise ValueError('Mismatch of the number of observations '
                              'in the condensed distance matrix and the data provided: '
                              '{0} != {1}'.format(num_obs_y(condensed_distance_matrix), len(data)))
@@ -143,6 +146,10 @@ class HierarchicalClustering(object):
 
     @property
     def data(self):
+        """
+        Returns the data that is internal to the object
+        :rtype: AlignmentsData
+        """
         return self._data
 
     @property
@@ -163,7 +170,7 @@ class HierarchicalClustering(object):
 
     @property
     def num_obs(self):
-        return len(self.data)
+        return self.data.number_of_items
 
     def as_tree(self):
         return hierarchy.to_tree(self.linkage)
@@ -191,7 +198,7 @@ class HierarchicalClustering(object):
             node = stack.pop()
 
             if node.is_leaf():
-                node.id = self.data.index[node.id]
+                node.id = self.data.items[node.id]
             else:
                 stack.append(node.get_left())
                 stack.append(node.get_right())
@@ -238,7 +245,7 @@ class HierarchicalClustering(object):
         :param index:
         :return:
         """
-        data_index = self.data.index
+        data_index = self.data.items
         if query_index not in data_index:
             raise ValueError('No index {0} in data'.format(query_index))
 
@@ -359,10 +366,11 @@ class Cluster(object):
         self._hierarchical_clustering_object = hierarchical_clustering_object
         self._cluster_root = cluster_root
 
-        self._item_ids = self._get_item_ids()
+        self._item_ids = self.__get_item_ids()
         self._index = pd.Index(self._item_ids)
 
-        assert(len(self._index) == len(hierarchical_clustering_object.data.index & self._index))
+        # Assert that we did not make up any names that were not in the original index
+        assert(len(self._index) == len(hierarchical_clustering_object.data.items & self._index))
 
     @property
     def hierarchical_clustering_object(self):
@@ -376,9 +384,13 @@ class Cluster(object):
         """
         return self._cluster_root
 
-    def _get_item_ids(self):
+    def __get_item_ids(self):
+        """
+        Gets the ids of all the leaf nodes in the tree.
+        :return:
+        """
 
-        ids = np.empty(self._cluster_root.count, dtype=int)
+        ids = []
         queue = set([self._cluster_root])
 
         counter = 0
@@ -386,7 +398,7 @@ class Cluster(object):
             node = queue.pop()
 
             if node.is_leaf():
-                ids[counter] = node.id
+                ids.append(node.id)
                 counter += 1
             else:
                 queue.add(node.get_left())
