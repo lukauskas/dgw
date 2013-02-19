@@ -271,7 +271,7 @@ class HierarchicalClustering(object):
                 queue.add(current_node.get_right())
             else:
                 clusters.add(current_node)
-        return ClusterAssignments(self, clusters)
+        return ClusterAssignments(self, clusters, t)
 
     def interactive_cut(self):
         cutter = InteractiveDendrogramCutter(self.linkage)
@@ -331,8 +331,9 @@ class ClusterAssignments(object):
     _cluster_roots = None
 
     _clusters = None
+    _cut_depth = None
 
-    def __init__(self, hierarchical_clustering_object, cluster_roots):
+    def __init__(self, hierarchical_clustering_object, cluster_roots, cut_depth):
         self._hierarchical_clustering_object = hierarchical_clustering_object
         self._cluster_roots = cluster_roots
 
@@ -341,17 +342,21 @@ class ClusterAssignments(object):
         for cluster_root in sorted(self._cluster_roots, key=lambda x: x.count, reverse=True):
             clusters.append(Cluster(hierarchical_clustering_object, cluster_root))
         self._clusters = clusters
+        self._cut_depth = cut_depth
 
     @property
     def n(self):
         return len(self._cluster_roots)
+    @property
+    def cut_depth(self):
+        return self._cut_depth
 
     @property
     def hierarchical_clustering_object(self):
         return self._hierarchical_clustering_object
 
     def __repr__(self):
-        return '<ClusterAssignments n={0} for {1!r}>'.format(self.n, self._hierarchical_clustering_object)
+        return '<ClusterAssignments n={0} (cut depth: {1})\n{2!r}>'.format(self.n, self.cut_depth, self.clusters)
 
     def flatten(self):
         """
@@ -511,4 +516,4 @@ class Cluster(object):
         return final_item[0]
 
     def __repr__(self):
-        return '<Cluster n_items={0} >'.format(self.n_items)
+        return '<Cluster n_items={0}>'.format(self.n_items)
