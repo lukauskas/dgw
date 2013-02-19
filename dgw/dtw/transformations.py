@@ -175,7 +175,7 @@ def dtw_path_averaging(sequence_a, sequence_b, path=None, *args, **kwargs):
 
     return avg
 
-def sdtw_averaging(sequence_a, sequence_b, weight_a, weight_b, *args, **kwargs):
+def sdtw_averaging(sequence_a, sequence_b, weight_a, weight_b, path=None, *args, **kwargs):
     """
     Implements Scaled Dynamic Time Warping Path Averaging as described in [#Niennattrakul:2009ep]
 
@@ -185,14 +185,18 @@ def sdtw_averaging(sequence_a, sequence_b, weight_a, weight_b, *args, **kwargs):
     :param sequence_b: sequence B
     :param weight_a: weight of sequence A
     :param weight_b: weight of sequence B
-    :param args:
-    :param kwargs:
+    :param path: computed DTW path. Will be calculated automatically if not provided
+    :param args: args passed to `dtw_std`
+    :param kwargs: kwargs passed to `dtw_std`
     :return:
     """
+    sequence_a = np.asarray(sequence_a, dtype=float)
+    sequence_b = np.asarray(sequence_b, dtype=float)
 
-    distance, cost, path = dtw_std(sequence_a, sequence_b, dist_only=False, *args, **kwargs)
+    if path is None:
+        distance, cost, path = dtw_std(sequence_a, sequence_b, dist_only=False, *args, **kwargs)
 
-    path = izip(path[0], path[1]) # Rezip this for easier traversal
+    path = izip(path[0], path[1])  # Rezip this for easier traversal
 
     averaged_path = []
 
@@ -220,6 +224,7 @@ def sdtw_averaging(sequence_a, sequence_b, weight_a, weight_b, *args, **kwargs):
         new_items = [item] * extension_coefficient
         averaged_path.extend(new_items)
         prev = (a, b)
+
     return uniform_shrinking_to_length(averaged_path, max(len(_strip_nans(sequence_a)), len(_strip_nans(sequence_b))))
 
 

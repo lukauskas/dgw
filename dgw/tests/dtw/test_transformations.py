@@ -201,3 +201,87 @@ class TestPathAveraging(unittest.TestCase):
         assert_array_equal(correct_ans2, average_path2)
 
 
+class TestSdtwAveraging(unittest.TestCase):
+
+    def test_one_dim_weights_set_to_one(self):
+        a = np.array([1, 2, 3])
+        b = np.array([5, 8, 9, 11])
+
+        path = (np.array([0, 1, 2, 2]),
+                np.array([0, 1, 2, 3]))
+
+        # Should be the same as scaled regular path averaging when weights = 1
+        correct_ans = uniform_shrinking_to_length(np.array([4, 5, 6, 7]), 4)
+        average_path = sdtw_averaging(a, b, 1, 1, path=path)
+
+        assert_array_equal(correct_ans, average_path)
+
+        path2 = (np.array([0, 1, 1, 2]),
+                 np.array([0, 1, 2, 3]))
+
+        correct_ans2 = uniform_shrinking_to_length(np.array([4, 5, (2 + 9) / 2.0, 7]), 4)
+        average_path2 = sdtw_averaging(a, b, 1, 1, path=path2)
+        assert_array_equal(correct_ans2, average_path2)
+
+    def test_multi_dim_weights_set_to_one(self):
+
+        a = np.array([[1, 21], [2, 22], [3, 23]])
+        b = np.array([[5, 35], [8, 38], [9, 39], [11, 41]])
+
+        path = (np.array([0, 1, 2, 2]),
+                np.array([0, 1, 2, 3]))
+
+        correct_ans = np.array([[4, (35 + 21) / 2.0],
+                                [5, (38 + 22) / 2.0],
+                                [6, ((39 + 23) / 2.0)],
+                                [7, (41 + 23) / 2.0]])
+
+        correct_ans = uniform_shrinking_to_length(correct_ans, 4)
+        average_path = sdtw_averaging(a, b, 1, 1, path=path)
+        assert_array_equal(correct_ans, average_path)
+
+        path2 = (np.array([0, 1, 1, 2]),
+                 np.array([0, 1, 2, 3]))
+
+        correct_ans2 = np.array([[4, (35 + 21) / 2.0],
+                                 [5, (38 + 22) / 2.0],
+                                 [(2 + 9) / 2.0, ((39 + 22) / 2.0)],
+                                 [7, (41 + 23) / 2.0]])
+        correct_ans2 = uniform_shrinking_to_length(correct_ans2, 4)
+        average_path2 = sdtw_averaging(a, b, 1, 1, path=path2)
+        assert_array_equal(correct_ans2, average_path2)
+
+    def test_one_dim_weights_more_than_one(self):
+        a = np.array([1, 2, 3])
+        b = np.array([5, 8, 9, 11])
+
+        path = (np.array([0, 1, 2, 2]),
+                np.array([0, 1, 2, 3]))
+
+        correct_ans = np.array([4, 4, 4, 4, 4,  # Diagonal
+                                5, 5, 5, 5, 5,  # Diagonal step
+                                6, 6, 6, 6, 6,  # Diagonal step
+                                7, 7, 7])       # B moved only
+
+        correct_ans = uniform_shrinking_to_length(correct_ans, 4)
+        average_path = sdtw_averaging(a, b, 3, 7, path=path)
+        assert_array_equal(correct_ans, average_path)
+
+
+    def test_multi_dim_weights_set_to_more_than_one(self):
+
+        a = np.array([[1, 21], [2, 22], [3, 23]])
+        b = np.array([[5, 35], [8, 38], [9, 39], [11, 41]])
+
+        path = (np.array([0, 1, 2, 2]),
+                np.array([0, 1, 2, 3]))
+
+        correct_ans = np.array([[4, (35 + 21) / 2.0], [4, (35 + 21) / 2.0], [4, (35 + 21) / 2.0], [4, (35 + 21) / 2.0],
+                                [5, (38 + 22) / 2.0], [5, (38 + 22) / 2.0], [5, (38 + 22) / 2.0], [5, (38 + 22) / 2.0],
+                                [6, ((39 + 23) / 2.0)], [6, ((39 + 23) / 2.0)], [6, ((39 + 23) / 2.0)], [6, ((39 + 23) / 2.0)],
+                                [7, (41 + 23) / 2.0], [7, (41 + 23) / 2.0], [7, (41 + 23) / 2.0]])
+
+        correct_ans = uniform_shrinking_to_length(correct_ans, 4)
+        average_path = sdtw_averaging(a, b, 3, 5, path=path)
+        assert_array_equal(correct_ans, average_path)
+
