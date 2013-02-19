@@ -276,8 +276,8 @@ class TestSdtwAveraging(unittest.TestCase):
 
     def test_multi_dim_weights_set_to_more_than_one(self):
 
-        a = np.array([[1, 21], [2, 22], [3, 23]])
-        b = np.array([[5, 35], [8, 38], [9, 39], [11, 41]])
+        a = np.array([[1, 21], [2, 22], [3, 23]], dtype=float)
+        b = np.array([[5, 35], [8, 38], [9, 39], [11, 41]], dtype=float)
 
         path = (np.array([0, 1, 2, 2]),
                 np.array([0, 1, 2, 3]))
@@ -293,12 +293,14 @@ class TestSdtwAveraging(unittest.TestCase):
         b2 = float(23 * 3 + 39 * 7) / (3 + 7)
         b3 = float(23 * 3 + 41 * 7) / (3 + 7)
 
-        correct_ans = np.array([[a0, b0], [a0, b0], [a0, b0], [a0, b0],
-                                [a1, b1], [a1, b1], [a1, b1], [a1, b1],
-                                [a2, b2], [a2, b2], [a2, b2], [a2, b2],
-                                [a3, b3], [a3, b3], [a3, b3]])
+        correct_ans = np.array([[a0, b0], [a0, b0], [a0, b0], [a0, b0], [a0, b0],
+                                [a1, b1], [a1, b1], [a1, b1], [a1, b1], [a1, b1],
+                                [a2, b2], [a2, b2], [a2, b2], [a2, b2], [a2, b2],
+                                [a3, b3], [a3, b3], [a3, b3]], dtype=float)
 
-        correct_ans = uniform_shrinking_to_length(correct_ans, 4)
-        average_path = sdtw_averaging(a, b, 3, 7, path=path)
-        assert_array_equal(correct_ans, average_path)
+        average_path = sdtw_averaging(a, b, 3, 7, path=path, shrink=False)
+        assert_array_equal(correct_ans, average_path, 'Arrays not equal before shrinking')
 
+        shrinked_ans = uniform_shrinking_to_length(correct_ans, 4)
+        average_shrinked_path = sdtw_averaging(a, b, 3, 7, path=path, shrink=True)
+        assert_array_equal(shrinked_ans, average_shrinked_path, 'Arrays not equal after shrinking')
