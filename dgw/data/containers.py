@@ -136,6 +136,7 @@ class Regions(object):
 
     _data = None
     def __init__(self, data, *args, **kwargs):
+
         if isinstance(data, Regions):
             self._data = data.data
         else:
@@ -146,6 +147,8 @@ class Regions(object):
                     raise ValueError('No such column {0!r} in provided DataFrame'.format(column))
 
             self._data = data
+
+        self._data = self._data.drop_duplicates() # TODO: somehow join the indices of the dropped data
 
     @property
     def data(self):
