@@ -30,7 +30,18 @@ def uniform_scaling_to_length(sequence, desired_length):
     return rescaled_sequence
 
 def uniform_shrinking_to_length(sequence, desired_length):
+    sequence = _strip_nans(sequence)
     current_length = len(sequence)
+
+    if current_length == 0:
+        raise ValueError('Cannot shrink sequence of length 0')
+    elif current_length < desired_length:
+        raise ValueError('Desired length greater than current length: {0} > {1}'.format(desired_length, current_length))
+    elif current_length == desired_length:
+        return sequence
+
+    if desired_length <= 0:
+        raise ValueError('Invalid length desired: {0}'.format(desired_length))
 
     # This is essentially how many points in the current sequence will be mapped to a single point in the newone
     shrink_factor = float(current_length) / desired_length
