@@ -34,6 +34,7 @@ class TestStripNans(unittest.TestCase):
         x = np.array([[1,2,3,4,5,np.nan], [7,8,9,10,11,np.nan], [13,14,15,16,np.nan,18]], dtype=float).T
         self.assertRaises(ValueError, _strip_nans, x)
 
+
 class TestDTWStd(unittest.TestCase):
 
     def test_multidimensional_dtw(self):

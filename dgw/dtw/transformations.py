@@ -7,31 +7,29 @@ import numpy as np
 from math import ceil, floor
 from dgw.dtw.distance import _strip_nans
 
-def uniform_scaling_by_a_factor(sequence, scaling_factor):
+def uniform_scaling_to_length(sequence, desired_length):
     """
-    Uses uniform scaling to scale the sequence by the scale_factor.
+    Uniform scaling procedure, similar to the one provided in [#yankov2007]
     .. [#yankov2007] D Yankov, E Keogh, J Medina, and B Chiu, "Detecting time series motifs under uniform scaling", 2007
     :param sequence:
-    :param scaling_factor:
+    :param desired_length:
     :return:
     """
-    scaling_factor = float(scaling_factor)
+    sequence = _strip_nans(sequence)
     current_len = len(sequence)
-    rescaled_len = int(ceil(current_len / scaling_factor))
+    if current_len == 0:
+        raise ValueError('Empty sequence cannot be extended')
+    elif desired_length == current_len:
+        return sequence
+    elif desired_length < current_len:
+        raise ValueError('Desired length is smaller than current length: {0} < {1}'.format(desired_length, current_len))
 
-    # Using floor (unlike Yankov) as we are 0 based here
-    rescaled_sequence = [sequence[int(floor(i*scaling_factor))] for i in range(rescaled_len)]
-
-    return rescaled_sequence
-
-def uniform_scaling_to_length(sequence, desired_length):
-    current_len = len(sequence)
     scaling_factor = float(current_len) / desired_length
 
     rescaled_sequence = [sequence[int(floor(i*scaling_factor))] for i in range(desired_length)]
     return rescaled_sequence
 
-def shrink_to_length(sequence, desired_length):
+def uniform_shrinking_to_length(sequence, desired_length):
     current_length = len(sequence)
 
     # This is essentially how many points in the current sequence will be mapped to a single point in the newone
@@ -169,7 +167,7 @@ def sdtw_averaging(sequence_a, sequence_b, weight_a, weight_b, *args, **kwargs):
         new_items = [item] * extension_coefficient
         averaged_path.extend(new_items)
         prev = (a, b)
-    return shrink_to_length(averaged_path, max(len(_strip_nans(sequence_a)), len(_strip_nans(sequence_b))))
+    return uniform_shrinking_to_length(averaged_path, max(len(_strip_nans(sequence_a)), len(_strip_nans(sequence_b))))
 
 
 
