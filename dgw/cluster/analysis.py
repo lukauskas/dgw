@@ -1,4 +1,5 @@
 from dgw.data.containers import AlignmentsData
+from dgw.dtw.distance import dtw_std
 
 __author__ = 'saulius'
 import fastcluster
@@ -122,14 +123,18 @@ class HierarchicalClustering(object):
     _data = None
     _linkage_matrix = None
     _distance_threshold = None
+    __dtw_args = None
+    __dtw_kwargs = None
 
-    def __init__(self, data, condensed_distance_matrix, linkage_matrix=None):
+    def __init__(self, data, condensed_distance_matrix, linkage_matrix=None, dtw_args=None, dtw_kwargs=None):
         """
         Initialises hierarchical clustering analyser.
         :param data: a pd.DataFrame object of the data in clusters
         :type data: AlignmentsData
         :param condensed_distance_matrix: a condensed distance matrix of this clustering computed by pdist
         :param linkage_matrix: (optional) linkage_matrix computed by fastcluster.linkage. Will be computed automatically if not provided
+        :param dtw_args: arguments that were passed into dtw_std
+        :param dtw_kwargs: keyword arguments that were passed into dtw_std
         :return:
         """
         self._condensed_distance_matrix = condensed_distance_matrix
@@ -144,6 +149,9 @@ class HierarchicalClustering(object):
         self._data = data
         self._linkage_matrix = linkage_matrix
 
+        self.__dtw_args = dtw_args
+        self.__dtw_kwargs = dtw_kwargs
+
     @property
     def data(self):
         """
@@ -151,6 +159,42 @@ class HierarchicalClustering(object):
         :rtype: AlignmentsData
         """
         return self._data
+
+    @property
+    def _dtw_args(self):
+        if self.__dtw_args is None:
+            return []
+        else:
+            return self.__dtw_args
+
+    @property
+    def _dtw_kwargs(self):
+        if self.__dtw_kwargs is None:
+            return {}
+        else:
+            return self.__dtw_kwargs
+
+    @property
+    def dtw_metric(self):
+        """
+        Returns dtw metric that was used to obtain this clustering
+        :return:
+        """
+        args = self._dtw_args
+        if args:
+            return args[0]
+        else:
+            return self._dtw_kwargs.get('metric', 'sqeuclidean')
+
+    def dtw_func(self, x, y):
+        """
+        A wrapper around the DTW function that was used to obtain clustering
+        :param x:
+        :param y:
+        :return:
+        """
+        return dtw_std(x, y, *self._dtw_args, **self._dtw_kwargs)
+
 
     @property
     def condensed_distance_matrix(self):
