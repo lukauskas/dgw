@@ -1,6 +1,6 @@
 import unittest
 from math import sqrt
-
+from scipy.spatial.distance import cosine
 import numpy as np
 from numpy.testing import *
 
@@ -48,7 +48,23 @@ class TestDTWStd(unittest.TestCase):
 
         # Euclidean distance is the one worth testing for, as sqeuclidean will be the same
         # for a.T and b.T as well.
-        euclid_distance   = sqrt(117)  + sqrt(149) + (sqrt(185))
-        self.assertAlmostEqual(euclid_distance, dtw_std(a,b, metric='euclidean'))
+        euclid_distance = sqrt(117) + sqrt(149) + (sqrt(185))
+        self.assertAlmostEqual(euclid_distance, dtw_std(a, b, metric='euclidean'))
+
+    def test_multidimensional_dtw_cosine(self):
+
+        a = np.array([[1,2,3, np.nan], [7,8,9,np.nan]]).T
+        b = np.array([[10,12,14], [13,15,17]]).T
+
+        # DTW should match the points:
+        # (1,7) to (10,13)
+        # (2,8) to (12,15)
+        # (3,9) to (14,17)
+
+        #
+        cosine_distance = cosine(a[0], b[0]) + cosine(a[1], b[1]) + cosine(a[2], b[2])
+        self.assertAlmostEqual(cosine_distance, dtw_std(a, b, metric='cosine'))
+
+
 
 

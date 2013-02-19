@@ -38,14 +38,7 @@ def dtw_std(x, y, metric='sqeuclidean', *args, **kwargs):
     x = _strip_nans(x)
     y = _strip_nans(y)
 
-    if metric == 'sqeuclidean':
-        squared = True
-    elif metric == 'euclidean':
-        squared = False
-    else:
-        raise ValueError('Unsupported metric provided: {0!r}'.format(metric))
-
-    return mlpy_dtw_std(x, y, squared=squared, *args, **kwargs)
+    return mlpy_dtw_std(x, y, metric=metric, *args, **kwargs)
 
 def dtw_with_reversing(x, y, dist_only=True, *args, **kwargs):
 
