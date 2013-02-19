@@ -147,6 +147,11 @@ class HierarchicalClustering(object):
                              '{0} != {1}'.format(num_obs_y(condensed_distance_matrix), len(data)))
 
         self._data = data
+
+        # Compute linkage matrix if its not provided
+        if linkage_matrix is None:
+            linkage_matrix = fastcluster.complete(condensed_distance_matrix)
+
         self._linkage_matrix = linkage_matrix
 
         self.__dtw_args = dtw_args
@@ -206,10 +211,6 @@ class HierarchicalClustering(object):
         Returns the linkage matrix of the clustering provided
         :return: linkage matrix.
         """
-        if self._linkage_matrix is None:
-            # If we haven't already, compute complete linkage matrix
-            self._linkage_matrix = fastcluster.complete(self._condensed_distance_matrix)
-
         return self._linkage_matrix
 
     @property
