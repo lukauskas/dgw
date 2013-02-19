@@ -356,7 +356,14 @@ class ClusterAssignments(object):
         return self._hierarchical_clustering_object
 
     def __repr__(self):
-        return '<ClusterAssignments n={0} (cut depth: {1})\n{2!r}>'.format(self.n, self.cut_depth, self.clusters)
+        if len(self.clusters) <= 10:
+            clusters_repr = '\n'.join(map(repr, self.clusters))
+        else:
+            clusters_repr = '\n'.join(map(repr, self.clusters[:3]))
+            clusters_repr += '\n...\n'
+            clusters_repr += '\n'.join(map(repr, self.clusters[-3:]))
+
+        return '<ClusterAssignments n={0}, cut depth: {1}\n{2}>'.format(self.n, self.cut_depth, clusters_repr)
 
     def flatten(self):
         """
