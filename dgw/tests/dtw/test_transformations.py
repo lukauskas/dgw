@@ -154,6 +154,12 @@ class TestScaling(unittest.TestCase):
         self.assertRaises(ValueError, uniform_shrinking_to_length, np.array([1, 2, 3]), 0)
 
 
+    def test_uniform_shrinking_doesnt_crash_when_doing_55_45(self):
+        # This test is here to make sure it does not crash when the final boundary is affected by rounding errors
+        a = np.ones(55)
+        assert_array_equal(np.ones(45), uniform_shrinking_to_length(a, 45))
+
+
 class TestPathAveraging(unittest.TestCase):
 
     def test_one_dim(self):
@@ -304,3 +310,4 @@ class TestSdtwAveraging(unittest.TestCase):
         shrinked_ans = uniform_shrinking_to_length(correct_ans, 4)
         average_shrinked_path = sdtw_averaging(a, b, 3, 7, path=path, shrink=True)
         assert_array_equal(shrinked_ans, average_shrinked_path, 'Arrays not equal after shrinking')
+

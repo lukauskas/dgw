@@ -1,10 +1,11 @@
 from itertools import izip
+from logging import debug
 
 __author__ = 'saulius'
 from dgw.dtw.distance import dtw_std
 import pandas as pd
 import numpy as np
-from math import ceil, floor
+from math import ceil, floor, fabs
 from dgw.dtw.distance import _strip_nans
 
 def uniform_scaling_to_length(sequence, desired_length):
@@ -30,6 +31,7 @@ def uniform_scaling_to_length(sequence, desired_length):
     return rescaled_sequence
 
 def uniform_shrinking_to_length(sequence, desired_length):
+    EPSILON = 1e-6
 
     sequence = np.asarray(sequence, dtype=float)
     sequence = _strip_nans(sequence)
@@ -67,19 +69,19 @@ def uniform_shrinking_to_length(sequence, desired_length):
 
         left_bound = int(floor(start))
 
-        if start == left_bound:
+        if fabs(start - left_bound) <= EPSILON:
             left_bound_input = 1
         else:
             left_bound_input = ceil(start) - start
 
-        if left_bound_input > 0:
+        if left_bound_input >= EPSILON:
             s += sequence[left_bound] * left_bound_input
             d += left_bound_input
 
         right_bound = int(floor(end))
         right_bound_input = end - floor(end)
 
-        if right_bound_input > 0:
+        if right_bound_input >= EPSILON:  # Epsilon to prevent rounding errors interfering
             s += sequence[right_bound] * right_bound_input
             d += right_bound_input
 
