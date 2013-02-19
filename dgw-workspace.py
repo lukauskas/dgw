@@ -1,5 +1,7 @@
 import pandas as pd
 import numpy as np
+import matplotlib.pyplot as plt
+
 import dgw.cluster.analysis
 
 datasets = pd.load('dgw_datasets.pd')
