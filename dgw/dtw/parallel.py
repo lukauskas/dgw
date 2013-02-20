@@ -21,7 +21,7 @@ def combinations_count(n_items):
     """
     return factorial(n_items) / (2 * factorial(n_items - 2))
 
-def _parallel_pdist_worker(data_buffer, data_buffer_shape, result_buffer, scheduling_queue, exception_queue, args, kwargs):
+def _parallel_pdist_worker(data_buffer, data_buffer_shape, result_buffer, scheduling_queue, exception_queue, dtw_args, dtw_kwargs):
     """
     A worker function for parallel_pdist that is executed on a separate process.
 
@@ -39,8 +39,8 @@ def _parallel_pdist_worker(data_buffer, data_buffer_shape, result_buffer, schedu
     :param scheduling_queue: multiprocessing-safe queue to read processing schedule from
     :type scheduling_queue: multiprocessing.Queue
     :param exception_queue: queue that any exceptions that occur will be pushed into
-    :param `args`: args passed into `dtw_std`
-    :param `kwargs`: kwargs passed into `dtw_std`
+    :param dtw_args: args passed into `dtw_std`
+    :param dtw_kwargs: kwargs passed into `dtw_std`
     :return:
     """
     import sys
@@ -69,7 +69,7 @@ def _parallel_pdist_worker(data_buffer, data_buffer_shape, result_buffer, schedu
             for i, (x, y) in enumerate(data_indices):
                 a = data_view[x]
                 b = data_view[y]
-                result = dtw_std(a, b, *args, **kwargs)
+                result = dtw_std(a, b, *dtw_args, **dtw_kwargs)
                 result_buffer[start + i] = result
 
             debug('PROCESS {0}: Iteration end'.format(pid))
@@ -86,15 +86,15 @@ def _parallel_pdist_worker(data_buffer, data_buffer_shape, result_buffer, schedu
         traceback.print_exc()
 
 
-def parallel_pdist(three_dim_array, n_processes=None, *args, **kwargs):
+def parallel_pdist(three_dim_array, n_processes=None, dtw_args=(), dtw_kwargs={}):
     """
     Calculates pairwise DTW distance for all the rows in three_dim_array provided.
     This module is similar to scipy.spatial.distance.pdist, but uses all CPU cores available, rather than one.
     :param three_dim_array: numpy data array [observations x max(sequence_lengths) x ndim ]
     :param n_processes: number of processes to spawn usage to the number specified.
                         Will default to the number of (virtual) CPUs available if not set
-    :param args: `args` to be passed into `dtw_std`
-    :param kwargs: `kwargs` to be passed into `dtw_std`
+    :param dtw_args: `args` to be passed into `dtw_std`
+    :param dtw_kwargs: `kwargs` to be passed into `dtw_std`
     :return: condensed distance matrix (just as `scipy.spatial.distance.pdist`)
     """
 
@@ -148,7 +148,7 @@ def parallel_pdist(three_dim_array, n_processes=None, *args, **kwargs):
     processes = []
     for i in xrange(n_processes):
         p = Process(target=_parallel_pdist_worker,
-                    args=(data_buffer, shape, result_buffer, scheduling_queue, exception_queue, args, kwargs))
+                    args=(data_buffer, shape, result_buffer, scheduling_queue, exception_queue, dtw_args, dtw_kwargs))
         processes.append(p)
 
     # Start all processes

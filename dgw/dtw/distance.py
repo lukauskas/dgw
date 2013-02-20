@@ -33,7 +33,7 @@ def no_nans_len(sequence):
     """
     return len(_strip_nans(sequence))
 
-def dtw_std(x, y, metric='sqeuclidean', dist_only=True, try_reverse=True, *args, **kwargs):
+def dtw_std(x, y, metric='sqeuclidean', dist_only=True, constraint=None, k=None, try_reverse=True, *args, **kwargs):
     '''
         Wrapper around mlpy's dtw_std that first strips all NaNs out of the data.
 
@@ -49,11 +49,11 @@ def dtw_std(x, y, metric='sqeuclidean', dist_only=True, try_reverse=True, *args,
     x = _strip_nans(x)
     y = _strip_nans(y)
 
-    regular_ans = mlpy_dtw_std(x, y, metric=metric, dist_only=dist_only, *args, **kwargs)
+    regular_ans = mlpy_dtw_std(x, y, metric=metric, dist_only=dist_only, constraint=constraint, k=k, *args, **kwargs)
     if not try_reverse:
         return regular_ans
     else:
-        reverse_ans = mlpy_dtw_std(x[::-1], y, metric=metric, dist_only=dist_only, *args, **kwargs)
+        reverse_ans = mlpy_dtw_std(x[::-1], y, metric=metric, dist_only=dist_only, constraint=constraint, k=k, *args, **kwargs)
         if dist_only:
             return min(regular_ans, reverse_ans)
         elif reverse_ans[0] >= regular_ans[0]:

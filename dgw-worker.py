@@ -16,7 +16,7 @@ from datetime import datetime
 from dgw.data.containers import Regions
 from dgw.data.parsers import read_bam
 from dgw.dtw.parallel import parallel_pdist
-from dgw.cli.actions import StoreFilenameAction, StoreUniqueFilenameAction
+from dgw.cli import StoreFilenameAction, StoreUniqueFilenameAction, Configuration
 
 def argument_parser():
 
@@ -39,7 +39,10 @@ def argument_parser():
                         help='Do a blank run - just process the dataset.but do not calculate the pairwise distances')
 
     parser.add_argument('--metric', help='Local distance metric to be used in DTW',
-                        choices=['sqeuclidean', 'euclidean'], default='sqeuclidean')
+                        choices=['sqeuclidean', 'euclidean', 'cosine'], default='sqeuclidean')
+
+    parser.add_argument('-sb', '--slanted-band', metavar='k', help='Constrain DTW with slanted band of width k',
+                        type=float) # TODO: assert > 0
 
     parser.add_argument('-n', '--n-cpus', metavar='N', type=int,
                         help='Use up to N CPUs when calculating pairwise distances.'
@@ -65,35 +68,6 @@ def read_regions(regions_filename, truncate_regions):
 def read_datasets(dataset_filenames, regions, resolution, extend_to):
     return read_bam(dataset_filenames, regions, resolution, extend_to)
 
-class Configuration(object):
-    _args = None
-
-    def __init__(self, args):
-        self._args = args
-
-    @property
-    def args(self):
-        return self._args
-
-    @property
-    def pairwise_distances_filename(self):
-        return '{0}_pairwise_distances.npy'.format(self.args.prefix)
-    @property
-    def configuration_filename(self):
-        return '{0}_config.pickle'.format(self.args.prefix)
-
-    @property
-    def parsed_regions_filename(self):
-        return '{0}_regions.pd'.format(self.args.prefix)
-
-    @property
-    def dataset_filename(self):
-        return '{0}_datasets.pd'.format(self.args.prefix)
-
-    @property
-    def missing_regions_filename(self):
-        return '{0}_missing_regions.pd'.format(self.args.prefix)
-
 def serialise(object, filename):
     f = open(filename, 'w')
     pickle.dump(object, f, protocol=pickle.HIGHEST_PROTOCOL)
@@ -111,6 +85,7 @@ def binomial_coefficent(n, k):
 def main():
     # --- Argument parsing -----------------------
     parser = argument_parser()
+
     args = parser.parse_args()
     if args.prefix is None:
         args.prefix = 'dgw'
@@ -150,7 +125,7 @@ def main():
             print '> Using {0} processes'.format(args.n_cpus)
 
         start = datetime.now()
-        dm = parallel_pdist(datasets, metric=args.metric, n_processes=args.n_cpus)
+        dm = parallel_pdist(datasets, args.n_cpus, dtw_kwargs=configuration.dtw_kwargs)
         end = datetime.now()
 
         delta = end - start
