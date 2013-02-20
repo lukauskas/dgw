@@ -30,11 +30,11 @@ def write_bed(regions, file_object):
         row.append(ix) # Index == name is the fourth positional argument
 
         # Score is the fifth
-        if 'score' in data.columns:
+        if 'score' in data:
             row.append(data['score'])
 
         if 'strand' in data:
-            if not 'score' in data.columns:
+            if not 'score' in data:
                 row.append(0)  # We do not known the score, so make up a value
 
             row.append(data['strand'])
