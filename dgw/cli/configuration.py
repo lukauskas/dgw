@@ -16,7 +16,11 @@ class Configuration(object):
 
     @property
     def pairwise_distances_filename(self):
-        return '{0}_pairwise_distances.npy'.format(self.args.prefix)
+        if not self.blank:
+            return '{0}_pairwise_distances.npy'.format(self.args.prefix)
+        else:
+            return None
+
     @property
     def configuration_filename(self):
         return '{0}_config.pickle'.format(self.args.prefix)
@@ -28,6 +32,13 @@ class Configuration(object):
     @property
     def dataset_filename(self):
         return '{0}_datasets.pd'.format(self.args.prefix)
+
+    @property
+    def raw_dataset_filename(self):
+        if self.args.output_raw_dataset:
+            return '{0}_datasets_raw.pd'.format(self.args.prefix)
+        else:
+            return None
 
     @property
     def missing_regions_filename(self):

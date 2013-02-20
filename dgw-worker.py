@@ -48,6 +48,9 @@ def argument_parser():
                         help='Use up to N CPUs when calculating pairwise distances.'
                              ' Defaults to the maximum number available.')
 
+    parser.add_argument('--output-raw-dataset', action='store_const', const=True, default=False,
+                        help='Output raw dataset as well as normalised one')
+
     return parser
 
 #-- Actual execution of the program
@@ -102,6 +105,11 @@ def main():
 
     print '> Reading datasets ...'
     datasets = read_datasets(args.datasets, regions, args.resolution, args.extend_to)
+
+    if args.output_raw_dataset:
+        print '> Saving raw dataset to {0}'.format(configuration.raw_dataset_filename)
+        serialise(datasets, configuration.raw_dataset_filename)
+
     datasets = datasets.to_log_scale()
 
     missing_regions = compare_datasets_and_regions(regions, datasets)
