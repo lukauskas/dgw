@@ -512,7 +512,7 @@ class Cluster(object):
 
         return items.ix[min_index]
 
-    def average(self, method='psa'):
+    def average(self, method='standard'):
         """
         Averages the data in the cluster with respect to hierarchy.
 
@@ -526,7 +526,7 @@ class Cluster(object):
                 see `dgw.transformations.dtw_path_averaging`
             Unweighted standard average of DTW path (method='standard-unweighted')
                 similar to the standard method above, but does not bias sequences higher up the tree
-                
+
 
         .. [#Niennattrakul:2009ep] Vit Niennattrakul and Chotirat Ann Ratanamahatana "Shape averaging under Time Warping",
            2009 6th International Conference on Electrical Engineering/Electronics, Computer,
