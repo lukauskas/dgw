@@ -550,7 +550,7 @@ class Cluster(object):
     def _average_standard_unweighted(self):
 
         def reduce_function(x, y):
-            path_average = dgw.dtw.transformations.dtw_path_averaging(x, y)
+            path_average = dgw.dtw.transformations.dtw_path_averaging(x, y, *self._dtw_args, **self._dtw_kwargs)
             path_average = dgw.dtw.transformations.uniform_shrinking_to_length(path_average,
                                                                                max(no_nans_len(x), no_nans_len(y)))
             return path_average
@@ -561,12 +561,22 @@ class Cluster(object):
         final_item = _reduce_tree(self.root, reduce_function, map_function)
 
         return final_item
+    @property
+    def _dtw_args(self):
+        return self.hierarchical_clustering_object._dtw_args
+
+    @property
+    def _dtw_kwargs(self):
+        return self.hierarchical_clustering_object._dtw_kwargs
+
 
     def __average_standard(self):
         def reduce_function(x, y):
             sequence_a, weight_a = x
             sequence_b, weight_b = y
-            path_average = dgw.dtw.transformations.dtw_path_averaging(sequence_a, sequence_b, weight_a, weight_b)
+            path_average = dgw.dtw.transformations.dtw_path_averaging(sequence_a, sequence_b, weight_a, weight_b,
+                                                                      *self._dtw_args,
+                                                                      **self._dtw_kwargs)
 
             path_average = dgw.dtw.transformations.uniform_shrinking_to_length(path_average,
                                                                                max(no_nans_len(sequence_a),
@@ -581,8 +591,9 @@ class Cluster(object):
         def reduce_function(x, y):
             sequence_a, weight_a = x
             sequence_b, weight_b = y
-            return dgw.dtw.transformations.sdtw_averaging(sequence_a, sequence_b, weight_a, weight_b),\
-                   weight_a + weight_b
+            avg_seq = dgw.dtw.transformations.sdtw_averaging(sequence_a, sequence_b, weight_a, weight_b,
+                                                             *self._dtw_args, **self._dtw_kwargs)
+            return avg_seq, weight_a + weight_b
 
         return self.__weighted_averaging(reduce_function)
 
