@@ -20,6 +20,9 @@ configuration = load_from_pickle(configuration_loc)
 assert(isinstance(configuration, Configuration))
 
 datasets = load_from_pickle(configuration.dataset_filename)
+if configuration.raw_dataset_filename:
+    raw_datasets = load_from_pickle(configuration.raw_dataset_filename)
+
 try:
     dm = np.load(configuration.pairwise_distances_filename)
 except IOError:

@@ -16,7 +16,7 @@ class Configuration(object):
 
     @property
     def pairwise_distances_filename(self):
-        if not self.blank:
+        if not self.args.blank:
             return '{0}_pairwise_distances.npy'.format(self.args.prefix)
         else:
             return None
