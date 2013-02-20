@@ -35,6 +35,7 @@ class TestStripNans(unittest.TestCase):
         self.assertRaises(ValueError, _strip_nans, x)
 
 
+
 class TestDTWStd(unittest.TestCase):
 
     def test_multidimensional_dtw(self):
@@ -65,6 +66,36 @@ class TestDTWStd(unittest.TestCase):
         #
         cosine_distance = cosine(a[0], b[0]) + cosine(a[1], b[1]) + cosine(a[2], b[2])
         self.assertAlmostEqual(cosine_distance, dtw_std(a, b, metric='cosine'))
+
+    def test_reverse_dtw(self):
+
+        a = np.array([1, 2, 3, np.nan])
+        b = np.array([3, 2, 1])
+
+        self.assertEqual(0, dtw_std(a, b, try_reverse=True))
+
+        dist, cost, path = dtw_std(a, b, try_reverse=True, dist_only=False)
+
+        assert_array_equal([2, 1, 0], path[0])
+        assert_array_equal([0, 1, 2], path[1])
+
+    def test_multidimensional_dtw_reverse(self):
+
+        a = np.array([[1,2,3, np.nan], [7,8,9,np.nan]]).T
+        b = np.array([[10,12,14], [13,15,17]]).T
+
+        #Reverse:
+        b = b[::-1]
+
+        # DTW should match the points:
+        # (1,7) to (10,13) (distance: sqrt(81 + 36 = 117))
+        # (2,8) to (12,15) (distance: sqrt(100 + 49 = 149))
+        # (3,9) to (14,17) (distance: sqrt(121 + 64 = 185))
+
+        # Euclidean distance is the one worth testing for, as sqeuclidean will be the same
+        # for a.T and b.T as well.
+        euclid_distance = sqrt(117) + sqrt(149) + (sqrt(185))
+        self.assertAlmostEqual(euclid_distance, dtw_std(a, b, metric='euclidean', try_reverse=True))
 
 
 

@@ -1,3 +1,5 @@
+from logging import debug
+
 __author__ = 'saulius'
 
 from mlpy.dtw import dtw_std as mlpy_dtw_std
@@ -31,7 +33,7 @@ def no_nans_len(sequence):
     """
     return len(_strip_nans(sequence))
 
-def dtw_std(x, y, metric='sqeuclidean', *args, **kwargs):
+def dtw_std(x, y, metric='sqeuclidean', dist_only=True, try_reverse=True, *args, **kwargs):
     '''
         Wrapper around mlpy's dtw_std that first strips all NaNs out of the data.
 
@@ -47,32 +49,19 @@ def dtw_std(x, y, metric='sqeuclidean', *args, **kwargs):
     x = _strip_nans(x)
     y = _strip_nans(y)
 
-    return mlpy_dtw_std(x, y, metric=metric, *args, **kwargs)
-
-def dtw_with_reversing(x, y, dist_only=True, *args, **kwargs):
-
-    # reverse of x
-    rev_x = x[::-1]
-
-    if dist_only:
-        dist = dtw_std(x, y, dist_only=True, *args, **kwargs)
-        dist_rev = dtw_std(rev_x, y, dist_only=True, *args, **kwargs)
-
-        if dist >= dist_rev:
-            return dist, False
-        else:
-            return dist_rev, True
-
+    regular_ans = mlpy_dtw_std(x, y, metric=metric, dist_only=dist_only, *args, **kwargs)
+    if not try_reverse:
+        return regular_ans
     else:
-        dist, cost, path = dtw_std(x, y, dist_only=False, *args, **kwargs)
-        dist_rev, cost_rev, path_rev = dtw_std(rev_x, y, dist_only=True, *args, **kwargs)
+        reverse_ans = mlpy_dtw_std(x[::-1], y, metric=metric, dist_only=dist_only, *args, **kwargs)
+        if dist_only:
+            return min(regular_ans, reverse_ans)
+        elif reverse_ans[0] >= regular_ans[0]:
+            return regular_ans
+        else:  # dist_only = False and reverse_ans is smaller
+            dist, cost, path = reverse_ans
+            path_rev = (path[0][::-1], path[1])
 
-        if dist >= dist_rev:
-            return (dist, cost, path), False
-        else:
-            cost_rev = None  # TODO: reverse cost matrix here
-            path_rev = (path_rev[0][::-1], path_rev[1][::-1])
-            return (dist_rev, cost_rev, path_rev), True
-
-
-
+            # TODO: Reverse cost matrix here
+            cost = None
+            return dist, cost, path_rev
