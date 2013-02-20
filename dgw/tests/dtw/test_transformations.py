@@ -180,6 +180,32 @@ class TestPathAveraging(unittest.TestCase):
         average_path2 = dtw_path_averaging(a, b, path=path2)
         assert_array_equal(correct_ans2, average_path2)
 
+    def test_weighted_one_dim(self):
+        a = np.array([1, 2, 3])
+        b = np.array([5, 8, 9, 11])
+
+        path = (np.array([0, 1, 2, 2]),
+                np.array([0, 1, 2, 3]))
+
+        correct_ans = np.array([(2 * 1 + 4 * 5) / 6.0,
+                                (2 * 2 + 4 * 8) / 6.0,
+                                (2 * 3 + 4 * 9) / 6.0,
+                                (2 * 3 + 4 * 11) / 6.0])
+
+        average_path = dtw_path_averaging(a, b, 2, 4, path=path)
+        assert_array_equal(correct_ans, average_path)
+
+        path2 = (np.array([0, 1, 1, 2]),
+                 np.array([0, 1, 2, 3]))
+
+        correct_ans2 = np.array([(2 * 1 + 4 * 5) / 6.0,
+                                (2 * 2 + 4 * 8) / 6.0,
+                                (2 * 2 + 4 * 9) / 6.0,
+                                (2 * 3 + 4 * 11) / 6.0])
+        
+        average_path2 = dtw_path_averaging(a, b, 2, 4, path=path2)
+        assert_array_equal(correct_ans2, average_path2)
+
     def test_multi_dim(self):
 
         a = np.array([[1, 21], [2, 22], [3, 23]])

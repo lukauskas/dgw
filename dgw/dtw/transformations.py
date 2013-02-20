@@ -153,13 +153,15 @@ def dtw_projection_multi(sequences, base, *args, **kwargs):
     else:
         return projected_sequences
 
-def dtw_path_averaging(sequence_a, sequence_b, path=None, *args, **kwargs):
+def dtw_path_averaging(sequence_a, sequence_b, weight_a=1, weight_b=1, path=None, *args, **kwargs):
     """
     Averages the path computed between the two DTW sequences.
     Computes the DTW distance in order to do so.
 
     :param sequence_a: first sequence to be averaged
     :param sequence_b: second sequence to be averaged
+    :param weight_a: weight of first sequence
+    :param weight_b: weight of the second sequence
     :param path: (optional) computed mapped path between the sequences. Will be computed if not provided
     :param args: positional arguments passed into `dtw_std`
     :param kwargs: keyword arguments to be passed into  `dtw_std`
@@ -173,7 +175,7 @@ def dtw_path_averaging(sequence_a, sequence_b, path=None, *args, **kwargs):
 
     path_base, path_other = path
 
-    avg = np.array([(sequence_a[i] + sequence_b[j]) / 2.0 for i, j in zip(path_base, path_other)])
+    avg = np.array([(sequence_a[i] * weight_a + sequence_b[j] * weight_b) / (weight_a + weight_b) for i, j in zip(path_base, path_other)])
 
     return avg
 
