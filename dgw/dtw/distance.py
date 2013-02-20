@@ -22,6 +22,15 @@ def _strip_nans(sequence):
 
     return sequence
 
+def no_nans_len(sequence):
+    """
+    Returns length of the sequence after removing all the nans from it.
+
+    :param sequence:
+    :return:
+    """
+    return len(_strip_nans(sequence))
+
 def dtw_std(x, y, metric='sqeuclidean', *args, **kwargs):
     '''
         Wrapper around mlpy's dtw_std that first strips all NaNs out of the data.
