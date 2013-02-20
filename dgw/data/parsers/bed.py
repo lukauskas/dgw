@@ -20,10 +20,15 @@ def read_bed(bed_file):
 
     return Regions(regions)
 
-def write_bed(regions, file_object):
+def write_bed(regions, writable_file):
     import csv
 
-    writer = csv.writer(file_object, delimiter='\t', quotechar='"')
+    need_closing = False
+    if not isinstance(writable_file, file):
+        writable_file = open(writable_file, 'w')
+        need_closing = True
+
+    writer = csv.writer(writable_file, delimiter='\t', quotechar='"')
     for ix, data in regions.iterrows():
 
         row = list(data[['chromosome', 'start', 'end']])
@@ -40,3 +45,6 @@ def write_bed(regions, file_object):
             row.append(data['strand'])
 
         writer.writerow(row)
+
+    if need_closing:
+        writable_file.close()
