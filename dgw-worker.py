@@ -6,10 +6,12 @@ Designed to be run on a multi-core machine with a lot of memory, e.g. a supercom
 
 """
 import argparse
+from math import factorial
 import os
 import numpy as np
 import pandas as pd
 import cPickle as pickle
+from datetime import datetime
 
 from dgw.data.containers import Regions
 from dgw.data.parsers import read_bam
@@ -49,13 +51,16 @@ def argument_parser():
 
 def read_regions(regions_filename, truncate_regions):
     regions = Regions.from_bed(regions_filename)
-    print '> {0} regions of interest read'.format(len(regions))
+    total_len = len(regions)
+    print '> {0} regions of interest read'.format(total_len)
 
+    used_len = total_len
     if truncate_regions:
         print '> Using only first {0} regions from {1!r}'.format(truncate_regions, regions_filename)
+        used_len = truncate_regions
         regions = regions.head(truncate_regions)
 
-    return regions
+    return regions, total_len, used_len
 
 def read_datasets(dataset_filenames, regions, resolution, extend_to):
     return read_bam(dataset_filenames, regions, resolution, extend_to)
@@ -100,6 +105,9 @@ def compare_datasets_and_regions(regions, datasets):
 
     return missing_regions
 
+def binomial_coefficent(n, k):
+    return factorial(n) / (factorial(k) * factorial(n-k))
+
 def main():
     # --- Argument parsing -----------------------
     parser = argument_parser()
@@ -111,7 +119,7 @@ def main():
 
     # --- pre-processing ------------------------
     print '> Reading regions from {0!r} ....'.format(args.regions)
-    regions = read_regions(args.regions, args.truncate_regions)
+    regions, total_regions, used_regions = read_regions(args.regions, args.truncate_regions)
 
     # --- saving of regions ----------
     print '> Saving regions to {0}'.format(configuration.parsed_regions_filename)
@@ -124,6 +132,12 @@ def main():
     missing_regions = compare_datasets_and_regions(regions, datasets)
     serialise(missing_regions, configuration.missing_regions_filename)
 
+    if len(missing_regions) > 0:
+        print "> There were {0} regions that are in input file, but not in dataset.".format(len(missing_regions))
+        print "> These regions were saved to are saved to file {0}".format(configuration.missing_regions_filename)
+
+        used_regions -= missing_regions
+
     # --- Saving of datasets -------------------
     print '> Saving datasets to {0}'.format(configuration.dataset_filename)
     # TODO: Pickle is likely to fuck-up here (not 64bit safe), and this is not strictly necessary!
@@ -135,7 +149,18 @@ def main():
         if args.n_cpus is not None:
             print '> Using {0} processes'.format(args.n_cpus)
 
+        start = datetime.now()
         dm = parallel_pdist(datasets, metric=args.metric, n_processes=args.n_cpus)
+        end = datetime.now()
+
+        delta = end - start
+        print '> Pairwise distances calculation took {0} s'.format(delta.total_seconds())
+
+        if args.truncate_regions:
+            multiplier = binomial_coefficent(total_regions, 2) / float(binomial_coefficent(args.truncate_regions, 2))
+            print '> Expected calculation duration if truncate_regions was not used: {0} s'\
+                   .format(delta.total_seconds() * multiplier)
+
 
         # --- Saving of the work --------------
         print '> Saving the pairwise distance matrix to {0!r}'.format(configuration.pairwise_distances_filename)
