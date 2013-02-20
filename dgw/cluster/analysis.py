@@ -566,12 +566,13 @@ class Cluster(object):
         def reduce_function(x, y):
             sequence_a, weight_a = x
             sequence_b, weight_b = y
-            path_average = dgw.dtw.transformations.dtw_path_averaging(sequence_a, sequence_b, weight_a, weight_b), \
-                   weight_a + weight_b
+            path_average = dgw.dtw.transformations.dtw_path_averaging(sequence_a, sequence_b, weight_a, weight_b)
 
             path_average = dgw.dtw.transformations.uniform_shrinking_to_length(path_average,
-                                                                               max(no_nans_len(x), no_nans_len(y)))
-            return path_average
+                                                                               max(no_nans_len(sequence_a),
+                                                                                   no_nans_len(sequence_b)))
+            return path_average, \
+                   weight_a + weight_b
 
         return self.__weighted_averaging(reduce_function)
 
