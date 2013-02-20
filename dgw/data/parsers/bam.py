@@ -8,8 +8,54 @@ import pysam
 import numpy as np
 from dgw.data.containers import AlignmentsData, Regions
 
+def read_alignments_for_regions(samfile, chromosome, start, end, resolution=1, extend_to=200):
+    if (end - start) % resolution != 0:
+        raise ValueError('The resolution {0} is not valid for region of length {1}'.format(resolution, end-start))
+
+
+
+    # Fetch all alignments from samfile
+    if extend_to is None or extend_to == 0:
+        read_start = start
+        read_end   = end
+    elif extend_to > 0:
+        read_start = start-extend_to+1 # +1 because extended reads should overlap with at least one pixel
+        read_end   = end+extend_to-1
+    else:
+        raise ValueError('extend_to should be >= 0')
+
+    alignments = samfile.fetch(chromosome, read_start, read_end)
+
+    return alignments
+
+def regions_to_fasta_file(samfile_filename, regions, fasta_file_name, resolution=1, extend_to=200):
+    samfile = pysam.Samfile(samfile_filename, 'rb')
+    fasta_file = open(fasta_file_name, 'w')
+    for ix, region in regions.iterrows():
+        chromosome = region['chromosome']
+        start = region['start']
+        end = region['end']
+
+        alignments = read_alignments_for_regions(samfile, chromosome, start, end, resolution=1, extend_to=200)
+
+        common_head = '> region {ix} [{chromosome}:{start}-{end}], '.format(ix=ix, chromosome=chromosome, start=start, end=end)
+        for alignment in alignments:
+            alignment_start = alignment.pos
+            alignment_end = alignment.aend
+            head = common_head + '{chromosome}: {start}-{end}\n'.format(chromosome=chromosome, start=alignment_start,
+                                                                        end=alignment_end)
+
+            fasta_file.write(head)
+            seq = alignment.seq + '\n'
+            fasta_file.write(seq)
+
+        fasta_file.write('\n\n')
+
+    fasta_file.close()
+    samfile.close()
+
 def read_samfile_region(samfile, chromosome, start, end, resolution=1, extend_to=200):
-    '''
+    """
         Returns read count data for a samfile.
         Chromosome, start, and end all describe a region of the data.
         This should be zero indexed and the last coordinate is not included, following BED format.
@@ -25,26 +71,13 @@ def read_samfile_region(samfile, chromosome, start, end, resolution=1, extend_to
     :param end:
     :param resolution:
     :return:
-    '''
-    if (end - start) % resolution != 0:
-        raise ValueError('The resolution {0} is not valid for peak of length {1}'.format(resolution, end-start))
-
+    """
     # Initialise
     data_len = (end - start) / resolution
     data_buffer = np.zeros(data_len)
 
-    # Fetch all alignments from samfile
-    if extend_to is None or extend_to == 0:
-        read_start = start
-        read_end   = end
-    elif extend_to > 0:
-        read_start = start-extend_to+1 # +1 because extended reads should overlap with at least one pixel
-        read_end   = end+extend_to-1
-    else:
-        raise ValueError('extend_to should be >= 0')
-
-    alignments = samfile.fetch(chromosome, read_start, read_end)
-
+    # Fetch all alignments from SamFile
+    alignments = read_alignments_for_regions(samfile, chromosome, start, end, resolution=resolution, extend_to=extend_to)
     for alignment in alignments:
         assert(alignment.aend > alignment.pos)
 
