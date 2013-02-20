@@ -86,7 +86,7 @@ def _parallel_pdist_worker(data_buffer, data_buffer_shape, result_buffer, schedu
         traceback.print_exc()
 
 
-def parallel_pdist(three_dim_array, n_processes=None, dtw_args=(), dtw_kwargs={}):
+def parallel_pdist(three_dim_array, n_processes=None, *dtw_args, **dtw_kwargs):
     """
     Calculates pairwise DTW distance for all the rows in three_dim_array provided.
     This module is similar to scipy.spatial.distance.pdist, but uses all CPU cores available, rather than one.

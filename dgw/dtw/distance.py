@@ -33,6 +33,19 @@ def no_nans_len(sequence):
     """
     return len(_strip_nans(sequence))
 
+def parametrised_dtw_wrapper(dtw_args, dtw_kwargs):
+    """
+    Returns a wrapper around DTW function with args dtw_args and kwargs dtw_kwargs
+    :param dtw_args: positional parameters of DTW
+    :param dtw_kwargs: keyword parameters of DTW
+    :return:
+    """
+
+    def f(x, y, dist_only=False):
+        return dtw_std(x, y, dist_only=dist_only, *dtw_args, **dtw_kwargs)
+
+    return f
+
 def dtw_std(x, y, metric='sqeuclidean', dist_only=True, constraint=None, k=None, try_reverse=True, *args, **kwargs):
     '''
         Wrapper around mlpy's dtw_std that first strips all NaNs out of the data.

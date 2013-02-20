@@ -42,7 +42,7 @@ def argument_parser():
                         choices=['sqeuclidean', 'euclidean', 'cosine'], default='sqeuclidean')
 
     parser.add_argument('-sb', '--slanted-band', metavar='k', help='Constrain DTW with slanted band of width k',
-                        type=float) # TODO: assert > 0
+                        type=int) # TODO: assert > 0
 
     parser.add_argument('-n', '--n-cpus', metavar='N', type=int,
                         help='Use up to N CPUs when calculating pairwise distances.'
@@ -125,7 +125,7 @@ def main():
             print '> Using {0} processes'.format(args.n_cpus)
 
         start = datetime.now()
-        dm = parallel_pdist(datasets, args.n_cpus, dtw_kwargs=configuration.dtw_kwargs)
+        dm = parallel_pdist(datasets, args.n_cpus, **configuration.dtw_kwargs)
         end = datetime.now()
 
         delta = end - start

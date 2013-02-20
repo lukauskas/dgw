@@ -126,7 +126,7 @@ class HierarchicalClustering(object):
     __dtw_args = None
     __dtw_kwargs = None
 
-    def __init__(self, data, condensed_distance_matrix, linkage_matrix=None, dtw_args=None, dtw_kwargs=None):
+    def __init__(self, data, condensed_distance_matrix, linkage_matrix=None, dtw_function=dtw_std):
         """
         Initialises hierarchical clustering analyser.
         :param data: a pd.DataFrame object of the data in clusters
@@ -154,8 +154,7 @@ class HierarchicalClustering(object):
 
         self._linkage_matrix = linkage_matrix
 
-        self.__dtw_args = dtw_args
-        self.__dtw_kwargs = dtw_kwargs
+        self.__dtw_function = dtw_function
 
     @property
     def data(self):
@@ -166,40 +165,8 @@ class HierarchicalClustering(object):
         return self._data
 
     @property
-    def _dtw_args(self):
-        if self.__dtw_args is None:
-            return []
-        else:
-            return self.__dtw_args
-
-    @property
-    def _dtw_kwargs(self):
-        if self.__dtw_kwargs is None:
-            return {}
-        else:
-            return self.__dtw_kwargs
-
-    @property
-    def dtw_metric(self):
-        """
-        Returns dtw metric that was used to obtain this clustering
-        :return:
-        """
-        args = self._dtw_args
-        if args:
-            return args[0]
-        else:
-            return self._dtw_kwargs.get('metric', 'sqeuclidean')
-
-    def dtw_func(self, x, y):
-        """
-        A wrapper around the DTW function that was used to obtain clustering
-        :param x:
-        :param y:
-        :return:
-        """
-        return dtw_std(x, y, *self._dtw_args, **self._dtw_kwargs)
-
+    def dtw_function(self):
+        return self.__dtw_function
 
     @property
     def condensed_distance_matrix(self):
@@ -550,7 +517,7 @@ class Cluster(object):
     def _average_standard_unweighted(self):
 
         def reduce_function(x, y):
-            path_average = dgw.dtw.transformations.dtw_path_averaging(x, y, *self._dtw_args, **self._dtw_kwargs)
+            path_average = dgw.dtw.transformations.dtw_path_averaging(x, y, dtw_function=self.dtw_function)
             path_average = dgw.dtw.transformations.uniform_shrinking_to_length(path_average,
                                                                                max(no_nans_len(x), no_nans_len(y)))
             return path_average
@@ -562,21 +529,15 @@ class Cluster(object):
 
         return final_item
     @property
-    def _dtw_args(self):
-        return self.hierarchical_clustering_object._dtw_args
-
-    @property
-    def _dtw_kwargs(self):
-        return self.hierarchical_clustering_object._dtw_kwargs
-
+    def dtw_function(self):
+        return self.hierarchical_clustering_object.dtw_function
 
     def __average_standard(self):
         def reduce_function(x, y):
             sequence_a, weight_a = x
             sequence_b, weight_b = y
             path_average = dgw.dtw.transformations.dtw_path_averaging(sequence_a, sequence_b, weight_a, weight_b,
-                                                                      *self._dtw_args,
-                                                                      **self._dtw_kwargs)
+                                                                      dtw_function=self.dtw_function)
 
             path_average = dgw.dtw.transformations.uniform_shrinking_to_length(path_average,
                                                                                max(no_nans_len(sequence_a),
@@ -592,7 +553,7 @@ class Cluster(object):
             sequence_a, weight_a = x
             sequence_b, weight_b = y
             avg_seq = dgw.dtw.transformations.sdtw_averaging(sequence_a, sequence_b, weight_a, weight_b,
-                                                             *self._dtw_args, **self._dtw_kwargs)
+                                                             dtw_function=self.dtw_function)
             return avg_seq, weight_a + weight_b
 
         return self.__weighted_averaging(reduce_function)

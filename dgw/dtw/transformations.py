@@ -153,7 +153,7 @@ def dtw_projection_multi(sequences, base, *args, **kwargs):
     else:
         return projected_sequences
 
-def dtw_path_averaging(sequence_a, sequence_b, weight_a=1, weight_b=1, path=None, *args, **kwargs):
+def dtw_path_averaging(sequence_a, sequence_b, weight_a=1, weight_b=1, path=None, dtw_function=dtw_std):
     """
     Averages the path computed between the two DTW sequences.
     Computes the DTW distance in order to do so.
@@ -163,15 +163,14 @@ def dtw_path_averaging(sequence_a, sequence_b, weight_a=1, weight_b=1, path=None
     :param weight_a: weight of first sequence
     :param weight_b: weight of the second sequence
     :param path: (optional) computed mapped path between the sequences. Will be computed if not provided
-    :param args: positional arguments passed into `dtw_std`
-    :param kwargs: keyword arguments to be passed into  `dtw_std`
+    :param dtw_function: function that computes DTW path between two sequences, e.g. see `parametrised_dtw_wrapper`
     :return:
     """
     sequence_a = np.asarray(sequence_a, dtype=float)
     sequence_b = np.asarray(sequence_b, dtype=float)
 
     if path is None:
-        distance, cost, path = dtw_std(sequence_a, sequence_b, dist_only=False, *args, **kwargs)
+        distance, cost, path = dtw_function(sequence_a, sequence_b, dist_only=False)
 
     path_base, path_other = path
 
@@ -179,7 +178,7 @@ def dtw_path_averaging(sequence_a, sequence_b, weight_a=1, weight_b=1, path=None
 
     return avg
 
-def sdtw_averaging(sequence_a, sequence_b, weight_a, weight_b, path=None, shrink=True, *args, **kwargs):
+def sdtw_averaging(sequence_a, sequence_b, weight_a, weight_b, path=None, shrink=True, dtw_function=dtw_std):
     """
     Implements Scaled Dynamic Time Warping Path Averaging as described in [#Niennattrakul:2009ep]
 
@@ -192,15 +191,13 @@ def sdtw_averaging(sequence_a, sequence_b, weight_a, weight_b, path=None, shrink
     :param weight_b: weight of sequence B
     :param path: computed DTW path. Will be calculated automatically if not provided
     :param shrink: if set to true the data will be shrinked to the length of maximum seq
-    :param args: args passed to `dtw_std`
-    :param kwargs: kwargs passed to `dtw_std`
     :return:
     """
     sequence_a = np.asarray(sequence_a, dtype=float)
     sequence_b = np.asarray(sequence_b, dtype=float)
 
     if path is None:
-        distance, cost, path = dtw_std(sequence_a, sequence_b, dist_only=False, *args, **kwargs)
+        distance, cost, path = dtw_function(sequence_a, sequence_b, dist_only=False)
 
     path = izip(path[0], path[1])  # Rezip this for easier traversal
 

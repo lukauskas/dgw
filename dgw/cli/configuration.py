@@ -1,4 +1,5 @@
-from dgw.dtw.distance import dtw_std
+from dgw.dtw.distance import dtw_std, parametrised_dtw_wrapper
+
 
 class Configuration(object):
     """
@@ -40,7 +41,6 @@ class Configuration(object):
             kw['k'] = self.args.slanted_band
         return kw
 
+    @property
     def dtw_function(self):
-        f = lambda x, y: dtw_std(x, y, **self.dtw_kwargs)
-        return f
-
+        return parametrised_dtw_wrapper((), self.dtw_kwargs)
