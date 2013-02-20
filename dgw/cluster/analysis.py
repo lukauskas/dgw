@@ -1,5 +1,5 @@
 from dgw.data.containers import AlignmentsData
-from dgw.dtw.distance import dtw_std
+from dgw.dtw.distance import dtw_std, no_nans_len
 
 __author__ = 'saulius'
 import fastcluster
@@ -355,6 +355,10 @@ class ClusterAssignments(object):
     def hierarchical_clustering_object(self):
         return self._hierarchical_clustering_object
 
+    @property
+    def cluster_sizes(self):
+        return pd.Series(map(len, self.clusters))
+
     def __repr__(self):
         if len(self.clusters) <= 10:
             clusters_repr = '\n'.join(map(repr, self.clusters))
@@ -508,7 +512,70 @@ class Cluster(object):
 
         return items.ix[min_index]
 
-    def average(self):
+    def average(self, method='psa'):
+        """
+        Averages the data in the cluster with respect to hierarchy.
+
+        Supports three methods:
+
+            Prioretised Shape Averaging (PSA) (method='psa')
+                as described in [#Niennattrakul:2009ep], see also `dgw.transformations.sdtw_averaging`
+            Standard average of DTW path (method='standard')
+                averages the DTW paths for each pair of nodes with the same parent.
+                The weights are determined by how many sequences were averaged into the node.
+                see `dgw.transformations.dtw_path_averaging`
+            Unweighted standard average of DTW path (method='standard-unweighted')
+                similar to the standard method above, but does not bias sequences higher up the tree
+                
+
+        .. [#Niennattrakul:2009ep] Vit Niennattrakul and Chotirat Ann Ratanamahatana "Shape averaging under Time Warping",
+           2009 6th International Conference on Electrical Engineering/Electronics, Computer,
+           Telecommunications and Information Technology (ECTI-CON)
+
+        :param method: method to use either 'psa' or 'standard'
+        :return:
+        """
+        if method == 'psa':
+            average_item = self.__average_sdtw()
+        elif method == 'standard':
+            average_item = self.__average_standard()
+        elif method == 'standard-unweighted':
+            average_item = self._average_standard_unweighted()
+        else:
+            raise ValueError('Incorrect method supplied: only \'psa\', \'standard\' or \'standard-unweighted\' supported')
+
+        df = pd.DataFrame(average_item, columns=self.hierarchical_clustering_object.data.dataset_axis)
+        return df
+
+    def _average_standard_unweighted(self):
+
+        def reduce_function(x, y):
+            path_average = dgw.dtw.transformations.dtw_path_averaging(x, y)
+            path_average = dgw.dtw.transformations.uniform_shrinking_to_length(path_average,
+                                                                               max(no_nans_len(x), no_nans_len(y)))
+            return path_average
+
+        items_ix = self.items.ix
+        map_function = lambda x: items_ix[x.id].values
+
+        final_item = _reduce_tree(self.root, reduce_function, map_function)
+
+        return final_item
+
+    def __average_standard(self):
+        def reduce_function(x, y):
+            sequence_a, weight_a = x
+            sequence_b, weight_b = y
+            path_average = dgw.dtw.transformations.dtw_path_averaging(sequence_a, sequence_b, weight_a, weight_b), \
+                   weight_a + weight_b
+
+            path_average = dgw.dtw.transformations.uniform_shrinking_to_length(path_average,
+                                                                               max(no_nans_len(x), no_nans_len(y)))
+            return path_average
+
+        return self.__weighted_averaging(reduce_function)
+
+    def __average_sdtw(self):
         # This is essentially Prioritised Shape Averaging as described in Vit Niennattrakul and Chotirat Ann Ratanamahatana
         def reduce_function(x, y):
             sequence_a, weight_a = x
@@ -516,11 +583,16 @@ class Cluster(object):
             return dgw.dtw.transformations.sdtw_averaging(sequence_a, sequence_b, weight_a, weight_b),\
                    weight_a + weight_b
 
+        return self.__weighted_averaging(reduce_function)
+
+    def __weighted_averaging(self, reduce_function):
         items_ix = self.items.ix
         map_function = lambda x: (items_ix[x.id].values, 1)
 
         final_item = _reduce_tree(self.root, reduce_function, map_function)
-        return final_item[0]
+        ans = final_item[0]
+
+        return ans
 
     def __repr__(self):
         return '<Cluster n_items={0}>'.format(self.n_items)
