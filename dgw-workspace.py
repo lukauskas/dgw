@@ -20,8 +20,14 @@ configuration = load_from_pickle(configuration_loc)
 assert(isinstance(configuration, Configuration))
 
 datasets = load_from_pickle(configuration.dataset_filename)
-dm = np.load(configuration.pairwise_distances_filename)
+try:
+    dm = np.load(configuration.pairwise_distances_filename)
+except IOError:
+    print "Pairwise distances file not found"
+    dm = None
+
 regions = load_from_pickle(configuration.parsed_regions_filename)
 
-hc = dgw.cluster.analysis.HierarchicalClustering(datasets, dm, dtw_function=configuration.dtw_function)
+if dm:
+    hc = dgw.cluster.analysis.HierarchicalClustering(datasets, dm, dtw_function=configuration.dtw_function)
 
