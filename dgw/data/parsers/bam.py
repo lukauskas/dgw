@@ -12,8 +12,6 @@ def read_alignments_for_regions(samfile, chromosome, start, end, resolution=1, e
     if (end - start) % resolution != 0:
         raise ValueError('The resolution {0} is not valid for region of length {1}'.format(resolution, end-start))
 
-
-
     # Fetch all alignments from samfile
     if extend_to is None or extend_to == 0:
         read_start = start
@@ -24,8 +22,14 @@ def read_alignments_for_regions(samfile, chromosome, start, end, resolution=1, e
     else:
         raise ValueError('extend_to should be >= 0')
 
-    alignments = samfile.fetch(chromosome, read_start, read_end)
-
+    try:
+        alignments = samfile.fetch(chromosome, read_start, read_end)
+    except ValueError:
+        if not chromosome in samfile.references:
+            raise NotInDatasetException('Location {0!r}: {1!r}-{2!r} is not in dataset'.format(chromosome, read_start,
+                                                                                               read_end))
+        else:
+            raise
     return alignments
 
 def regions_to_fasta_file(samfile_filename, regions, fasta_file_name, resolution=1, extend_to=200):
@@ -54,7 +58,13 @@ def regions_to_fasta_file(samfile_filename, regions, fasta_file_name, resolution
     fasta_file.close()
     samfile.close()
 
-def read_samfile_region(samfile, chromosome, start, end, resolution=1, extend_to=200):
+class NotInDatasetException(Exception):
+    """
+    Exception raised when an item is not in dataset
+    """
+    pass
+
+def read_samfile_region(samfile, chromosome, start, end, resolution=50, extend_to=200):
     """
         Returns read count data for a samfile.
         Chromosome, start, and end all describe a region of the data.
@@ -208,9 +218,9 @@ def __read_bam(alignments_filename, regions, resolution=25, extend_to=200):
                 peak['end'],
                 resolution=resolution,
                 extend_to=extend_to)
-        except ValueError, e:
+        except NotInDatasetException, e:
             # Most likely caused due to a chromosome not existing in BAM
-            debug('Ignoring {0!r} because of {1!r}'.format(peak, e))
+            debug('{0!r} not in dataset'.format(peak))
             continue
 
         peak_data.append(current_peak_data)
