@@ -107,7 +107,7 @@ class AlignmentsData(object):
         new_data = (self.data + 1).apply(np.log)
         return AlignmentsData(new_data, scale='log')
 
-    def plot_heatmap(self, *args, **kwargs):
+    def plot_heatmap(self, titles=None, *args, **kwargs):
         """
         Plots heatmap of the data stored in the panel.
 
@@ -116,12 +116,14 @@ class AlignmentsData(object):
         :return:
         """
         number_of_datasets = self.number_of_datasets
+        if titles is None:
+            titles = self.dataset_axis
 
-        for i, title in enumerate(self.dataset_axis):
+        for i, (ix, title) in enumerate(zip(self.dataset_axis, titles)):
             if number_of_datasets > 1:
-                plt.subplot(number_of_datasets, 1, i+1) # TODO: consider doing sublot with multiple lines
+                plt.subplot(1, number_of_datasets, i+1) # TODO: consider doing sublot with multiple lines
 
-            data_to_plot = self.dataset_xs(title, copy=False).T
+            data_to_plot = self.dataset_xs(ix, copy=False).T
             heatmap.plot(data_to_plot, *args, **kwargs)
             plt.title(title)
 
