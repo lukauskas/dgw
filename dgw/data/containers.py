@@ -125,6 +125,11 @@ class AlignmentsData(object):
             heatmap.plot(data_to_plot, *args, **kwargs)
             plt.title(title)
 
+    def plot_all(self):
+        for ix in self.items:
+            plt.plot(self.ix[ix], label=ix)
+
+
     def plot_random_sample(self, k):
         import matplotlib.pyplot as plt
         import random
