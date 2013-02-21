@@ -10,11 +10,10 @@ configuration_loc = 'dgw_config.pickle' if len(sys.argv) < 2 else sys.argv[1]
 
 def load_from_pickle(filename):
     f = open(filename, 'rb')
-    obj = pickle.load(f)
-    f.close()
-    return obj
-
-# TODO: this should load configuration object up instead
+    try:
+        return pickle.load(f)
+    finally:
+        f.close()
 
 configuration = load_from_pickle(configuration_loc)
 assert(isinstance(configuration, Configuration))
