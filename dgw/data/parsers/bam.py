@@ -235,7 +235,7 @@ def __read_bam(alignments_filename, regions, resolution=25, extend_to=200):
 
     return sdf
 
-def read_bam(alignment_filenames, regions, resolution=25, extend_to=200):
+def read_bam(alignment_filenames, regions, resolution=50, extend_to=200):
     """
     Reads provided bam files for the data in the specified regions
     :param alignment_filenames: Filenames of the files to read
