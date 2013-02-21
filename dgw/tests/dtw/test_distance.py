@@ -34,8 +34,6 @@ class TestStripNans(unittest.TestCase):
         x = np.array([[1,2,3,4,5,np.nan], [7,8,9,10,11,np.nan], [13,14,15,16,np.nan,18]], dtype=float).T
         self.assertRaises(ValueError, _strip_nans, x)
 
-
-
 class TestDTWStd(unittest.TestCase):
 
     def test_multidimensional_dtw(self):
@@ -52,6 +50,17 @@ class TestDTWStd(unittest.TestCase):
         # for a.T and b.T as well.
         euclid_distance = sqrt(117) + sqrt(149) + (sqrt(185))
         self.assertAlmostEqual(euclid_distance, dtw_std(a, b, metric='euclidean'))
+
+    def test_slanted_band_dtw(self):
+
+        a = np.array([1, 2, 3, 4, 5, 6, 7])
+        b = np.array([1, 1, 1, 1, 4, 4, 4])
+
+        # Slanted band should constrain mapping all elements exactly
+        correct_dist = 0 + 1 + 2 ** 2 + 3 ** 2 + 1 + 2 ** 2 + 3 ** 2
+        dist = dtw_std(a, b, constraint='slanted_band', k=0)
+
+        self.assertEqual(correct_dist, dist)
 
     def test_multidimensional_dtw_cosine(self):
 
