@@ -246,7 +246,7 @@ def read_bam(alignment_filenames, regions, resolution=50, extend_to=200):
     :rtype: pd.Panel
     """
     # Allow passing either a list of filenames or a single filename
-    if type(alignment_filenames) == type('str'):
+    if isinstance(alignment_filenames, basestring):
         alignment_filenames = [alignment_filenames]
 
     panel_dict = {}
