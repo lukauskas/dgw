@@ -1,12 +1,9 @@
 from itertools import izip
-from logging import debug
-
-__author__ = 'saulius'
-from dgw.dtw.distance import dtw_std
 import pandas as pd
 import numpy as np
 from math import ceil, floor, fabs
-from dgw.dtw.distance import _strip_nans
+
+from distance import dtw_std, _strip_nans
 
 def uniform_scaling_to_length(sequence, desired_length):
     """

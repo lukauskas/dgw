@@ -1,7 +1,7 @@
 from collections import defaultdict
 import numpy as np
-from dgw.data.containers import AlignmentsData
-from dgw.dtw.distance import no_nans_len
+from ..data.containers import AlignmentsData
+from ..dtw.distance import no_nans_len
 import random
 import pandas as pd
 

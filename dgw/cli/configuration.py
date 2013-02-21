@@ -1,5 +1,4 @@
-from dgw.dtw.distance import dtw_std, parametrised_dtw_wrapper
-
+from ..dtw.distance import dtw_std, parametrised_dtw_wrapper
 
 class Configuration(object):
     """

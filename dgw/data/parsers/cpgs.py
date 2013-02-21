@@ -1,4 +1,4 @@
-from dgw.data.containers import Regions
+from ..containers import Regions
 
 __author__ = 'saulius'
 import pandas as pd

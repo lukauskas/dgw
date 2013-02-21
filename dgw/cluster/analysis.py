@@ -1,14 +1,12 @@
-from dgw.data.containers import AlignmentsData
-from dgw.dtw.distance import dtw_std, no_nans_len
-
-__author__ = 'saulius'
 import fastcluster
 import scipy.cluster.hierarchy as hierarchy
 from scipy.spatial.distance import num_obs_y
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
-import dgw.dtw.transformations
+from ..data.containers import AlignmentsData
+from ..dtw.distance import dtw_std, no_nans_len
+from ..dtw import transformations
 
 def _reduce_tree(tree, reduce_func, map_function=lambda node: node.id):
     """
@@ -517,8 +515,8 @@ class Cluster(object):
     def _average_standard_unweighted(self):
 
         def reduce_function(x, y):
-            path_average = dgw.dtw.transformations.dtw_path_averaging(x, y, dtw_function=self.dtw_function)
-            path_average = dgw.dtw.transformations.uniform_shrinking_to_length(path_average,
+            path_average = transformations.dtw_path_averaging(x, y, dtw_function=self.dtw_function)
+            path_average = transformations.uniform_shrinking_to_length(path_average,
                                                                                max(no_nans_len(x), no_nans_len(y)))
             return path_average
 
@@ -536,10 +534,10 @@ class Cluster(object):
         def reduce_function(x, y):
             sequence_a, weight_a = x
             sequence_b, weight_b = y
-            path_average = dgw.dtw.transformations.dtw_path_averaging(sequence_a, sequence_b, weight_a, weight_b,
+            path_average = transformations.dtw_path_averaging(sequence_a, sequence_b, weight_a, weight_b,
                                                                       dtw_function=self.dtw_function)
 
-            path_average = dgw.dtw.transformations.uniform_shrinking_to_length(path_average,
+            path_average = transformations.uniform_shrinking_to_length(path_average,
                                                                                max(no_nans_len(sequence_a),
                                                                                    no_nans_len(sequence_b)))
             return path_average, \
@@ -552,7 +550,7 @@ class Cluster(object):
         def reduce_function(x, y):
             sequence_a, weight_a = x
             sequence_b, weight_b = y
-            avg_seq = dgw.dtw.transformations.sdtw_averaging(sequence_a, sequence_b, weight_a, weight_b,
+            avg_seq = transformations.sdtw_averaging(sequence_a, sequence_b, weight_a, weight_b,
                                                              dtw_function=self.dtw_function)
             return avg_seq, weight_a + weight_b
 

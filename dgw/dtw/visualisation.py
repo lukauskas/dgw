@@ -1,8 +1,8 @@
 import matplotlib.pyplot as plt
 import matplotlib.cm as cm
 from matplotlib.ticker import NullFormatter
-from dgw.dtw.distance import dtw_std
 
+from distance import dtw_std
 
 def plot_dtw_cost_and_path(cost_matrix, path, ax=None):
     """

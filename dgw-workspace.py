@@ -2,7 +2,7 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 import cPickle as pickle
-import dgw.cluster.analysis
+import dgw
 from dgw.cli import Configuration
 
 import sys

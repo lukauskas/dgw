@@ -1,5 +1,5 @@
 import pandas as pd
-from dgw.data.containers import Regions
+from ..containers import Regions
 
 __author__ = 'saulius'
 BED_COLUMNS = ['chromosome', 'start', 'end', 'name', 'score',

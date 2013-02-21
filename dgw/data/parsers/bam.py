@@ -6,7 +6,7 @@ import os
 import pandas as pd
 import pysam
 import numpy as np
-from dgw.data.containers import AlignmentsData, Regions
+from ..containers import AlignmentsData, Regions
 
 def read_alignments_for_regions(samfile, chromosome, start, end, resolution=1, extend_to=200):
     if (end - start) % resolution != 0:

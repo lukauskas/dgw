@@ -1,7 +1,7 @@
 __author__ = 'saulius'
 
 import pandas as pd
-from dgw.data.containers import Genes
+from ..containers import Genes
 
 def read_encode_known_genes(known_genes_filename):
     """

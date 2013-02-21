@@ -2,7 +2,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import numpy as np
 
-import dgw.data.visualisation.heatmap as heatmap
+import visualisation.heatmap as heatmap
 
 class AlignmentsDataIndexer(object):
     """
