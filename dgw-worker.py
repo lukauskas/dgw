@@ -21,13 +21,16 @@ from dgw.cli import StoreFilenameAction, StoreUniqueFilenameAction, Configuratio
 def argument_parser():
 
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    parser.add_argument('-r', '--regions', metavar='regions_of_interest.bed', action=StoreFilenameAction,
-                        help='A BED file listing genome regions that will be processed', required=True)
-    parser.add_argument('-d', '--datasets', metavar='dataset.bam', nargs='+', action=StoreUniqueFilenameAction,
-                        help='One or more datasets to be analysed using DGW. Must be BAM files.', required=True)
 
-    parser.add_argument('-p', '--prefix', help='Prefix of the output files generated '
-                                               '(defaults to \'dgw\')')
+
+    parser.add_argument('-r', '--regions', metavar='regions_of_interest.bed', action=StoreFilenameAction,
+                        help='A BED file listing genome regions that will be processed')
+    parser.add_argument('-d', '--datasets', metavar='dataset.bam', nargs='+', action=StoreUniqueFilenameAction,
+                        help='One or more datasets to be analysed using DGW. Must be BAM files.')
+    parser.add_argument('-pd', '--processed-dataset', metavar='processed_dataset.pd', action=StoreFilenameAction,
+                        help='Dataset that has already been processed. E.g. from a previous run')
+
+    parser.add_argument('-p', '--prefix', help='Prefix of the output files generated ', default='dgw')
 
     parser.add_argument('--truncate-regions', metavar='X', type=int, help='Only use first X rows of regions '
                                                                            'rather than the full dataset')
@@ -68,13 +71,22 @@ def read_regions(regions_filename, truncate_regions):
 
     return regions, total_len, used_len
 
-def read_datasets(dataset_filenames, regions, resolution, extend_to):
-    return read_bam(dataset_filenames, regions, resolution, extend_to)
+def read_datasets(configuration, regions):
+    if configuration.args.datasets:
+        return read_bam(configuration.args.datasets, regions, configuration.args.resolution, configuration.args.extend_to)
+    else:
+        return deserialise(configuration.args.processed_dataset)
 
 def serialise(object, filename):
-    f = open(filename, 'w')
+    f = open(filename, 'wb')
     pickle.dump(object, f, protocol=pickle.HIGHEST_PROTOCOL)
     f.close()
+
+def deserialise(filename):
+    f = open(filename, 'rb')
+    obj = pickle.load(f)
+    f.close()
+    return f
 
 def compare_datasets_and_regions(regions, datasets):
     missing_regions = regions.regions_not_in_dataset(datasets)
@@ -90,41 +102,50 @@ def main():
     parser = argument_parser()
 
     args = parser.parse_args()
-    if args.prefix is None:
-        args.prefix = 'dgw'
+    if (args.regions or args.datasets) and args.processed_dataset:
+        parser.error('Must specify either both --regions and --datasets or --processed_dataset only.')
+    elif not args.processed_dataset:
+        if not args.regions or not args.datasets:
+            parser.error('Must specify both --regions and --datasets')
 
     configuration = Configuration(args)
 
     # --- pre-processing ------------------------
-    print '> Reading regions from {0!r} ....'.format(args.regions)
-    regions, total_regions, used_regions = read_regions(args.regions, args.truncate_regions)
+    if args.regions:
+        print '> Reading regions from {0!r} ....'.format(args.regions)
+        regions, total_regions, used_regions = read_regions(args.regions, args.truncate_regions)
 
-    # --- saving of regions ----------
-    print '> Saving regions to {0}'.format(configuration.parsed_regions_filename)
-    serialise(regions, configuration.parsed_regions_filename)
+        # --- saving of regions ----------
+        print '> Saving regions to {0}'.format(configuration.parsed_regions_filename)
+        serialise(regions, configuration.parsed_regions_filename)
+    else:
+        regions = None
 
     print '> Reading datasets ...'
-    datasets = read_datasets(args.datasets, regions, args.resolution, args.extend_to)
+    datasets = read_datasets(configuration, regions)
 
-    if args.output_raw_dataset:
-        print '> Saving raw dataset to {0}'.format(configuration.raw_dataset_filename)
-        serialise(datasets, configuration.raw_dataset_filename)
+    if args.datasets:
+        if args.output_raw_dataset:
+            print '> Saving raw dataset to {0}'.format(configuration.raw_dataset_filename)
+            serialise(datasets, configuration.raw_dataset_filename)
 
-    datasets = datasets.to_log_scale()
+        datasets = datasets.to_log_scale()
 
-    missing_regions = compare_datasets_and_regions(regions, datasets)
-    serialise(missing_regions, configuration.missing_regions_filename)
+        missing_regions = compare_datasets_and_regions(regions, datasets)
+        serialise(missing_regions, configuration.missing_regions_filename)
 
-    if len(missing_regions) > 0:
-        print "> There were {0} regions that are in input file, but not in dataset.".format(len(missing_regions))
-        print "> These regions were saved to are saved to file {0}".format(configuration.missing_regions_filename)
+        if len(missing_regions) > 0:
+            print "> There were {0} regions that are in input file, but not in dataset.".format(len(missing_regions))
+            print "> These regions were saved to are saved to file {0}".format(configuration.missing_regions_filename)
 
-        used_regions -= missing_regions
+            used_regions -= missing_regions
 
-    # --- Saving of datasets -------------------
-    print '> Saving datasets to {0}'.format(configuration.dataset_filename)
-    # TODO: Pickle is likely to fuck-up here (not 64bit safe), and this is not strictly necessary!
-    serialise(datasets, configuration.dataset_filename)
+        # --- Saving of datasets -------------------
+        print '> Saving datasets to {0}'.format(configuration.dataset_filename)
+        # TODO: Pickle is likely to fuck-up here (not 64bit safe), and this is not strictly necessary!
+        serialise(datasets, configuration.dataset_filename)
+    else:
+        print "> Not converting dataset to log scale as processed dataset already provided"
 
     if not args.blank:
         # --- actual work ---------------------------

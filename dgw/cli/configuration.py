@@ -27,8 +27,10 @@ class Configuration(object):
 
     @property
     def parsed_regions_filename(self):
-        return '{0}_regions.pd'.format(self.args.prefix)
-
+        if self.args.regions:
+            return '{0}_regions.pd'.format(self.args.prefix)
+        else:
+            return None
     @property
     def dataset_filename(self):
         return '{0}_datasets.pd'.format(self.args.prefix)
@@ -42,7 +44,10 @@ class Configuration(object):
 
     @property
     def missing_regions_filename(self):
-        return '{0}_missing_regions.pd'.format(self.args.prefix)
+        if self.args.regions:
+            return '{0}_missing_regions.pd'.format(self.args.prefix)
+        else:
+            return None
 
     @property
     def dtw_kwargs(self):
