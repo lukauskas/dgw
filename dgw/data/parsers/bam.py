@@ -19,17 +19,32 @@ def _alignments_that_fall_within_a_region(samfile, chromosome, start, end, exten
     :param extend_to:
     :return:
     """
+    if start < 0:
+        raise ValueError('Read start shoult be greater than 0, {0} given'.format(start))
+    
     # Fetch all alignments from samfile
     if extend_to is None or extend_to == 0:
         read_start = start
         read_end = end
     elif extend_to > 0:
-        read_start = start-extend_to+1 # +1 because extended reads should overlap with at least one pixel
+        read_start = max(start - extend_to + 1, 0) # +1 because extended reads should overlap with at least one pixel
         read_end = end + extend_to-1
     else:
         raise ValueError('extend_to should be >= 0')
 
-    alignments = samfile.fetch(chromosome, read_start, read_end)
+    try:
+        # Converting to list here as otherwise exception wont be caught
+        alignments = list(samfile.fetch(chromosome, read_start, read_end))
+    except ValueError:
+        if extend_to > 0:
+            chromosome_length = samfile.lengths[samfile.references.index(chromosome)]
+            if end <= chromosome_length < read_end:  # If the exception was caused by extending
+                alignments = samfile.fetch(chromosome, read_start, chromosome_length)
+            else:
+                raise
+        else:
+            raise
+
     return alignments
 
 def _read_samfile_region(samfile, chromosome, start, end, resolution=50, extend_to=200):
@@ -60,7 +75,6 @@ def _read_samfile_region(samfile, chromosome, start, end, resolution=50, extend_
     # Fetch all alignments from SamFile
     alignments = _alignments_that_fall_within_a_region(samfile, chromosome, start, end, extend_to=extend_to)
     for alignment in alignments:
-        assert(alignment.aend > alignment.pos)
 
         if extend_to is not None and extend_to > 0:
             alignment_start, alignment_end = _extend_read_to(alignment, extend_to)
@@ -150,10 +164,13 @@ def read_bam(alignment_filenames, regions, resolution=50, extend_to=200):
         data_arr = np.empty((max_len, len(samfiles)))
 
         for i, samfile in enumerate(samfiles):
-            region_data = _read_samfile_region(samfile,
-                                               chromosome, start, end,
-                                               resolution=resolution,
-                                               extend_to=extend_to)
+            try:
+                region_data = _read_samfile_region(samfile,
+                                                   chromosome, start, end,
+                                                   resolution=resolution,
+                                                   extend_to=extend_to)
+            except Exception, e:
+                raise IOError('Could not read {0}:{1}-{2} from {4}, got: {3!r}'.format(chromosome, start, end, e, alignment_filenames[i]))
 
             padding = [np.nan] * (max_len - len(region_data))
             data_arr[:, i] = np.concatenate((region_data, padding))

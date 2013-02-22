@@ -18,11 +18,45 @@ class StubAlignedRead(object):
 
 class StubSamfile(object):
     __fetch_response = None
+    __references = None
+    __lengths = None
 
-    def __init__(self, fetch_response):
+    def __init__(self, fetch_response, references, lengths):
+        """
+        Simulates `Samfile` behaviour.
+        Returns `fetch_response` for all responses that satisfy the following criterion:
+           `chromosome` is in `references`,
+           0 <= `start`, end <= length_of_chromosome
+           where length_of_chromosome = lengths[references.index('chromosome')]
+
+        :param fetch_response: the response that will be returned
+        :param references: a list of references (chromosomes) in the genome
+        :param lengths: of these references
+        :return:
+        """
         self.__fetch_response = fetch_response
+        self.__references = references
+        self.__lengths = lengths
+
+    @property
+    def references(self):
+        return self.__references
+
+    @property
+    def lengths(self):
+        return self.__lengths
 
     def fetch(self, chromosome, start, end):
+        if chromosome not in self.references:
+            raise ValueError('Invalid reference')
+
+        chromosome_length = self.lengths[self.references.index(chromosome)]
+
+        if start < 0:
+            raise ValueError('Start out of bounds {0} < 0'.format(start))
+        elif end > chromosome_length:
+            raise ValueError('End out of bounds {0} > {1}'.format(end, chromosome_length))
+
         for item in self.__fetch_response:
             if item.pos < end and item.aend >= start:
                 yield item
@@ -63,8 +97,7 @@ class TestReadCountForRegionReading(unittest.TestCase):
         #01234567890123456789012345678901234
         #..........AAAAAAAAAABBBBBBBBBB.....
         #.....CCCCCCCCCC..........DDDDDDDDDD
-
-        self.samfile = StubSamfile(aligned_reads)
+        self.samfile = StubSamfile(aligned_reads, ['chr1', 'chr2'], [50, 20])
 
     def test_non_extended_read_no_binning(self):
         peak_data = bam_parser._read_samfile_region(self.samfile, 'chr1', 3, 40, resolution=1, extend_to=None)
@@ -131,6 +164,8 @@ class TestReadCountForRegionReading(unittest.TestCase):
         correct = np.array([0,0,0])
         assert_array_equal(correct, peak_data)
 
+    def test_extended_read_no_binning_extended_boundaries_edge_case(self):
+
         #[012345]67890123456789012345678901234567890123
         #[.....a]aaaaAAAAAAAAAA........................
         #[......].........bbbbbBBBBBBBBBB..............
@@ -156,9 +191,13 @@ class TestReadCountForRegionReading(unittest.TestCase):
         #...............bbb[bbBBBBB|BBBBB..|.......].....
         #.....CCCCCCCCCCccc[cc.....|DDDDDDD|DDDdddd]d....
 
-        peak_data = bam_parser._read_samfile_region(self.samfile, 'chr1',18, 39, resolution=7, extend_to=15)
+        peak_data = bam_parser._read_samfile_region(self.samfile, 'chr1', 18, 39, resolution=7, extend_to=15)
         correct = np.array([3,2,1])
         assert_array_equal(correct, peak_data)
+
+    def test_read_samfile_region_raises_exception_when_read_region_is_bad(self):
+        self.assertRaises(ValueError, bam_parser._read_samfile_region, self.samfile, 'chr1', -20, 20, resolution=4, extend_to=15)
+        self.assertRaises(ValueError, bam_parser._read_samfile_region, self.samfile, 'chr1', 10, 60, resolution=4, extend_to=15)
 
 if __name__ == '__main__':
     unittest.main()
