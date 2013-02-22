@@ -20,8 +20,8 @@ def _alignments_that_fall_within_a_region(samfile, chromosome, start, end, exten
     :return:
     """
     if start < 0:
-        raise ValueError('Read start shoult be greater than 0, {0} given'.format(start))
-    
+        raise ValueError('Read start should be greater than 0, {0} given'.format(start))
+
     # Fetch all alignments from samfile
     if extend_to is None or extend_to == 0:
         read_start = start
