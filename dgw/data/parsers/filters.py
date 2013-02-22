@@ -1,5 +1,5 @@
 import numpy as np
-from ...dtw.distance import _strip_nans
+from pandas.core.nanops import nansum, nanmax
 
 class DataFilter(object):
     """
@@ -22,9 +22,7 @@ class MinNumberOfReadsFilter(DataFilter):
         self._min_number_of_reads = min_number_of_reads
 
     def is_valid(self, data_row):
-        no_nans_row = _strip_nans(data_row)
-        total_number_of_reads = np.sum(no_nans_row)
-        return total_number_of_reads >= self._min_number_of_reads
+        return nansum(data_row) >= self._min_number_of_reads
 
 class HighestPileUpFilter(DataFilter):
 
@@ -34,7 +32,4 @@ class HighestPileUpFilter(DataFilter):
         self._highest_pileup_threshold = highest_pileup_threshold
 
     def is_valid(self, data_row):
-        no_nans_row = _strip_nans(data_row)
-        highest_pileup = np.max(no_nans_row)
-
-        return highest_pileup >= self._highest_pileup_threshold
+        return nanmax(data_row) >= self._highest_pileup_threshold

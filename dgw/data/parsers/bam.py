@@ -1,4 +1,7 @@
 # coding=utf-8
+from itertools import imap
+from dgw.data.parsers.filters import MinNumberOfReadsFilter
+
 __author__ = 'saulius'
 from logging import debug
 import os
@@ -112,14 +115,17 @@ def _extend_read_to(aligned_read, extend_to):
 
     return alignment_start, alignment_end
 
-def read_bam(alignment_filenames, regions, resolution=50, extend_to=200):
+def read_bam(alignment_filenames, regions, resolution=50, extend_to=200, data_filters=[MinNumberOfReadsFilter(1)],
+            output_removed_indices=False):
     """
     Reads provided bam files for the data in the specified regions
     :param alignment_filenames: Filenames of the files to read
     :param regions:         Regions to be explored within these files
     :param resolution:      Resolution at which to read the files
     :param extend_to:       Reads will be extended to extend_to base pairs of length, if not None
-    :return:
+    :param data_filters:    Data filters that will be run on data to determine whether to include the value to list or not
+    :param output_removed_indices: function outputs both indices in regions that were not found in dataset, and regions removed by filters
+    :return: dataset, [regions_not_in_dataset, regions_removed_by_filter] -- the latter two only if output_removed_indices is set
     :rtype: pd.Panel
     """
     # Allow passing either a list of filenames or a single filename
@@ -148,6 +154,8 @@ def read_bam(alignment_filenames, regions, resolution=50, extend_to=200):
     # TODO: make sure the regions removed are somewhere accounted for
     dataset_regions = regions[regions.chromosome.isin(references)]
 
+    indices_not_in_dataset = regions.index - dataset_regions.index
+
     # Make sure the regions play nicely with the resolution
     dataset_regions = dataset_regions.clip_to_resolution(resolution)
 
@@ -175,8 +183,19 @@ def read_bam(alignment_filenames, regions, resolution=50, extend_to=200):
             padding = [np.nan] * (max_len - len(region_data))
             data_arr[:, i] = np.concatenate((region_data, padding))
 
+        valid = all(imap(lambda f: f.is_valid(data_arr), data_filters))
+        if not valid:
+            continue
+
         df = pd.DataFrame(data_arr, columns=columns)
         dataset[index] = df
 
     panel = pd.Panel(dataset)
-    return AlignmentsData(panel)
+    data = AlignmentsData(panel)
+
+    filtered_out_indices = dataset_regions.index - data.items
+
+    if output_removed_indices:
+        return data, indices_not_in_dataset, filtered_out_indices
+    else:
+        return data
