@@ -49,6 +49,13 @@ class Configuration(object):
             return None
 
     @property
+    def filtered_regions_filename(self):
+        if self.args.regions:
+            return '{0}_filtered_regions.pd'.format(self.args.prefix)
+        else:
+            return None
+
+    @property
     def dtw_kwargs(self):
         kw = {'metric': self.args.metric}
         if self.args.slanted_band is not None:

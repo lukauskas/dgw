@@ -14,7 +14,7 @@ import cPickle as pickle
 from datetime import datetime
 
 from dgw.data.containers import Regions
-from dgw.data.parsers import read_bam
+from dgw.data.parsers import read_bam, HighestPileUpFilter
 from dgw.dtw.parallel import parallel_pdist
 from dgw.cli import StoreFilenameAction, StoreUniqueFilenameAction, Configuration
 
@@ -54,6 +54,9 @@ def argument_parser():
     parser.add_argument('--output-raw-dataset', action='store_const', const=True, default=False,
                         help='Output raw dataset as well as normalised one')
 
+    parser.add_argument('-mp', '--min-pileup', metavar='H', type=int, default=10,
+                        help='Only cluster these regions that have at least one pileup column of H or more reads. ')
+
     return parser
 
 #-- Actual execution of the program
@@ -73,7 +76,16 @@ def read_regions(regions_filename, truncate_regions):
 
 def read_datasets(configuration, regions):
     if configuration.args.datasets:
-        return read_bam(configuration.args.datasets, regions, configuration.args.resolution, configuration.args.extend_to)
+        if configuration.args.min_pileup:
+            data_filters = [HighestPileUpFilter(configuration.args.min_pileup)]
+        else:
+            data_filters = []
+
+        return read_bam(configuration.args.datasets, regions,
+                        resolution=configuration.args.resolution,
+                        extend_to=configuration.args.extend_to,
+                        data_filters=data_filters,
+                        output_removed_indices=True)
     else:
         return deserialise(configuration.args.processed_dataset)
 
@@ -87,12 +99,6 @@ def deserialise(filename):
     obj = pickle.load(f)
     f.close()
     return f
-
-def compare_datasets_and_regions(regions, datasets):
-    missing_regions = regions.regions_not_in_dataset(datasets)
-    print '> {0} regions were not found in the dataset'.format(len(missing_regions))
-
-    return missing_regions
 
 def binomial_coefficent(n, k):
     return factorial(n) / (factorial(k) * factorial(n-k))
@@ -122,7 +128,7 @@ def main():
         regions = None
 
     print '> Reading datasets ...'
-    datasets = read_datasets(configuration, regions)
+    datasets, missing_regions, filtered_regions = read_datasets(configuration, regions)
 
     if args.datasets:
         if args.output_raw_dataset:
@@ -131,14 +137,18 @@ def main():
 
         datasets = datasets.to_log_scale()
 
-        missing_regions = compare_datasets_and_regions(regions, datasets)
-        serialise(missing_regions, configuration.missing_regions_filename)
-
         if len(missing_regions) > 0:
-            print "> There were {0} regions that are in input file, but not in dataset.".format(len(missing_regions))
-            print "> These regions were saved to are saved to file {0}".format(configuration.missing_regions_filename)
+            print "> {0} regions were not found in the dataset, they were saved to {1}".format(len(missing_regions),
+                                                                                configuration.missing_regions_filename)
+            serialise(missing_regions, configuration.missing_regions_filename)
+        if len(filtered_regions) > 0:
+            print "> {0} regions were filtered out from dataset due to --min-pileup constraint, they were saved to {1}".format(len(filtered_regions),
+                                                                                           configuration.filtered_regions_filename)
+            serialise(filtered_regions, configuration.missing_regions_filename)
 
-            used_regions -= missing_regions
+        used_regions = len(datasets.items)
+        if len(missing_regions) > 0 or len(filtered_regions) > 0:
+            print '> {0} regions remaining'.format(used_regions)
 
         # --- Saving of datasets -------------------
         print '> Saving datasets to {0}'.format(configuration.dataset_filename)
