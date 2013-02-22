@@ -22,8 +22,8 @@ def main():
 
     # Reading genes
     genes = Genes.from_encode_known_genes(input_filename)
-    genes.regions_around_transcription_start_sites(args.window)
-    genes.to_bed(args.output)
+    tss_regions = genes.regions_around_transcription_start_sites(args.window)
+    tss_regions.to_bed(args.output)
 
 if __name__ == '__main__':
     main()
