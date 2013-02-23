@@ -87,6 +87,8 @@ class AlignmentsData(object):
     def ix(self):
         return AlignmentsDataIndexer(self.data.ix)
 
+    def __getitem__(self, item):
+        return self.data.__getitem__(item)
 
     def head(self, n=5):
         return self.ix[:n]
