@@ -182,7 +182,7 @@ class HierarchicalClustering(object):
 
     __tree = None
 
-    def __init__(self, data, condensed_distance_matrix, linkage_matrix=None, dtw_function=dtw_std, prototyping_method='psa'):
+    def __init__(self, data, condensed_distance_matrix, linkage_matrix=None, dtw_function=dtw_std, prototyping_method='standard'):
         """
         Initialises hierarchical clustering analyser.
         Handles linkage calculation, dendrogram plotting and prototype generation.
@@ -421,6 +421,11 @@ class ClusterAssignments(object):
     @property
     def n(self):
         return len(self._cluster_roots)
+
+    @property
+    def dataset_names(self):
+        return self.hierarchical_clustering_object.dataset_names
+
     @property
     def cut_depth(self):
         return self._cut_depth

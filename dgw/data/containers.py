@@ -109,7 +109,7 @@ class AlignmentsData(object):
         new_data = (self.data + 1).apply(np.log)
         return AlignmentsData(new_data, scale='log')
 
-    def plot_heatmap(self, titles=None, *args, **kwargs):
+    def plot_heatmap(self, titles=None, horizontal_grid=True, parent_subplot_spec=None, *args, **kwargs):
         """
         Plots heatmap of the data stored in the panel.
 
@@ -117,13 +117,30 @@ class AlignmentsData(object):
         :param kwargs: kwargs to be passed into `data.visualisation.heatmap.plot`
         :return:
         """
+        import matplotlib.pyplot as plt
+        from matplotlib import gridspec
+
         number_of_datasets = self.number_of_datasets
         if titles is None:
             titles = self.dataset_axis
 
+        if number_of_datasets > 1:
+            if horizontal_grid:
+                grid = (1, number_of_datasets)
+            else:
+                grid = (number_of_datasets, 1)
+
+            if not parent_subplot_spec:
+                gs = gridspec.GridSpec(*grid)
+            else:
+                gs = gridspec.GridSpecFromSubplotSpec(*grid, subplot_spec=parent_subplot_spec)
+
         for i, (ix, title) in enumerate(zip(self.dataset_axis, titles)):
             if number_of_datasets > 1:
-                plt.subplot(1, number_of_datasets, i+1) # TODO: consider doing sublot with multiple lines
+                t_gs = gs[i]
+                plt.subplot(t_gs)
+            elif parent_subplot_spec:
+                plt.subplot(parent_subplot_spec)
 
             data_to_plot = self.dataset_xs(ix, copy=False).T
             heatmap.plot(data_to_plot, *args, **kwargs)
