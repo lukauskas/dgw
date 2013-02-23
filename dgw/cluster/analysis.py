@@ -422,6 +422,9 @@ class ClusterAssignments(object):
     def n(self):
         return len(self._cluster_roots)
 
+    def __len__(self):
+        return self.n
+    
     @property
     def dataset_names(self):
         return self.hierarchical_clustering_object.dataset_names
