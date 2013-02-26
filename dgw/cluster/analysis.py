@@ -17,14 +17,17 @@ def dendrogram_with_heatmap(hc):
     dendrogram_gs = gs[0]
     heatmap_gs = gs[1]
 
-    plt.subplot(dendrogram_gs)
+    ax_dendrogram = plt.subplot(dendrogram_gs)
     dendrogram_dict = hc.dendrogram(orientation='right', get_leaves=True, color_threshold=0)
     leaves = dendrogram_dict['leaves']
+    debug(plt.gca().get_ylim())
 
     index = hc.data.items[leaves]
 
     debug('Plotting heatmap')
-    hc.data.plot_heatmap(subplot_spec=heatmap_gs, no_major_axis=True, sort_by=index)
+    DENDROGRAM_SCALE = 10  # scipy.cluster.hierarachy.dendrogram scales all y axis values by tenfold for some reason
+    hc.data.plot_heatmap(subplot_spec=heatmap_gs, no_y_axis=True, sort_by=index, share_y_axis=ax_dendrogram,
+                         scale_y_axis=DENDROGRAM_SCALE)
 
 
 class ClusterNodeWithPrototype(object, hierarchy.ClusterNode):

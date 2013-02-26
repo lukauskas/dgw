@@ -19,12 +19,12 @@ def raw_plot_data_as_heatmap(data_frame, ax=None, *args, **kwargs):
     cmap = matplotlib.cm.get_cmap('jet')
     cmap.set_bad('#FFFFFF', 1.0)
 
-    result = ax.imshow(masked_arr, cmap=cmap, aspect="auto", interpolation='nearest', *args, **kwargs)
+    result = ax.imshow(masked_arr, origin='lower', cmap=cmap, aspect="auto", interpolation='nearest', *args, **kwargs)
 
     return result
 
 def plot(alignments, clip_colors=True, titles=None, horizontal_grid=True,
-         no_major_axis=False, sort_by='length', subplot_spec=None):
+         no_y_axis=False, sort_by='length', subplot_spec=None, share_y_axis=None, scale_y_axis=None):
     """
 
     :param alignments: `AlignmentsData` object
@@ -32,9 +32,11 @@ def plot(alignments, clip_colors=True, titles=None, horizontal_grid=True,
                         Equivalent of setting the top 0.1% values in the dataset to the last one below top 0.1%
     :param titles: Titles of the heatmaps. If set to none `alignments.dataset_axis` will be used
     :param horizontal_grid: Whether to plot heatmap on a horizontal grid
-    :param no_major_axis: Will not plot the major (items) axis.
+    :param no_y_axis: Will not plot the major (items) axis.
     :param sort_by: Sort values by 'length' or supplied index.
     :param subplot_spec: SubplotSpec of the suplot to plot hte heatmaps in. See `matplotlib.gridspec` package.
+    :param share_y_axis: if not None, the plot will share the major (items) axis with the specified axis
+    :param scale_y_axis: plot will scale the y axis by the specified number (linearly) if set.
     :return:
     """
     import matplotlib.pyplot as plt
@@ -48,7 +50,6 @@ def plot(alignments, clip_colors=True, titles=None, horizontal_grid=True,
     sample_data_frame = alignments.dataset_xs(alignments.dataset_axis[0], copy=False).T
     lengths = sample_data_frame.apply(no_nans_len, axis=1)
     max_len = lengths.max()
-    debug('Max len: {0}'.format(max_len))
 
     # Sorting
     if isinstance(sort_by, pd.Index):
@@ -104,29 +105,46 @@ def plot(alignments, clip_colors=True, titles=None, horizontal_grid=True,
         else:
             gs = gridspec.GridSpecFromSubplotSpec(*grid, subplot_spec=subplot_spec, **spacing_kwargs)
 
-
-
     # Main drawing loop
+    first_axis = None
+    extent = None
+    if scale_y_axis:
+        extent = [0, max_len, 0, alignments.number_of_items * scale_y_axis] # Multiply by 10 as that is what matplotlib's dendrogram returns
+
     for i, (ix, title) in enumerate(zip(alignments.dataset_axis, titles)):
         if number_of_datasets > 1:
             t_gs = gs[i]
-            plt.subplot(t_gs)
-        elif subplot_spec: # If one dataset only, still change to correct subset
+            if i == 0:
+                if not share_y_axis:
+                    first_axis = plt.subplot(t_gs)
+                    share_y_axis = first_axis
+                else:
+                    first_axis = plt.subplot(t_gs, sharey=share_y_axis)
+            else:
+                # Remember to share axes
+                plt.subplot(t_gs, sharex=first_axis, sharey=share_y_axis)
+
+        elif subplot_spec:  # If one dataset only, still change to correct subset
             plt.subplot(subplot_spec)
 
         data_to_plot = alignments.dataset_xs(ix, copy=False).T
         # Cut most of the columns that are NaNs out of the plot
         data_to_plot = data_to_plot[data_to_plot.columns[:max_len]]
 
-        result = raw_plot_data_as_heatmap(data_to_plot, vmin=min_value, vmax=max_value)
+        result = raw_plot_data_as_heatmap(data_to_plot, vmin=min_value, vmax=max_value, extent=extent)
+        debug(plt.gca().get_ylim())
+        debug(plt.gca().get_xlim())
         # Remove redundant axes
         if horizontal_grid:
-            if i > 0 or no_major_axis:
+            if i > 0 or no_y_axis:
                 plt.gca().get_yaxis().set_visible(False)
         else:
             # Leave only last axis
-            if i + 1 < number_of_datasets or no_major_axis:
+            if i + 1 < number_of_datasets:
                 plt.gca().get_xaxis().set_visible(False)
+
+            if no_y_axis:
+                plt.gca().get_yaxis().set_visible(False)
 
         plt.title(title)
 
