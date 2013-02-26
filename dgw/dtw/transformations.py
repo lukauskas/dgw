@@ -1,9 +1,12 @@
 from itertools import izip
+from logging import debug
 import pandas as pd
 import numpy as np
 from math import ceil, floor, fabs
+from dgw.data.containers import AlignmentsData
 
-from distance import dtw_std, _strip_nans
+from distance import dtw_std, _strip_nans, no_nans_len
+
 
 def uniform_scaling_to_length(sequence, desired_length):
     """
@@ -95,22 +98,34 @@ def uniform_shrinking_to_length(sequence, desired_length):
 
 
 
-def dtw_projection(sequence, base_sequence, *args, **kwargs):
+def dtw_projection(sequence, base_sequence, dtw_function=dtw_std):
     """
     Projects given sequence onto a base time series using Dynamic Time Warping
     :param sequence: the sequence that will be projected onto base_sequence
     :param base_sequence: base sequence to project onto
+    :param dtw_function: DTW function to use
     :return: new time series of length base containing x projected on it
     """
-    distance, cost, path = dtw_std(base_sequence, sequence, dist_only=False, *args, **kwargs)
+    base_sequence = np.asarray(base_sequence)
+    sequence = np.asarray(sequence)
+
+    distance, cost, path = dtw_function(base_sequence, sequence, dist_only=False)
 
     path_base, path_other = path
 
-    current_sums = np.zeros(len(base_sequence))
-    current_counts = np.zeros(len(base_sequence))
+    current_sums = np.zeros(base_sequence.shape)
+    current_counts = np.zeros(base_sequence.shape)
 
-    current_sums[np.isnan(base_sequence)] = np.nan
-    current_counts[np.isnan(base_sequence)] = np.nan
+    nnl = no_nans_len(base_sequence)
+
+    try:
+        filler = [np.nan] * base_sequence.shape[1]
+    except IndexError:
+        filler = np.nan
+
+    for i in range(nnl, len(base_sequence)):
+        current_sums[i] = filler
+        current_counts[i] = filler
 
     for mapped_i, i in zip(path_base, path_other):
         # Go through the path and sum all points that map to the base location i together
@@ -119,36 +134,34 @@ def dtw_projection(sequence, base_sequence, *args, **kwargs):
 
     current_average = current_sums / current_counts
 
+    # Append NaNs as needed
+    nans_count = len(base_sequence) - len(base_sequence)
+    if nans_count:
+        current_average = np.concatenate((current_average,
+                                          [[np.nan] * base_sequence.shape[-1]] * (nans_count)))
+
     return current_average
 
-def dtw_projection_multi(sequences, base, *args, **kwargs):
+def dtw_projection_multi(alignments, base, *args, **kwargs):
     """
-    Projects given sequences onto the base.
-
-    :param base:
-    :type base: array-like
-    :param data_frame:
-    :type data_frame: pd.DataFrame or np.ndarray
-    :param args:
-    :param kwargs:
-    :return:
-    :rtype: pd.DataFrame or np.ndarray
+    DTW Projects given alignments onto the given base
     """
-
     def _projection(sequence):
         return dtw_projection(sequence, base, *args, **kwargs)
 
     index = None
-    if isinstance(sequences, pd.DataFrame):
-        index = sequences.index
-        sequences = sequences.values
+    if isinstance(alignments, pd.DataFrame):
+        index = alignments.index
+        sequences = alignments.values
 
-    projected_sequences = map(_projection, sequences)
+    new_data = {}
 
-    if index is not None:
-        return pd.DataFrame(projected_sequences, index=index)
-    else:
-        return projected_sequences
+    for index in alignments.items:
+        item = alignments.ix[index]
+        projection = dtw_projection(item, base, *args, **kwargs)
+        new_data[index] = pd.DataFrame(projection, index=range(len(base)), columns=item.columns)
+
+    return AlignmentsData(pd.Panel(new_data))
 
 def dtw_path_averaging(sequence_a, sequence_b, weight_a=1, weight_b=1, path=None, shrink=True, dtw_function=dtw_std):
     """
