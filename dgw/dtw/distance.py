@@ -33,7 +33,7 @@ def no_nans_len(sequence):
     """
     return len(_strip_nans(sequence))
 
-def parametrised_dtw_wrapper(dtw_args, dtw_kwargs):
+def parametrised_dtw_wrapper(*dtw_args, **dtw_kwargs):
     """
     Returns a wrapper around DTW function with args dtw_args and kwargs dtw_kwargs
     :param dtw_args: positional parameters of DTW

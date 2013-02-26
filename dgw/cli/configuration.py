@@ -65,4 +65,4 @@ class Configuration(object):
 
     @property
     def dtw_function(self):
-        return parametrised_dtw_wrapper((), self.dtw_kwargs)
+        return parametrised_dtw_wrapper(**self.dtw_kwargs)
