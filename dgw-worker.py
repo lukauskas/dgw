@@ -6,6 +6,7 @@ Designed to be run on a multi-core machine with a lot of memory, e.g. a supercom
 
 """
 import argparse
+import logging
 from math import factorial
 import os
 import numpy as np
@@ -56,6 +57,9 @@ def argument_parser():
 
     parser.add_argument('-mp', '--min-pileup', metavar='H', type=int, default=10,
                         help='Only cluster these regions that have at least one pileup column of H or more reads. ')
+
+    parser.add_argument('-v', '--verbose', help='Turns on displaying of debug messages', action='store_const',
+                        const=True, default=False)
 
     return parser
 
@@ -113,6 +117,9 @@ def main():
     elif not args.processed_dataset:
         if not args.regions or not args.datasets:
             parser.error('Must specify both --regions and --datasets')
+
+    if args.verbose:
+        logging.root.setLevel(logging.DEBUG)
 
     configuration = Configuration(args)
 
