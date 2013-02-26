@@ -9,6 +9,24 @@ from ..data.containers import AlignmentsData
 from ..dtw.distance import dtw_std, no_nans_len
 from ..dtw import transformations
 
+def dendrogram_with_heatmap(hc):
+    import matplotlib.pyplot as plt
+    import matplotlib.gridspec as gridspec
+
+    gs = gridspec.GridSpec(1, 2, wspace=0)
+    dendrogram_gs = gs[0]
+    heatmap_gs = gs[1]
+
+    plt.subplot(dendrogram_gs)
+    dendrogram_dict = hc.dendrogram(orientation='right', get_leaves=True, color_threshold=0)
+    leaves = dendrogram_dict['leaves']
+
+    index = hc.data.items[leaves]
+
+    debug('Plotting heatmap')
+    hc.data.plot_heatmap(subplot_spec=heatmap_gs, no_major_axis=True, sort_by=index)
+
+
 class ClusterNodeWithPrototype(object, hierarchy.ClusterNode):
     _prototype = None
 
@@ -182,7 +200,7 @@ class HierarchicalClustering(object):
 
     __tree = None
 
-    def __init__(self, data, condensed_distance_matrix, linkage_matrix=None, dtw_function=dtw_std, prototyping_method='standard'):
+    def __init__(self, data, condensed_distance_matrix, linkage_matrix=None, dtw_function=dtw_std, prototyping_method='psa'):
         """
         Initialises hierarchical clustering analyser.
         Handles linkage calculation, dendrogram plotting and prototype generation.
@@ -424,7 +442,7 @@ class ClusterAssignments(object):
 
     def __len__(self):
         return self.n
-    
+
     @property
     def dataset_names(self):
         return self.hierarchical_clustering_object.dataset_names

@@ -68,11 +68,13 @@ class ClusterAssignmentsPreviewer(object):
 
         plt.figlegend(*ax_prototype.get_legend_handles_labels(), loc='lower center')
 
-        plt.suptitle('Cluster #{0} ({1} elements)'.format(self._current_cluster_id, current_cluster.n_items))
+        self.title.set_text('Cluster #{0}/{2} ({1} elements)'.format(self._current_cluster_id + 1,
+                                                                     current_cluster.n_items,
+                                                                     len(self._clusters)))
 
         ax_heatmap = self.ax_heatmap()
         plt.cla()
-        current_cluster.items.plot_heatmap(horizontal_grid=False, parent_subplot_spec=self.gs_heatmap())
+        current_cluster.items.plot_heatmap(horizontal_grid=False, subplot_spec=self.gs_heatmap())
         plt.draw()
 
 
@@ -80,6 +82,7 @@ class ClusterAssignmentsPreviewer(object):
     def show(self):
         # A5 Paper size
         plt.figure(num=None, figsize=(8.3, 5.8), facecolor='w', edgecolor='k')
+        self.title = plt.suptitle("") # Create text object for title
         self.draw_buttons()
         self.draw()
         plt.show()
