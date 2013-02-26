@@ -5,8 +5,6 @@ __author__ = 'saulius'
 from mlpy.dtw import dtw_std as mlpy_dtw_std
 import numpy as np
 
-__all__ = ['no_nans_len', 'dtw_std', 'parametrised_dtw_wrapper']
-
 def _strip_nans(sequence):
     '''
         Strips NaNs that are padded to the right of each peak if they are of unequal length
