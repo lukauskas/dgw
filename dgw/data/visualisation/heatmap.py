@@ -91,19 +91,19 @@ def plot(alignments, clip_colors=True, titles=None, horizontal_grid=True,
 
     # Subplot creation
 
-    if number_of_datasets > 1:
-        if horizontal_grid:
-            grid = (1, number_of_datasets)
-            spacing_kwargs = {'wspace' : 0.01}  # Almost no space between plots
+    if horizontal_grid:
+        grid = (1, number_of_datasets + 1)
+        width_ratios = [5] * number_of_datasets
+        width_ratios.append(1)
+        spacing_kwargs = {'wspace': 0.01, 'width_ratios': width_ratios}  # Almost no space between plots
+    else:
+        grid = (number_of_datasets, 2)
+        spacing_kwargs = {'hspace': 0.15, 'width_ratios': [5, 1]} # Allow a bit of a space for title
 
-        else:
-            grid = (number_of_datasets, 1)
-            spacing_kwargs = {'hspace' : 0.15} # Allow a bit of a space for title
-
-        if not subplot_spec:
-            gs = gridspec.GridSpec(*grid, **spacing_kwargs)
-        else:
-            gs = gridspec.GridSpecFromSubplotSpec(*grid, subplot_spec=subplot_spec, **spacing_kwargs)
+    if not subplot_spec:
+        gs = gridspec.GridSpec(*grid, **spacing_kwargs)
+    else:
+        gs = gridspec.GridSpecFromSubplotSpec(*grid, subplot_spec=subplot_spec, **spacing_kwargs)
 
     # Main drawing loop
     first_axis = None
@@ -112,20 +112,16 @@ def plot(alignments, clip_colors=True, titles=None, horizontal_grid=True,
         extent = [0, max_len, 0, alignments.number_of_items * scale_y_axis] # Multiply by 10 as that is what matplotlib's dendrogram returns
 
     for i, (ix, title) in enumerate(zip(alignments.dataset_axis, titles)):
-        if number_of_datasets > 1:
-            t_gs = gs[i]
-            if i == 0:
-                if not share_y_axis:
-                    first_axis = plt.subplot(t_gs)
-                    share_y_axis = first_axis
-                else:
-                    first_axis = plt.subplot(t_gs, sharey=share_y_axis)
+        t_gs = gs[:, i] if horizontal_grid else gs[i, 1]
+        if i == 0:
+            if not share_y_axis:
+                first_axis = plt.subplot(t_gs)
+                share_y_axis = first_axis
             else:
-                # Remember to share axes
-                plt.subplot(t_gs, sharex=first_axis, sharey=share_y_axis)
-
-        elif subplot_spec:  # If one dataset only, still change to correct subset
-            plt.subplot(subplot_spec)
+                first_axis = plt.subplot(t_gs, sharey=share_y_axis)
+        else:
+            # Remember to share axes
+            plt.subplot(t_gs, sharex=first_axis, sharey=share_y_axis)
 
         data_to_plot = alignments.dataset_xs(ix, copy=False).T
         # Cut most of the columns that are NaNs out of the plot
@@ -147,7 +143,7 @@ def plot(alignments, clip_colors=True, titles=None, horizontal_grid=True,
                 plt.gca().get_yaxis().set_visible(False)
 
         plt.title(title)
-
+        plt.gca().title.set_fontsize(5)
     # Colorbar
-    colorbar_axis = plt.gcf().add_axes([0.91, 0.1, 0.03, 0.8])
+    colorbar_axis = plt.subplot(gs[:, number_of_datasets] if horizontal_grid else gs[:, 2])
     plt.colorbar(result, cax=colorbar_axis)

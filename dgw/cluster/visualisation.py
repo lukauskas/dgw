@@ -31,7 +31,7 @@ class ClusterPreviewer(object):
 
 
     def _initialise_grid(self):
-        self._main_gs = gridspec.GridSpec(5, 2, height_ratios=[1, 40, 20, 20, 4])
+        self._main_gs = gridspec.GridSpec(5, 2, height_ratios=[1, 40, 20, 20, 4], hspace=0.4)
 
 
     def current_cluster(self):
@@ -100,8 +100,8 @@ class ClusterPreviewer(object):
 
 
     def show(self):
-        # A4 Paper size
-        plt.figure(num=None, figsize=(11.7, 8.3), dpi=100, facecolor='w', edgecolor='k')
+        # A5 Paper size
+        plt.figure(num=None, figsize=(12, 10), facecolor='w', edgecolor='k')
         self.title = plt.suptitle("") # Create text object for title
         self.draw_buttons()
         self.draw()
@@ -119,12 +119,19 @@ class HierarchicalClusteringViewer(object):
         self._hierarchical_clustering_object = hierarchical_clustering_object
 
     @property
+    def clusters(self):
+        if self._cut_xdata > 0:
+            return self._hierarchical_clustering_object.cut(self._cut_xdata)
+        else:
+            return []
+
+    @property
     def gs_dendrogram(self):
-        return self.gs_main[0]
+        return self.gs_main[1, 0]
 
     @property
     def gs_heatmap(self):
-        return self.gs_main[1]
+        return self.gs_main[1, 1]
 
     @property
     def ax_dendrogram(self):
@@ -139,10 +146,12 @@ class HierarchicalClusteringViewer(object):
         return self._hierarchical_clustering_object
 
     def set_up(self):
-        self._gs_main = gridspec.GridSpec(1, 2, wspace=0)
+        self._gs_main = gridspec.GridSpec(2, 2, wspace=0, height_ratios=[1, 15])
         self._figure = plt.gcf()
         self._ax_dendrogram = plt.subplot(self.gs_dendrogram)
         self._figure.canvas.mpl_connect('button_press_event', self._onclick_listener)
+
+        self.draw_buttons()
 
     def draw_dendrogram(self):
         ax_dendrogram = self.ax_dendrogram
@@ -155,6 +164,36 @@ class HierarchicalClusteringViewer(object):
 
         return leaves
 
+    def _callback_preview(self, event):
+        if not self.clusters:
+            return
+
+        # Else, if we have clusters
+        pw = ClusterPreviewer(self.clusters)
+        pw.show()
+
+    def _callback_save(self, event):
+        pass
+
+    def draw_buttons(self):
+        buttons_left = 0.05
+        buttons_bottom = 1 - 0.1
+
+        button_width = 0.1
+        button_height = 0.05
+
+        button_spacing = 0.02
+
+        ax_button_preview = plt.axes([buttons_left, buttons_bottom, button_width, button_height])
+        self.button_preview = Button(ax_button_preview, 'Preview')
+        self.button_preview.on_clicked(self._callback_preview)
+
+        ax_button_save = plt.axes([buttons_left + button_width + button_spacing, buttons_bottom,
+                                   button_width, button_height])
+        self.button_save = Button(ax_button_save, 'Save')
+        self.button_save.on_clicked(self._callback_save)
+
+
     def draw(self):
         leaves = self.draw_dendrogram()
         hc = self.hierarchical_clustering_object
@@ -166,7 +205,7 @@ class HierarchicalClusteringViewer(object):
 
     def show(self):
         # A5 Paper size
-        plt.figure(num=None, figsize=(8.3, 5.8), dpi=100, facecolor='w', edgecolor='k')
+        plt.figure(num=None, figsize=(12, 10), facecolor='w', edgecolor='k')
         self.set_up()
         self.draw()
         plt.show()
