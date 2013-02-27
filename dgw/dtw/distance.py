@@ -46,7 +46,7 @@ def parametrised_dtw_wrapper(*dtw_args, **dtw_kwargs):
 
     return f
 
-def dtw_std(x, y, metric='sqeuclidean', dist_only=True, constraint=None, k=None, try_reverse=True, *args, **kwargs):
+def dtw_std(x, y, metric='sqeuclidean', dist_only=True, constraint=None, k=None, try_reverse=True, normalise=False, *args, **kwargs):
     '''
         Wrapper around mlpy's dtw_std that first strips all NaNs out of the data.
 
@@ -56,6 +56,12 @@ def dtw_std(x, y, metric='sqeuclidean', dist_only=True, constraint=None, k=None,
     @param kwargs:
     @return:
     '''
+    def _normalise(ans):
+        if normalise:
+            return ans / max(no_nans_len(x), no_nans_len(y))
+        else:
+            return ans
+
     x = np.asarray(x, dtype=np.float)
     y = np.asarray(y, dtype=np.float)
 
@@ -64,17 +70,18 @@ def dtw_std(x, y, metric='sqeuclidean', dist_only=True, constraint=None, k=None,
 
     regular_ans = mlpy_dtw_std(x, y, metric=metric, dist_only=dist_only, constraint=constraint, k=k, *args, **kwargs)
     if not try_reverse:
-        return regular_ans
+        return _normalise(regular_ans)
     else:
         reverse_ans = mlpy_dtw_std(x[::-1], y, metric=metric, dist_only=dist_only, constraint=constraint, k=k, *args, **kwargs)
         if dist_only:
-            return min(regular_ans, reverse_ans)
+            return _normalise(min(regular_ans, reverse_ans))
         elif reverse_ans[0] >= regular_ans[0]:
-            return regular_ans
+            dist, cost, path = regular_ans
+            return _normalise(dist), cost, path
         else:  # dist_only = False and reverse_ans is smaller
             dist, cost, path = reverse_ans
             path_rev = (path[0][::-1], path[1])
 
             # TODO: Reverse cost matrix here
             cost = None
-            return dist, cost, path_rev
+            return _normalise(dist), cost, path_rev
