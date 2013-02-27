@@ -48,6 +48,9 @@ def argument_parser():
     parser.add_argument('-sb', '--slanted-band', metavar='k', help='Constrain DTW with slanted band of width k',
                         type=int) # TODO: assert > 0
 
+    parser.add_argument('--normalise', const=True, default=False, action='store_const',
+                        help='Normalise the DTW distances by dividing them by the length of longer sequence')
+
     parser.add_argument('-n', '--n-cpus', metavar='N', type=int,
                         help='Use up to N CPUs when calculating pairwise distances.'
                              ' Defaults to the maximum number available.')

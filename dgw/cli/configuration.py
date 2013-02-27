@@ -61,6 +61,8 @@ class Configuration(object):
         if self.args.slanted_band is not None:
             kw['constraint'] = 'slanted_band'
             kw['k'] = self.args.slanted_band
+
+        kw['normalise'] = self.args.normalise
         return kw
 
     @property
