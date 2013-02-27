@@ -3,13 +3,14 @@ import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
 from matplotlib.widgets import Button
 
-class ClusterAssignmentsPreviewer(object):
+
+class ClusterPreviewer(object):
     _clusters = None
     _main_gs = None
     _current_cluster_id = None
 
-    def __init__(self, cluster_assignments):
-        self._clusters = cluster_assignments
+    def __init__(self, cluster_roots):
+        self._clusters = cluster_roots
         self._initialise_grid()
 
         self._current_cluster_id = 0
@@ -74,7 +75,7 @@ class ClusterAssignmentsPreviewer(object):
 
         ax_heatmap = self.ax_heatmap()
         plt.cla()
-        current_cluster.items.plot_heatmap(horizontal_grid=False, subplot_spec=self.gs_heatmap())
+        current_cluster.data.plot_heatmap(horizontal_grid=False, subplot_spec=self.gs_heatmap())
         plt.draw()
 
 
@@ -86,3 +87,47 @@ class ClusterAssignmentsPreviewer(object):
         self.draw_buttons()
         self.draw()
         plt.show()
+
+class HierarchicalClusteringViewer(object):
+    _hierarchical_clustering_object = None
+    _gs_main = None
+
+    def __init__(self, hierarchical_clustering_object):
+        self._hierarchical_clustering_object = hierarchical_clustering_object
+
+    @property
+    def gs_dendrogram(self):
+        return self.gs_main
+
+    @property
+    def gs_heatmap(self):
+        return self.gs_main
+
+    @property
+    def gs_main(self):
+        return self._gs_main
+
+    @property
+    def hierarchical_clustering_object(self):
+        return self._hierarchical_clustering_object
+
+    def set_up(self):
+        self._gs_main = gridspec.GridSpec(1, 2, wspace=0)
+
+    def draw(self):
+        ax_dendrogram = plt.subplot(self.gs_dendrogram)
+        hc = self.hierarchical_clustering_object
+
+        dendrogram_dict = hc.dendrogram(orientation='right', get_leaves=True,
+                                        color_threshold=0, distance_sort=True)
+        leaves = dendrogram_dict['leaves']
+
+        index = hc.data.index[leaves]
+
+        DENDROGRAM_SCALE = 10  # scipy.cluster.hierarachy.dendrogram scales all y axis values by tenfold for some reason
+        hc.data.plot_heatmap(subplot_spec=self.gs_heatmap, no_y_axis=True, sort_by=index, share_y_axis=ax_dendrogram,
+                             scale_y_axis=DENDROGRAM_SCALE)
+
+    def show(self):
+        self.set_up()
+        self.draw()
