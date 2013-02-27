@@ -51,10 +51,12 @@ class DTWClusterNode(object, hierarchy.ClusterNode):
     @property
     def projected_data(self):
         # It is infeasible to calculate projected data for all the nodes beforehand
+        self.ensure_projections_are_calculated()
+        return self._projected_data
+
+    def ensure_projections_are_calculated(self):
         if not self._projected_data:
             self._projected_data = self.__project_items_onto_prototype()
-
-        return self._projected_data
 
     def __project_items_onto_prototype(self):
         data = self.data

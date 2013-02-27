@@ -15,18 +15,23 @@ class ClusterPreviewer(object):
 
         self._current_cluster_id = 0
 
-    def gs_prototype(self):
-        return plt.subplot(self._main_gs[1, 0])
-    def ax_prototype(self):
-        return plt.subplot(self.gs_prototype())
+        debug('Calculating projections')
+        for c in self._clusters:
+            c.ensure_projections_are_calculated()
 
-    def gs_heatmap(self):
+
+    def gs_prototype(self):
+        return self._main_gs[1, 0]
+    def gs_projected_mean(self):
         return self._main_gs[1, 1]
-    def ax_heatmap(self):
-        return plt.subplot(self.gs_heatmap())
+    def gs_projected_heatmap(self):
+        return self._main_gs[3, :]
+    def gs_heatmap(self):
+        return self._main_gs[2, :]
+
 
     def _initialise_grid(self):
-        self._main_gs = gridspec.GridSpec(3, 2, height_ratios=[1, 40, 4])
+        self._main_gs = gridspec.GridSpec(5, 2, height_ratios=[1, 40, 20, 20, 4])
 
 
     def current_cluster(self):
@@ -62,8 +67,9 @@ class ClusterPreviewer(object):
 
     def draw(self):
 
-        ax_prototype = self.ax_prototype()
+        ax_prototype = plt.subplot(self.gs_prototype())
         plt.cla()
+        plt.title('Prototype')
         current_cluster = self.current_cluster()
         current_cluster.prototype.plot(ax=ax_prototype, legend=False)
 
@@ -73,11 +79,24 @@ class ClusterPreviewer(object):
                                                                      current_cluster.n_items,
                                                                      len(self._clusters)))
 
-        ax_heatmap = self.ax_heatmap()
+        plt.subplot(self.gs_heatmap())
         plt.cla()
-        current_cluster.data.plot_heatmap(horizontal_grid=False, subplot_spec=self.gs_heatmap())
-        plt.draw()
+        current_cluster.data.plot_heatmap(horizontal_grid=True, subplot_spec=self.gs_heatmap())
 
+        # Projections
+        projections = current_cluster.projected_data
+
+        ax_projections = plt.subplot(self.gs_projected_mean())
+        plt.cla()
+        plt.title('Average DTW projection onto prototype')
+        projections.mean().plot(ax=ax_projections, legend=False)
+
+        ax_projected_heatmap = plt.subplot(self.gs_projected_heatmap())
+        plt.cla()
+        current_cluster.projected_data.plot_heatmap(horizontal_grid=True, subplot_spec=self.gs_projected_heatmap())
+
+        # Finally issue a draw command for the plot
+        plt.draw()
 
 
     def show(self):
@@ -97,11 +116,11 @@ class HierarchicalClusteringViewer(object):
 
     @property
     def gs_dendrogram(self):
-        return self.gs_main
+        return self.gs_main[0]
 
     @property
     def gs_heatmap(self):
-        return self.gs_main
+        return self.gs_main[1]
 
     @property
     def gs_main(self):
@@ -122,7 +141,7 @@ class HierarchicalClusteringViewer(object):
                                         color_threshold=0, distance_sort=True)
         leaves = dendrogram_dict['leaves']
 
-        index = hc.data.index[leaves]
+        index = hc.data.items[leaves]
 
         DENDROGRAM_SCALE = 10  # scipy.cluster.hierarachy.dendrogram scales all y axis values by tenfold for some reason
         hc.data.plot_heatmap(subplot_spec=self.gs_heatmap, no_y_axis=True, sort_by=index, share_y_axis=ax_dendrogram,
@@ -131,3 +150,4 @@ class HierarchicalClusteringViewer(object):
     def show(self):
         self.set_up()
         self.draw()
+        plt.show()
