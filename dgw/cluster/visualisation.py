@@ -211,13 +211,15 @@ class HierarchicalClusteringViewer(object):
         plt.show()
 
     def cut_line(self, xdata):
+
+        self._cut_xdata = xdata
+        self.draw_dendrogram()
         if self._line is not None:
             self._line.set_xdata(xdata)
         else:
             self._line = self._ax_dendrogram.axvline(linestyle='--', x=xdata, color='k')
 
-        self._cut_xdata = xdata
-        self.draw_dendrogram()
+        self._figure.canvas.draw()
 
 
     def _onclick_listener(self, event):
