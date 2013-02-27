@@ -103,7 +103,7 @@ class AlignmentsData(object):
         if self._scale == 'log':
             return self
 
-        new_data = (self.data + 1).apply(np.log)
+        new_data = (self.data + 2).apply(np.log) # Adding +2 so we have no zeros in log output
         return AlignmentsData(new_data, scale='log')
 
     def plot_heatmap(self, *args, **kwargs):
