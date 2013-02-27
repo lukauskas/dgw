@@ -9,38 +9,72 @@ from ..data.containers import AlignmentsData
 from ..dtw.distance import dtw_std, no_nans_len
 from ..dtw import transformations
 
-def dendrogram_with_heatmap(hc):
-    import matplotlib.pyplot as plt
-    import matplotlib.gridspec as gridspec
-
-    gs = gridspec.GridSpec(1, 2, wspace=0)
-    dendrogram_gs = gs[0]
-    heatmap_gs = gs[1]
-
-    ax_dendrogram = plt.subplot(dendrogram_gs)
-    dendrogram_dict = hc.dendrogram(orientation='right', get_leaves=True, color_threshold=0)
-    leaves = dendrogram_dict['leaves']
-    debug(plt.gca().get_ylim())
-
-    index = hc.data.items[leaves]
-
-    debug('Plotting heatmap')
-    DENDROGRAM_SCALE = 10  # scipy.cluster.hierarachy.dendrogram scales all y axis values by tenfold for some reason
-    hc.data.plot_heatmap(subplot_spec=heatmap_gs, no_y_axis=True, sort_by=index, share_y_axis=ax_dendrogram,
-                         scale_y_axis=DENDROGRAM_SCALE)
-
-
-class ClusterNodeWithPrototype(object, hierarchy.ClusterNode):
+# Inheritting from object explicitly as hierarchy.ClusterNode is not doing this
+class DTWClusterNode(object, hierarchy.ClusterNode):
     _prototype = None
+    _index = None
+    _hierarchical_clustering_object = None
+    _projected_data = None
+    _projected_data = None
 
-    def __init__(self, id, prototype, left=None, right=None, dist=0, count=1):
+    def __init__(self, hierarchical_clustering_object, id, prototype, left=None, right=None, dist=0, count=1):
         hierarchy.ClusterNode.__init__(self, id, left=left, right=right, dist=dist, count=count)
+        if not isinstance(prototype, pd.DataFrame):
+            prototype = pd.DataFrame(prototype, columns=hierarchical_clustering_object.data.dataset_axis)
         self._prototype = prototype
+        self._hierarchical_clustering_object = hierarchical_clustering_object
+        self._index = pd.Index(self.__get_item_ids())
+
+    def __get_item_ids(self):
+        """
+        Gets the ids of all the leaf nodes that are in the tree below
+        :return:
+        """
+        if self.is_leaf():
+            return pd.Index([self.id])
+        else:
+            return self.get_left().index | self.get_right().index
 
     @property
     def prototype(self):
         return self._prototype
 
+    @property
+    def index(self):
+        return self._index
+
+    @property
+    def data(self):
+        # Don't store the data inside
+        return self._hierarchical_clustering_object.data.ix[self.index]
+
+    @property
+    def projected_data(self):
+        # It is infeasible to calculate projected data for all the nodes beforehand
+        if not self._projected_data:
+            self._projected_data = self.__project_items_onto_prototype()
+
+        return self._projected_data
+
+    def __project_items_onto_prototype(self):
+        data = self.data
+        dtw_function = self._hierarchical_clustering_object.dtw_function
+        projections = transformations.dtw_projection_multi(data, self.prototype,
+                                                           dtw_function)
+        return projections
+
+    @property
+    def n_items(self):
+        """
+        Returns number of leaves below the current node
+        """
+        return len(self.index)
+
+    def __len__(self):
+        return self.n_items
+
+    def __repr__(self):
+        return "<{0} containing {1} items>".format(self.__class__.__name__, self.n_items)
 
 
 def _reduce_tree(tree, reduce_func, map_function=lambda node: node.id,
@@ -107,9 +141,10 @@ def _reduce_tree(tree, reduce_func, map_function=lambda node: node.id,
 
                 stack.append(reduced_value)
 
-def _compute_prototyped_tree(tree, values, prototyping_function):
+def _compute_dtw_tree(hierarchical_clustering_object, tree, values, prototyping_function):
     """
     Computes prototypes for all nodes in the tree and returns `ClusterNodeWithPrototype` tree
+    :param hierarchical_clustering_object: back reference to hierarchical_clustering_object
     :param tree: root of the tree to process
     :param values: values of items in the tree. Should support `values[node.id]`.
     :param prototyping_function: function that will calculate prototypes.
@@ -119,7 +154,7 @@ def _compute_prototyped_tree(tree, values, prototyping_function):
     def map_function(node):
         prototype = values[node.id]
 
-        return ClusterNodeWithPrototype(node.id, prototype,
+        return DTWClusterNode(hierarchical_clustering_object, node.id, prototype,
                                         left=node.get_left(), right=node.get_right(),
                                         dist=node.dist, count=node.count)
 
@@ -133,13 +168,13 @@ def _compute_prototyped_tree(tree, values, prototyping_function):
         assert(parent_node.get_right().id == right.id)
         assert(parent_node.count == left.count + right.count)
 
-        prototype = prototyping_function(left.prototype, right.prototype, left.count, right.count)
+        prototype = prototyping_function(left.prototype.values, right.prototype.values, left.count, right.count)
 
-        return ClusterNodeWithPrototype(parent_node.id, prototype,
+        return DTWClusterNode(hierarchical_clustering_object, parent_node.id, prototype,
                                         left=left, right=right, dist=parent_node.dist, count=parent_node.count)
 
     def is_value(node):
-        return isinstance(node, ClusterNodeWithPrototype)
+        return isinstance(node, DTWClusterNode)
 
     return _reduce_tree(tree, reduce_function, map_function, is_value)
 
@@ -250,10 +285,10 @@ class HierarchicalClustering(object):
 
         self.__dtw_function = dtw_function
 
-        tree = self.__prototyped_tree_from_linkage(linkage_matrix, prototyping_method)
+        tree = self.__dtw_tree_from_linkage(linkage_matrix, prototyping_method)
         self.__tree = tree
 
-    def __prototyped_tree_from_linkage(self, linkage, method):
+    def __dtw_tree_from_linkage(self, linkage, method):
         """
         Computes a prototyped tree from linkage matrix
         :param linkage: linkage matrix
@@ -277,7 +312,7 @@ class HierarchicalClustering(object):
                              'only \'psa\', \'standard\' or \'standard-unweighted\' supported')
 
         # Compute prototypes for the tree
-        tree = _compute_prototyped_tree(root, self.data, averaging_func)
+        tree = _compute_dtw_tree(self, root, self.data, averaging_func)
 
         return tree
 
@@ -435,7 +470,7 @@ class ClusterAssignments(object):
         clusters = []
         # Store clusters in decreasing number of elements
         for cluster_root in sorted(self._cluster_roots, key=lambda x: x.count, reverse=True):
-            clusters.append(Cluster(hierarchical_clustering_object, cluster_root))
+            clusters.append(cluster_root)
         self._clusters = clusters
         self._cut_depth = cut_depth
 
@@ -506,94 +541,3 @@ class ClusterAssignments(object):
 
     def __getitem__(self, key):
         return self.clusters[key]
-
-class Cluster(object):
-    _hierarchical_clustering_object = None
-    _index = None
-    _item_ids = None
-
-    _cluster_root = None
-
-    _item_dms = None
-
-    def __init__(self, hierarchical_clustering_object, cluster_root):
-        """
-        Initialises the cluster from the Hiearachical Clustering Object and the root of cluster tree.
-
-        WARNING: The class assumes that the ids of the nodes are the same as indices of the data.
-                 See `HierarchicalClustering._rename_nodes` for how this is implemented
-
-        :param hierarchical_clustering_object:
-        :type hierarchical_clustering_object: HierarchicalClustering
-        :param cluster_root: the root of this cluster
-        :type cluster_root: `hierarchy.ClusterNode`
-        :return:
-        """
-        self._hierarchical_clustering_object = hierarchical_clustering_object
-        self._cluster_root = cluster_root
-
-        self._item_ids = self.__get_item_ids()
-        self._index = pd.Index(self._item_ids)
-
-        # Assert that we did not make up any names that were not in the original index
-        assert(len(self._index) == len(hierarchical_clustering_object.data.items & self._index))
-
-    @property
-    def hierarchical_clustering_object(self):
-        return self._hierarchical_clustering_object
-
-    @property
-    def root(self):
-        """
-        Returns the root of the tree
-        :rtype: `hierarchy.ClusterNode`
-        """
-        return self._cluster_root
-
-    def __get_item_ids(self):
-        """
-        Gets the ids of all the leaf nodes in the tree.
-        :return:
-        """
-
-        ids = []
-        queue = set([self._cluster_root])
-
-        counter = 0
-        while queue:
-            node = queue.pop()
-
-            if node.is_leaf():
-                ids.append(node.id)
-                counter += 1
-            else:
-                queue.add(node.get_left())
-                queue.add(node.get_right())
-
-        return ids
-
-    @property
-    def index(self):
-        return self._index
-
-    @property
-    def n_items(self):
-        return len(self.index)
-
-    def __len__(self):
-        return self.n_items
-
-    @property
-    def items(self):
-        """
-        Returns a pd.Dataframe of the items in the cluster
-        :return:
-        """
-        return self.hierarchical_clustering_object.data.ix[self.index]
-
-    @property
-    def prototype(self):
-        return pd.DataFrame(self.root.prototype, columns=self.hierarchical_clustering_object.dataset_names)
-
-    def __repr__(self):
-        return '<Cluster n_items={0}>'.format(self.n_items)
