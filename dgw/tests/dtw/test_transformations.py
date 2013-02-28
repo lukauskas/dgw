@@ -1,5 +1,6 @@
 import unittest
 import numpy as np
+from dgw.dtw import parametrised_dtw_wrapper
 from dgw.dtw.transformations import *
 from numpy.testing import assert_array_equal, assert_array_almost_equal
 
@@ -231,6 +232,31 @@ class TestPathAveraging(unittest.TestCase):
                                 [7, (41 + 23) / 2.0]])
         average_path2 = dtw_path_averaging(a, b, path=path2)
         assert_array_equal(correct_ans2, average_path2)
+
+class TestProjectionIsTheSameRegardlessOfWhetherDtwFunctionOrPathProvided(unittest.TestCase):
+
+    def setUp(self):
+        np.random.seed(42)
+        self.a = np.random.randn(20)
+        self.b = np.random.randn(30)
+
+    def test_dtw_std(self):
+        dtw_function = dtw_std
+
+        dist, cost, path = dtw_function(self.a, self.b, dist_only=False)
+        path_answer = dtw_projection(self.a, self.b, path=path)
+        dtw_function_answer = dtw_projection(self.a, self.b, dtw_function=dtw_function)
+        assert_array_equal(path_answer, dtw_function_answer)
+
+
+    def test_dtw_sb(self):
+        dtw_function = parametrised_dtw_wrapper(constraint='slanted_band', k=4)
+
+        dist, cost, path = dtw_function(self.a, self.b, dist_only=False)
+        path_answer = dtw_projection(self.a, self.b, path=path)
+        dtw_function_answer = dtw_projection(self.a, self.b, dtw_function=dtw_function)
+        assert_array_equal(path_answer, dtw_function_answer)
+
 
 
 class TestSdtwAveraging(unittest.TestCase):

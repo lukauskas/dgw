@@ -7,6 +7,22 @@ from dgw.data.containers import AlignmentsData
 
 from distance import dtw_std, _strip_nans, no_nans_len
 
+def track_a_point_down(index, path, sequence_a=True):
+    """
+    Returns all indices on the sequence b that are mapped to the index on sequence_a provided.
+
+    :param index: query index
+    :param path: DTW warping path between `sequence_a` and `sequence_b`
+    :param sequence_a: whether the query point is on `sequence_a` or not. (Will swap sequences otherwise)
+    :return:
+    """
+    if sequence_a:
+        path_ours, path_theirs = path
+    else:
+        path_theirs, path_ours = path
+
+    path_indices = np.nonzero(path_ours == index)
+    return path_theirs[path_indices]
 
 def uniform_scaling_to_length(sequence, desired_length):
     """
@@ -98,20 +114,22 @@ def uniform_shrinking_to_length(sequence, desired_length):
 
 
 
-def dtw_projection(sequence, base_sequence, dtw_function=dtw_std):
+def dtw_projection(sequence, base_sequence, dtw_function=dtw_std, path=None):
     """
     Projects given sequence onto a base time series using Dynamic Time Warping
     :param sequence: the sequence that will be projected onto base_sequence
     :param base_sequence: base sequence to project onto
-    :param dtw_function: DTW function to use
+    :param dtw_function: DTW function to compute the path if it is set to None
+    :param path: the pre-computed DTW warping path between sequence and base sequence.
     :return: new time series of length base containing x projected on it
     """
     base_sequence = np.asarray(base_sequence)
     sequence = np.asarray(sequence)
 
-    distance, cost, path = dtw_function(base_sequence, sequence, dist_only=False)
+    if not path:
+        distance, cost, path = dtw_function(sequence, base_sequence, dist_only=False)
 
-    path_base, path_other = path
+    path_other, path_base = path
 
     current_sums = np.zeros(base_sequence.shape)
     current_counts = np.zeros(base_sequence.shape)
@@ -154,14 +172,14 @@ def dtw_projection_multi(alignments, base, *args, **kwargs):
         index = alignments.index
         sequences = alignments.values
 
-    new_data = {}
+    new_data = pd.Panel()
 
     for index in alignments.items:
         item = alignments.ix[index]
         projection = dtw_projection(item, base, *args, **kwargs)
         new_data[index] = pd.DataFrame(projection, index=range(len(base)), columns=item.columns)
 
-    return AlignmentsData(pd.Panel(new_data))
+    return AlignmentsData(new_data)
 
 def dtw_path_averaging(sequence_a, sequence_b, weight_a=1, weight_b=1, path=None, shrink=True, dtw_function=dtw_std):
     """
