@@ -7,7 +7,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from ..data.containers import AlignmentsData
 from ..dtw.distance import dtw_std, no_nans_len
-from ..dtw import transformations
+from ..dtw import transformations, dtw_projection
 
 # Inheritting from object explicitly as hierarchy.ClusterNode is not doing this
 class DTWClusterNode(object, hierarchy.ClusterNode):
@@ -15,7 +15,7 @@ class DTWClusterNode(object, hierarchy.ClusterNode):
     _index = None
     _hierarchical_clustering_object = None
     _projected_data = None
-    _projected_data = None
+    _warping_paths = None
 
     def __init__(self, hierarchical_clustering_object, id, prototype, left=None, right=None, dist=0, count=1):
         hierarchy.ClusterNode.__init__(self, id, left=left, right=right, dist=dist, count=count)
@@ -58,12 +58,48 @@ class DTWClusterNode(object, hierarchy.ClusterNode):
         if not self._projected_data:
             self._projected_data = self.__project_items_onto_prototype()
 
+    @property
+    def warping_paths(self):
+        if not self._warping_paths:
+            self._warping_paths = self.__compute_dtw_warping_paths()
+        return self._warping_paths
+
+
+    def __compute_dtw_warping_paths(self):
+        data = self.data
+        dtw_function = self._hierarchical_clustering_object.dtw_function
+        prototype = self.prototype
+
+        paths = {}
+        for ix in data.items:
+            _, _, path = dtw_function(data.ix[ix], prototype, dist_only=False)
+            # Reduce the bit size of the path arrays to 16 bits
+            # DTW would be too slow to use anyway if we had more than 2**16-1 items in it
+            # Feel free to update this if it is not the case.
+            #path = (np.asarray(path[0], dtype=np.int16), np.asarray(path[1], dtype=np.int16))
+
+            paths[ix] = path
+
+        return paths
+
     def __project_items_onto_prototype(self):
         data = self.data
         dtw_function = self._hierarchical_clustering_object.dtw_function
-        projections = transformations.dtw_projection_multi(data, self.prototype,
-                                                           dtw_function)
-        return projections
+        prototype = self.prototype
+
+        warping_paths = self.warping_paths
+
+        columns = data.dataset_axis
+
+        projections = pd.Panel()
+        for ix in data.items:
+            item = data.ix[ix]
+
+            projection = dtw_projection(item, prototype, path=warping_paths[ix])
+            df = pd.DataFrame(projection, index=range(len(prototype)), columns=columns)
+            projections[ix] = df
+
+        return AlignmentsData(projections)
 
     @property
     def n_items(self):
