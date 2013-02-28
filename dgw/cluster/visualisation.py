@@ -81,7 +81,9 @@ class ClusterPreviewer(object):
 
         plt.subplot(self.gs_heatmap())
         plt.cla()
-        current_cluster.data.plot_heatmap(horizontal_grid=True, subplot_spec=self.gs_heatmap())
+
+        shared_axis = current_cluster.data.plot_heatmap(horizontal_grid=True, subplot_spec=self.gs_heatmap(),
+                                                        sort_by=None)
 
         # Projections
         projections = current_cluster.projected_data
@@ -93,7 +95,8 @@ class ClusterPreviewer(object):
 
         ax_projected_heatmap = plt.subplot(self.gs_projected_heatmap())
         plt.cla()
-        current_cluster.projected_data.plot_heatmap(horizontal_grid=True, subplot_spec=self.gs_projected_heatmap())
+        current_cluster.projected_data.plot_heatmap(horizontal_grid=True, subplot_spec=self.gs_projected_heatmap(),
+                                                    share_y_axis=shared_axis, sort_by=None)
 
         # Finally issue a draw command for the plot
         plt.draw()

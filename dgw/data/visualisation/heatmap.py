@@ -59,7 +59,7 @@ def plot(alignments, clip_colors=True, titles=None, horizontal_grid=True,
     :param share_y_axis: if not None, the plot will share the major (items) axis with the specified axis
     :param scale_y_axis: plot will scale the y axis by the specified number (linearly) if set.
     :type scale_y_axis: int
-    :return:
+    :return: returns the shared y axis
     """
     import matplotlib.pyplot as plt
     from matplotlib import gridspec
@@ -75,15 +75,19 @@ def plot(alignments, clip_colors=True, titles=None, horizontal_grid=True,
 
     # Sorting
     if isinstance(sort_by, pd.Index):
-        alignments = alignments.ix[sort_by]
+        sorted_index = sort_by
     elif sort_by == 'length':
         debug('Sorting by length')
         lengths.sort()  # Should do in-place
-        alignments = alignments.ix[lengths.index]
+        sorted_index = lengths.index
     elif sort_by is None:
-        pass
+        sorted_index = alignments.items
     else:
         raise ValueError('Unsupported sort_by value provided: {0!r}. Only None or \'length\' supported'.format(sort_by))
+    # Apply sorting
+    alignments = alignments.ix[sorted_index]
+    # Create the instance of axis formatter
+    tick_formatter = dataset_ticks(alignments, scale_y_axis)
 
     # Clipping of colors
     values = np.empty(0)
@@ -133,8 +137,7 @@ def plot(alignments, clip_colors=True, titles=None, horizontal_grid=True,
     if scale_y_axis:
         extent = [0, max_len, 0, alignments.number_of_items * scale_y_axis] # Multiply by 10 as that is what matplotlib's dendrogram returns
 
-    # Create the instance of axis formatter
-    tick_formatter = dataset_ticks(alignments, scale_y_axis)
+
 
     for i, (ix, title) in enumerate(zip(alignments.dataset_axis, titles)):
         t_gs = gs[:, i] if horizontal_grid else gs[i, 1]
@@ -174,6 +177,9 @@ def plot(alignments, clip_colors=True, titles=None, horizontal_grid=True,
         plt.title(title)
         plt.gca().title.set_fontsize(7)
         plt.setp(plt.gca().get_xticklabels(), rotation='vertical', fontsize=7)
-        # Colorbar
+
+    # Colorbar
     colorbar_axis = plt.subplot(gs[:, number_of_datasets] if horizontal_grid else gs[:, 2])
     plt.colorbar(result, cax=colorbar_axis)
+
+    return first_axis

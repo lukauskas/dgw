@@ -266,7 +266,7 @@ class HierarchicalClustering(object):
         :param condensed_distance_matrix: a condensed distance matrix of this clustering computed by pdist
         :param linkage_matrix: (optional) linkage_matrix computed by fastcluster.linkage. Will be computed automatically if not provided
         :param dtw_function: DTW calculation function
-        :param prototyping_type: Averaging method either 'psa', 'standard' or 'standard-unweighted'
+        :param prototyping_method: Averaging method either 'psa', 'standard' or 'standard-unweighted'
         :return:
         """
         self._condensed_distance_matrix = condensed_distance_matrix

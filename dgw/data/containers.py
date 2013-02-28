@@ -115,7 +115,7 @@ class AlignmentsData(object):
         :return:
         """
         import visualisation.heatmap
-        visualisation.heatmap.plot(self, *args, **kwargs)
+        return visualisation.heatmap.plot(self, *args, **kwargs)
 
 
     def __repr__(self):
