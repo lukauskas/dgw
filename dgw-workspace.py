@@ -18,10 +18,14 @@ def load_from_pickle(filename):
 configuration = load_from_pickle(configuration_loc)
 assert(isinstance(configuration, Configuration))
 
-regions = load_from_pickle(configuration.parsed_regions_filename)
-dataset = load_from_pickle(configuration.dataset_filename)
-if configuration.raw_dataset_filename:
-    raw_dataset = load_from_pickle(configuration.raw_dataset_filename)
+if configuration.parsed_regions_filename:
+    regions = load_from_pickle(configuration.parsed_regions_filename)
+if configuration.processed_dataset_filename:
+    dataset = load_from_pickle(configuration.processed_dataset_filename)
+else:
+    dataset = load_from_pickle(configuration.dataset_filename)
+    if configuration.raw_dataset_filename:
+        raw_dataset = load_from_pickle(configuration.raw_dataset_filename)
 
 if configuration.pairwise_distances_filename:
     dm = np.load(configuration.pairwise_distances_filename)

@@ -56,6 +56,10 @@ class Configuration(object):
             return None
 
     @property
+    def processed_dataset_filename(self):
+        return self.args.processed_dataset
+
+    @property
     def dtw_kwargs(self):
         kw = {'metric': self.args.metric}
         if self.args.slanted_band is not None:

@@ -283,6 +283,8 @@ class HierarchicalClustering(object):
         # Compute linkage matrix if its not provided
         if linkage_matrix is None:
             linkage_matrix = fastcluster.complete(condensed_distance_matrix)
+            # small negative distances in linkage matrix are sometimes possible due to rounding errors. Change them to 0
+            linkage_matrix[:, 2][linkage_matrix[:, 2] < 0] = 0
         self._linkage_matrix = linkage_matrix
 
         self.__dtw_function = dtw_function

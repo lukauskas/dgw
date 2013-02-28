@@ -19,6 +19,7 @@ from dgw.data.parsers import read_bam, HighestPileUpFilter
 from dgw.dtw.parallel import parallel_pdist
 from dgw.cli import StoreFilenameAction, StoreUniqueFilenameAction, Configuration
 
+
 def argument_parser():
 
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
@@ -29,7 +30,7 @@ def argument_parser():
     parser.add_argument('-d', '--datasets', metavar='dataset.bam', nargs='+', action=StoreUniqueFilenameAction,
                         help='One or more datasets to be analysed using DGW. Must be BAM files.')
     parser.add_argument('-pd', '--processed-dataset', metavar='processed_dataset.pd', action=StoreFilenameAction,
-                        help='Dataset that has already been processed. E.g. from a previous run')
+                        help='Dataset that has already been processed. E.g. from a previous run.')
 
     parser.add_argument('-p', '--prefix', help='Prefix of the output files generated ', default='dgw')
 
@@ -94,18 +95,26 @@ def read_datasets(configuration, regions):
                         data_filters=data_filters,
                         output_removed_indices=True)
     else:
-        return deserialise(configuration.args.processed_dataset)
+        processed_dataset_file = configuration.processed_dataset_filename
+        logging.debug('Reading processed dataset {0!r}'.format(processed_dataset_file))
+
+        processed_dataset = deserialise(processed_dataset_file)
+        return processed_dataset, pd.Index([]), pd.Index([])  # Return empty indices for filtered regions
 
 def serialise(object, filename):
     f = open(filename, 'wb')
-    pickle.dump(object, f, protocol=pickle.HIGHEST_PROTOCOL)
-    f.close()
+    try:
+        pickle.dump(object, f, protocol=pickle.HIGHEST_PROTOCOL)
+    finally:
+        f.close()
 
 def deserialise(filename):
     f = open(filename, 'rb')
-    obj = pickle.load(f)
-    f.close()
-    return f
+    try:
+        obj = pickle.load(f)
+        return obj
+    finally:
+        f.close()
 
 def binomial_coefficent(n, k):
     return factorial(n) / (factorial(k) * factorial(n-k))

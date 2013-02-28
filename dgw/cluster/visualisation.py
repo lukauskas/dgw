@@ -161,7 +161,8 @@ class HierarchicalClusteringViewer(object):
         dendrogram_dict = hc.dendrogram(orientation='right', get_leaves=True,
                                         distance_sort=True, color_threshold=self._cut_xdata)
         leaves = dendrogram_dict['leaves']
-
+        plt.setp(plt.gca().get_xticklabels(), rotation='vertical', fontsize=7)
+        plt.gca().get_yaxis().set_visible(False)
         return leaves
 
     def _callback_preview(self, event):
@@ -188,11 +189,11 @@ class HierarchicalClusteringViewer(object):
         self.button_preview = Button(ax_button_preview, 'Preview')
         self.button_preview.on_clicked(self._callback_preview)
 
-        ax_button_save = plt.axes([buttons_left + button_width + button_spacing, buttons_bottom,
-                                   button_width, button_height])
-        self.button_save = Button(ax_button_save, 'Save')
-        self.button_save.on_clicked(self._callback_save)
+        #ax_button_save = plt.axes([buttons_left + button_width + button_spacing, buttons_bottom,
+        #                           button_width, button_height])
 
+        #self.button_save = Button(ax_button_save, 'Save')
+        #self.button_save.on_clicked(self._callback_save)
 
     def draw(self):
         leaves = self.draw_dendrogram()

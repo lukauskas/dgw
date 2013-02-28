@@ -2,11 +2,32 @@ from __future__ import print_function
 from logging import debug
 import matplotlib.pyplot as plt
 from matplotlib import cm
+from matplotlib.ticker import FuncFormatter, IndexLocator
 import numpy as np
 import matplotlib
 import pandas as pd
 from dgw.dtw import no_nans_len
 
+def dataset_ticks(dataset, scale=1):
+    """
+    Ticks formater for heatmap. Shows dataset indices as ticks.
+
+    Use it as `ax.yaxis.set_major_formatter(dataset_ticks(dataset, scale))`
+
+    :param dataset:
+    :param scale:
+    :return:
+    """
+    if scale is None:
+        scale = 1
+
+    def f(tick, pos):
+        try:
+            return dataset.items[int(tick / scale)]
+        except IndexError:
+            return ''
+
+    return FuncFormatter(f)
 
 def raw_plot_data_as_heatmap(data_frame, ax=None, *args, **kwargs):
     if ax is None:
@@ -37,6 +58,7 @@ def plot(alignments, clip_colors=True, titles=None, horizontal_grid=True,
     :param subplot_spec: SubplotSpec of the suplot to plot hte heatmaps in. See `matplotlib.gridspec` package.
     :param share_y_axis: if not None, the plot will share the major (items) axis with the specified axis
     :param scale_y_axis: plot will scale the y axis by the specified number (linearly) if set.
+    :type scale_y_axis: int
     :return:
     """
     import matplotlib.pyplot as plt
@@ -111,6 +133,9 @@ def plot(alignments, clip_colors=True, titles=None, horizontal_grid=True,
     if scale_y_axis:
         extent = [0, max_len, 0, alignments.number_of_items * scale_y_axis] # Multiply by 10 as that is what matplotlib's dendrogram returns
 
+    # Create the instance of axis formatter
+    tick_formatter = dataset_ticks(alignments, scale_y_axis)
+
     for i, (ix, title) in enumerate(zip(alignments.dataset_axis, titles)):
         t_gs = gs[:, i] if horizontal_grid else gs[i, 1]
         if i == 0:
@@ -123,13 +148,8 @@ def plot(alignments, clip_colors=True, titles=None, horizontal_grid=True,
             # Remember to share axes
             plt.subplot(t_gs, sharex=first_axis, sharey=share_y_axis)
 
-        data_to_plot = alignments.dataset_xs(ix, copy=False).T
-        # Cut most of the columns that are NaNs out of the plot
-        data_to_plot = data_to_plot[data_to_plot.columns[:max_len]]
-
-        result = raw_plot_data_as_heatmap(data_to_plot, vmin=min_value, vmax=max_value, extent=extent)
-        debug(plt.gca().get_ylim())
-        debug(plt.gca().get_xlim())
+        plt.gca().get_yaxis().set_major_formatter(tick_formatter)
+        #plt.gca().get_yaxis().set_major_locator(IndexLocator(1000, 0))
         # Remove redundant axes
         if horizontal_grid:
             if i > 0 or no_y_axis:
@@ -142,8 +162,18 @@ def plot(alignments, clip_colors=True, titles=None, horizontal_grid=True,
             if no_y_axis:
                 plt.gca().get_yaxis().set_visible(False)
 
+        data_to_plot = alignments.dataset_xs(ix, copy=False).T
+        # Cut most of the columns that are NaNs out of the plot
+        data_to_plot = data_to_plot[data_to_plot.columns[:max_len]]
+
+        result = raw_plot_data_as_heatmap(data_to_plot, vmin=min_value, vmax=max_value, extent=extent)
+        debug(plt.gca().get_ylim())
+        debug(plt.gca().get_xlim())
+
+
         plt.title(title)
-        plt.gca().title.set_fontsize(5)
-    # Colorbar
+        plt.gca().title.set_fontsize(7)
+        plt.setp(plt.gca().get_xticklabels(), rotation='vertical', fontsize=7)
+        # Colorbar
     colorbar_axis = plt.subplot(gs[:, number_of_datasets] if horizontal_grid else gs[:, 2])
     plt.colorbar(result, cax=colorbar_axis)

@@ -55,12 +55,12 @@ def mutate_sequence(sequence, prob):
         mutate = np.random.choice([True, False], p=[prob_adjusted, 1 - prob_adjusted])
 
         if mutate:
-            sequence[i] = sequence[random.randint(0, length)]
+            sequence[i] = sequence[random.randint(0, length - 1)]
 
     return sequence
 
 def randomly_warp_sequence(sequence, max_number_of_extensions=10, max_number_of_shrinks=10,
-                           max_extend_length=4, max_shrink_len=4, may_flip=True, mutation_prob=0.01):
+                           max_extend_length=4, max_shrink_length=4, may_reverse=True, mutation_prob=0.01):
     sequence = np.copy(sequence)
 
     n_ext = 0
@@ -87,17 +87,17 @@ def randomly_warp_sequence(sequence, max_number_of_extensions=10, max_number_of_
             action = random.choice(available_actions)
 
         if action == 'extend':
-            pos = random.randint(0, length)
+            pos = random.randint(0, length - 1)  # minus one as the second number is inclusive in random.randint
             k = random.randint(2, max_extend_length)
             sequence = extend_point(sequence, pos, k)
             n_ext += 1
         else:
-            pos = random.randint(0, length)
-            k = random.randint(2, max_shrink_len)
+            pos = random.randint(0, length - 1)
+            k = random.randint(2, max_shrink_length)
             sequence = shrink_to_a_single_point(sequence, pos, k)
             n_shrinks += 1
 
-    if may_flip:
+    if may_reverse:
         flip = random.choice([True, False])
         if flip:
             sequence = sequence[::-1]
