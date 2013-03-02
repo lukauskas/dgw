@@ -1,3 +1,4 @@
+from itertools import izip
 from logging import debug
 import fastcluster
 import scipy.cluster.hierarchy as hierarchy
@@ -8,6 +9,74 @@ import matplotlib.pyplot as plt
 from ..data.containers import AlignmentsData
 from ..dtw.distance import dtw_std, no_nans_len
 from ..dtw import transformations, dtw_projection
+from ..dtw.parallel import parallel_dtw_paths
+
+def _compute_paths(data, dtw_nodes_list, n, n_processes=None, *dtw_args, **dtw_kwargs):
+
+    non_leaf_nodes = dtw_nodes_list[n:]
+    paths = parallel_dtw_paths(data, non_leaf_nodes, n_processes=n_processes, *dtw_args, **dtw_kwargs)
+    return paths
+
+def _to_dtw_tree(linkage, hierarchical_clustering_object, prototyping_function):
+    """
+    Converts a hierarchical clustering linkage matrix `linkage` to hierarchy of `DTWClusterNode`s.
+    This is a modification of `scipy.cluster.hierarchy.to_tree` function and the code is mostly taken from it.
+
+    :param linkage: linkage matrix to convert to the DTW Tree
+    :param hierarchical_clustering_object: hierarchical clustering object to work with
+    :param prototyping_function: prototyping function to be used to compute prototypes
+    """
+
+    # Validation
+    linkage = np.asarray(linkage, order='c')
+    hierarchy.is_valid_linkage(linkage, throw=True, name='Z')
+
+    data = hierarchical_clustering_object.data
+    labels = data.items
+    values = data.ix
+
+    n = linkage.shape[0] + 1
+
+    # Create a list full of None's to store the node objects
+    d = [None] * (n * 2 - 1)
+
+    # Create the nodes corresponding to the n original objects.
+    for i in xrange(0, n):
+        index = labels[i]
+        d[i] = DTWClusterNode(id=index, hierarchical_clustering_object=hierarchical_clustering_object,
+                              prototype=values[index])
+
+    nd = None
+
+    for i in xrange(0, n - 1):
+        fi = int(linkage[i, 0])
+        fj = int(linkage[i, 1])
+
+        assert(fi <= i + n)
+        assert(fj <= i + n)
+
+        id = i + n
+        left = d[fi]
+        right = d[fj]
+        dist = linkage[i, 2]
+
+        prototype = prototyping_function(left.prototype.values, right.prototype.values, left.count, right.count)
+
+        nd = DTWClusterNode(id=id, hierarchical_clustering_object=hierarchical_clustering_object,
+                            prototype=prototype,
+                            left=left, right=right,
+                            dist=linkage[i, 2])
+
+        assert(linkage[i, 3] == nd.count)
+        d[n + i] = nd
+
+    return nd, d
+
+def add_path_data(data, dtw_nodes, n, n_processes=None, **dtw_kwargs):
+    paths = _compute_paths(data, dtw_nodes, n, n_processes=n_processes, **dtw_kwargs)
+    # Loop through non-leaf nodes
+    for node in dtw_nodes[n:]:
+        node.warping_paths = paths[node.id]
 
 # Inheritting from object explicitly as hierarchy.ClusterNode is not doing this
 class DTWClusterNode(object, hierarchy.ClusterNode):
@@ -27,8 +96,8 @@ class DTWClusterNode(object, hierarchy.ClusterNode):
         self._hierarchical_clustering_object = hierarchical_clustering_object
         self._index = pd.Index(self.__get_item_ids())
 
-        # Assume only bin 40 is interesting at this point ... TODO: make this customisable
-        self._points_of_interest = {ix: np.array([40], dtype=np.int32) for ix in self.index}
+        # Assume no points of interest. TODO: Add  way to specify those
+        self._points_of_interest = {}
 
     def __get_item_ids(self):
         """
@@ -71,9 +140,13 @@ class DTWClusterNode(object, hierarchy.ClusterNode):
     @property
     def warping_paths(self):
         if not self._warping_paths:
-            self._warping_paths = self.__compute_dtw_warping_paths()
+            raise Exception('Warping paths not computed')
+
         return self._warping_paths
 
+    @warping_paths.setter
+    def warping_paths(self, values):
+        self._warping_paths = values
 
     def __compute_dtw_warping_paths(self):
         data = self.data
@@ -93,36 +166,45 @@ class DTWClusterNode(object, hierarchy.ClusterNode):
         return paths
 
     def __project_items_onto_prototype(self):
-        data = self.data
-        prototype = self.prototype
 
-        warping_paths = self.warping_paths
+        if self.is_leaf():
+            # there is no projection, really, return itself
+            return AlignmentsData(pd.Panel({self.id: self.data}))
+        else:
+            data = self.data
+            prototype = self.prototype
 
-        columns = data.dataset_axis
+            warping_paths = self.warping_paths
 
-        projections = {}
-        for ix in data.items:
-            item = data.ix[ix]
+            columns = data.dataset_axis
 
-            projection = dtw_projection(item, prototype, path=warping_paths[ix])
-            df = pd.DataFrame(projection, index=range(len(prototype)), columns=columns)
-            projections[ix] = df
+            projections = {}
+            for ix in data.items:
+                item = data.ix[ix]
 
-        return AlignmentsData(pd.Panel(projections))
+                projection = dtw_projection(item, prototype, path=warping_paths[ix])
+                df = pd.DataFrame(projection, index=range(len(prototype)), columns=columns)
+                projections[ix] = df
+
+            return AlignmentsData(pd.Panel(projections))
 
     def __track_points_of_interest(self):
-        points_of_interest = self.points_of_interest
-        warping_paths = self.warping_paths
-        tracked_points = {}
-        for ix, poi in points_of_interest.iteritems():
-            mapped_points = transformations.points_mapped_to(poi, warping_paths[ix])
-            tracked_points[ix] = mapped_points
 
-        return tracked_points
+        if self.is_leaf():
+            # Nothing to track
+            return {self.id: self.points_of_interest}
+        else:
+            points_of_interest = self.points_of_interest
+            warping_paths = self.warping_paths
+            tracked_points = {}
+            for ix, poi in points_of_interest.iteritems():
+                mapped_points = transformations.points_mapped_to(poi, warping_paths[ix])
+                tracked_points[ix] = mapped_points
+
+            return tracked_points
     @property
     def points_of_interest(self):
         poi = self._points_of_interest
-
         return poi
 
     @property
@@ -209,93 +291,6 @@ def _reduce_tree(tree, reduce_func, map_function=lambda node: node.id,
 
                 stack.append(reduced_value)
 
-def _compute_dtw_tree(hierarchical_clustering_object, tree, values, prototyping_function):
-    """
-    Computes prototypes for all nodes in the tree and returns `ClusterNodeWithPrototype` tree
-    :param hierarchical_clustering_object: back reference to hierarchical_clustering_object
-    :param tree: root of the tree to process
-    :param values: values of items in the tree. Should support `values[node.id]`.
-    :param prototyping_function: function that will calculate prototypes.
-        Must take four arguments: sequence_a, sequence_b, weight_a, weight_b
-    :return:
-    """
-    def map_function(node):
-        prototype = values[node.id]
-
-        return DTWClusterNode(hierarchical_clustering_object, node.id, prototype,
-                                        left=node.get_left(), right=node.get_right(),
-                                        dist=node.dist, count=node.count)
-
-    def reduce_function(parent_node, left, right):
-        # Check if we need to swap nodes by chance
-        if parent_node.get_left().id == right.id or parent_node.get_right().id == left.id:
-            left, right = right, left
-
-        # Consistency check
-        assert(parent_node.get_left().id == left.id)
-        assert(parent_node.get_right().id == right.id)
-        assert(parent_node.count == left.count + right.count)
-
-        prototype = prototyping_function(left.prototype.values, right.prototype.values, left.count, right.count)
-
-        return DTWClusterNode(hierarchical_clustering_object, parent_node.id, prototype,
-                                        left=left, right=right, dist=parent_node.dist, count=parent_node.count)
-
-    def is_value(node):
-        return isinstance(node, DTWClusterNode)
-
-    return _reduce_tree(tree, reduce_function, map_function, is_value)
-
-class InteractiveDendrogramCutter(object):
-    _linkage = None
-    _figure = None
-    _axis = None
-
-    _cut_value = None
-    _line = None
-
-    def _onmotion_listener(self, event):
-        if event.inaxes != self._axis or event.ydata is None:
-            if self._line.get_visible():
-                # Hide line
-                self._line.set_visible(False)
-                self._figure.canvas.draw()
-                return
-        else:
-            self._line.set_ydata(event.ydata)
-            self._line.set_visible(True)
-            self._figure.canvas.draw()
-
-    def _onclick_listener(self, event):
-        # Allow only double-click, only in axis, only the left button and only regions with value
-        if not event.dblclick or event.inaxes != self._axis or event.button != 1 or event.ydata is None:
-            return
-
-        self._cut_value = event.ydata
-        plt.close(self._figure)
-
-    def __init__(self, linkage):
-        self._linkage = linkage
-
-
-    def show(self):
-
-        figure = plt.figure()
-        self._figure = figure
-        self._axis = plt.gca()  # Get axis
-
-        self._figure.canvas.mpl_connect('button_press_event', self._onclick_listener)
-        self._figure.canvas.mpl_connect('motion_notify_event', self._onmotion_listener)
-        hierarchy.dendrogram(self._linkage, no_labels=True)
-        self._line = self._axis.axhline(linestyle='--', y=0, visible=False)
-
-        plt.title('Double click on the dendrogram to cut it')
-        plt.show()
-
-    @property
-    def value(self):
-        return self._cut_value
-
 class HierarchicalClustering(object):
     _condensed_distance_matrix = None
     _data = None
@@ -305,6 +300,7 @@ class HierarchicalClustering(object):
     __dtw_kwargs = None
 
     __tree = None
+    __tree_nodes_list = None
 
     def __init__(self, data, condensed_distance_matrix, linkage_matrix=None, dtw_function=dtw_std, prototyping_method='psa'):
         """
@@ -355,8 +351,9 @@ class HierarchicalClustering(object):
 
         self.__dtw_function = dtw_function
 
-        tree = self.__dtw_tree_from_linkage(linkage_matrix, prototyping_method)
+        tree, tree_nodes = self.__dtw_tree_from_linkage(linkage_matrix, prototyping_method)
         self.__tree = tree
+        self.__tree_nodes_list = tree_nodes
 
     def __dtw_tree_from_linkage(self, linkage, method):
         """
@@ -365,8 +362,8 @@ class HierarchicalClustering(object):
         :param method: prototyping method
         :return:
         """
-        root = hierarchy.to_tree(linkage)
-        self._rename_nodes(root)
+
+
 
         if method == 'psa':
             averaging_func = lambda x, y, wx, wy: \
@@ -381,10 +378,7 @@ class HierarchicalClustering(object):
             raise ValueError('Incorrect method supplied: '
                              'only \'psa\', \'standard\' or \'standard-unweighted\' supported')
 
-        # Compute prototypes for the tree
-        tree = _compute_dtw_tree(self, root, self.data, averaging_func)
-
-        return tree
+        return _to_dtw_tree(linkage, self, averaging_func)
 
     @property
     def data(self):
@@ -420,6 +414,10 @@ class HierarchicalClustering(object):
 
     def as_tree(self):
         return self.__tree
+
+    @property
+    def tree_nodes_list(self):
+        return self.__tree_nodes_list
 
     def dendrogram(self, *args, **kwargs):
         """
@@ -470,61 +468,6 @@ class HierarchicalClustering(object):
             else:
                 clusters.add(current_node)
         return ClusterAssignments(self, clusters, t)
-
-    def interactive_cut(self):
-        cutter = InteractiveDendrogramCutter(self.linkage)
-
-        cutter.show()
-        value = cutter.value
-
-        try:
-            value = float(value)
-        except TypeError, ValueError:
-            raise ValueError('Incorrect back from the interactive cut routine. Did you double-click it?')
-
-        return self.cut(value)
-
-    def pairwise_distances_to_index(self, query_index):
-        """
-        Reads the pairwise distances of an index to other indices from the condensed distance matrix
-        :param index:
-        :return:
-        """
-        data_index = self.data.items
-        if query_index not in data_index:
-            raise ValueError('No index {0} in data'.format(query_index))
-
-        n = len(data_index)
-        # Find the query index in the full index
-        query_index_pos = list(data_index).index(query_index)
-
-        dm = self.condensed_distance_matrix
-
-        dm_indices = np.empty(n-1, dtype=int)
-        start = 0
-        for i in xrange(query_index_pos):
-            # Each i will have to be compared with n_compared to items:
-            n_compared_to = n - i - 1
-
-            # the comparisons will be in this order
-            # (i, i+1), (i, i+2), (i, i+3)
-            # So if index == i+1 then offset = 0
-            # If index == i+2, offset = 1
-            # So on, so offset = index - i - 1
-            query_index_offset = query_index_pos - i-1
-            dm_indices[i] = start + query_index_offset
-
-            start += n_compared_to
-
-        # Add all other items
-        n_compared_to = n - query_index_pos - 1
-        dm_indices[query_index_pos:n-1] = np.arange(start,start+n_compared_to)
-        distances = dm[dm_indices]
-
-        data_without_query_index = data_index - [query_index]
-        return pd.Series(distances, index=data_without_query_index)
-
-
 
 class ClusterAssignments(object):
     _hierarchical_clustering_object = None
