@@ -29,7 +29,7 @@ def dataset_ticks(dataset, scale=1):
 
     return FuncFormatter(f)
 
-def raw_plot_data_as_heatmap(data_frame, ax=None, *args, **kwargs):
+def raw_plot_data_as_heatmap(data_frame, ax=None, highlight_mask=None, *args, **kwargs):
     if ax is None:
         ax = plt.gca()
 
@@ -42,10 +42,16 @@ def raw_plot_data_as_heatmap(data_frame, ax=None, *args, **kwargs):
 
     result = ax.imshow(masked_arr, origin='lower', cmap=cmap, aspect="auto", interpolation='nearest', *args, **kwargs)
 
+    if highlight_mask is not None:
+        highlight_cmap = matplotlib.cm.get_cmap('bone')
+        cmap.set_bad('#000000', 0)
+        ax.imshow(highlight_mask, origin='lower', cmap=highlight_cmap, aspect="auto", interpolation='nearest',
+                           *args, **kwargs)
+
     return result
 
 def plot(alignments, clip_colors=True, titles=None, horizontal_grid=True,
-         no_y_axis=False, sort_by='length', subplot_spec=None, share_y_axis=None, scale_y_axis=None):
+         no_y_axis=False, sort_by='length', subplot_spec=None, share_y_axis=None, scale_y_axis=None, highlighted_points={}):
     """
 
     :param alignments: `AlignmentsData` object
@@ -59,6 +65,7 @@ def plot(alignments, clip_colors=True, titles=None, horizontal_grid=True,
     :param share_y_axis: if not None, the plot will share the major (items) axis with the specified axis
     :param scale_y_axis: plot will scale the y axis by the specified number (linearly) if set.
     :type scale_y_axis: int
+    :param highlighted_points: a (index, array) dictionary of points that should be highlighted in the heatmap
     :return: returns the shared y axis
     """
     import matplotlib.pyplot as plt
@@ -137,7 +144,18 @@ def plot(alignments, clip_colors=True, titles=None, horizontal_grid=True,
     if scale_y_axis:
         extent = [0, max_len, 0, alignments.number_of_items * scale_y_axis] # Multiply by 10 as that is what matplotlib's dendrogram returns
 
+    if highlighted_points:
+        highlight_mask = np.zeros((alignments.number_of_items, max_len), dtype=np.bool)
+        for i, ix in enumerate(sorted_index):
+            try:
+                points = highlighted_points[ix]
+            except KeyError:
+                continue
+            highlight_mask[i][points] = 1
 
+        highlight_mask = np.ma.masked_where(highlight_mask == 0, highlight_mask)
+    else:
+        highlight_mask = None
 
     for i, (ix, title) in enumerate(zip(alignments.dataset_axis, titles)):
         t_gs = gs[:, i] if horizontal_grid else gs[i, 1]
@@ -169,10 +187,9 @@ def plot(alignments, clip_colors=True, titles=None, horizontal_grid=True,
         # Cut most of the columns that are NaNs out of the plot
         data_to_plot = data_to_plot[data_to_plot.columns[:max_len]]
 
-        result = raw_plot_data_as_heatmap(data_to_plot, vmin=min_value, vmax=max_value, extent=extent)
+        result = raw_plot_data_as_heatmap(data_to_plot, vmin=min_value, vmax=max_value, extent=extent, highlight_mask=highlight_mask)
         debug(plt.gca().get_ylim())
         debug(plt.gca().get_xlim())
-
 
         plt.title(title)
         plt.gca().title.set_fontsize(7)

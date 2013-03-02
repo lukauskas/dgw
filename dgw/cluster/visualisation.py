@@ -18,6 +18,7 @@ class ClusterPreviewer(object):
         debug('Calculating projections')
         for c in self._clusters:
             c.ensure_projections_are_calculated()
+            c.ensure_points_of_interest_are_tracked_down()
 
 
     def gs_prototype(self):
@@ -83,7 +84,7 @@ class ClusterPreviewer(object):
         plt.cla()
 
         shared_axis = current_cluster.data.plot_heatmap(horizontal_grid=True, subplot_spec=self.gs_heatmap(),
-                                                        sort_by=None)
+                                                        sort_by=None, highlighted_points=current_cluster.points_of_interest)
 
         # Projections
         projections = current_cluster.projected_data
@@ -96,7 +97,7 @@ class ClusterPreviewer(object):
         ax_projected_heatmap = plt.subplot(self.gs_projected_heatmap())
         plt.cla()
         current_cluster.projected_data.plot_heatmap(horizontal_grid=True, subplot_spec=self.gs_projected_heatmap(),
-                                                    share_y_axis=shared_axis, sort_by=None)
+                                                    share_y_axis=shared_axis, sort_by=None, highlighted_points=current_cluster.tracked_points_of_interest)
 
         # Finally issue a draw command for the plot
         plt.draw()

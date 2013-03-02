@@ -16,6 +16,8 @@ class DTWClusterNode(object, hierarchy.ClusterNode):
     _hierarchical_clustering_object = None
     _projected_data = None
     _warping_paths = None
+    _tracked_points = None
+    _points_of_interest = None
 
     def __init__(self, hierarchical_clustering_object, id, prototype, left=None, right=None, dist=0, count=1):
         hierarchy.ClusterNode.__init__(self, id, left=left, right=right, dist=dist, count=count)
@@ -24,6 +26,9 @@ class DTWClusterNode(object, hierarchy.ClusterNode):
         self._prototype = prototype
         self._hierarchical_clustering_object = hierarchical_clustering_object
         self._index = pd.Index(self.__get_item_ids())
+
+        # Assume only bin 40 is interesting at this point ... TODO: make this customisable
+        self._points_of_interest = {ix: np.array([40], dtype=np.int32) for ix in self.index}
 
     def __get_item_ids(self):
         """
@@ -58,6 +63,11 @@ class DTWClusterNode(object, hierarchy.ClusterNode):
         if not self._projected_data:
             self._projected_data = self.__project_items_onto_prototype()
 
+    def ensure_points_of_interest_are_tracked_down(self):
+        if self._tracked_points is None:
+            self._tracked_points = self.__track_points_of_interest()
+
+
     @property
     def warping_paths(self):
         if not self._warping_paths:
@@ -84,14 +94,13 @@ class DTWClusterNode(object, hierarchy.ClusterNode):
 
     def __project_items_onto_prototype(self):
         data = self.data
-        dtw_function = self._hierarchical_clustering_object.dtw_function
         prototype = self.prototype
 
         warping_paths = self.warping_paths
 
         columns = data.dataset_axis
 
-        projections = pd.Panel()
+        projections = {}
         for ix in data.items:
             item = data.ix[ix]
 
@@ -99,7 +108,28 @@ class DTWClusterNode(object, hierarchy.ClusterNode):
             df = pd.DataFrame(projection, index=range(len(prototype)), columns=columns)
             projections[ix] = df
 
-        return AlignmentsData(projections)
+        return AlignmentsData(pd.Panel(projections))
+
+    def __track_points_of_interest(self):
+        points_of_interest = self.points_of_interest
+        warping_paths = self.warping_paths
+        tracked_points = {}
+        for ix, poi in points_of_interest.iteritems():
+            mapped_points = transformations.points_mapped_to(poi, warping_paths[ix])
+            tracked_points[ix] = mapped_points
+
+        return tracked_points
+    @property
+    def points_of_interest(self):
+        poi = self._points_of_interest
+
+        return poi
+
+    @property
+    def tracked_points_of_interest(self):
+        self.ensure_points_of_interest_are_tracked_down()
+        tracked_points = self._tracked_points
+        return tracked_points
 
     @property
     def n_items(self):

@@ -7,21 +7,21 @@ from dgw.data.containers import AlignmentsData
 
 from distance import dtw_std, _strip_nans, no_nans_len
 
-def track_a_point_down(index, path, sequence_a=True):
+def points_mapped_to(point_on_original_sequence, dtw_path, sequence_a=True):
     """
     Returns all indices on the sequence b that are mapped to the index on sequence_a provided.
 
-    :param index: query index
-    :param path: DTW warping path between `sequence_a` and `sequence_b`
+    :param point_on_original_sequence: index of a point on original sequence
+    :param dtw_path: DTW warping path between `sequence_a` and `sequence_b`
     :param sequence_a: whether the query point is on `sequence_a` or not. (Will swap sequences otherwise)
     :return:
     """
     if sequence_a:
-        path_ours, path_theirs = path
+        path_ours, path_theirs = dtw_path
     else:
-        path_theirs, path_ours = path
+        path_theirs, path_ours = dtw_path
 
-    path_indices = np.nonzero(path_ours == index)
+    path_indices = np.nonzero(path_ours == point_on_original_sequence)
     return path_theirs[path_indices]
 
 def uniform_scaling_to_length(sequence, desired_length):
@@ -172,14 +172,14 @@ def dtw_projection_multi(alignments, base, *args, **kwargs):
         index = alignments.index
         sequences = alignments.values
 
-    new_data = pd.Panel()
+    new_data = {}
 
     for index in alignments.items:
         item = alignments.ix[index]
         projection = dtw_projection(item, base, *args, **kwargs)
         new_data[index] = pd.DataFrame(projection, index=range(len(base)), columns=item.columns)
 
-    return AlignmentsData(new_data)
+    return AlignmentsData(pd.Panel(new_data))
 
 def dtw_path_averaging(sequence_a, sequence_b, weight_a=1, weight_b=1, path=None, shrink=True, dtw_function=dtw_std):
     """
