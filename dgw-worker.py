@@ -67,6 +67,8 @@ def argument_parser():
     parser.add_argument('-v', '--verbose', help='Turns on displaying of debug messages', action='store_const',
                         const=True, default=False)
 
+    parser.add_argument('--output-pairwise-distances', action='store_const', const=True, default=False,
+                        help='If set to true, DGW will output the pairwise distance matrix computed to a file.')
 
     return parser
 
@@ -212,8 +214,9 @@ def main():
 
 
         # --- Saving of the work --------------
-        print '> Saving the pairwise distance matrix to {0!r}'.format(configuration.pairwise_distances_filename)
-        np.save(configuration.pairwise_distances_filename, dm)
+        if configuration.pairwise_distances_filename:
+            print '> Saving the pairwise distance matrix to {0!r}'.format(configuration.pairwise_distances_filename)
+            np.save(configuration.pairwise_distances_filename, dm)
 
         # Linkage matrix
         print '> Computing linkage matrix'
