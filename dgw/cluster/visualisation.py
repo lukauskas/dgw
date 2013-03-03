@@ -1,14 +1,17 @@
 from logging import debug
+import os
 import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
 from matplotlib.widgets import Button
-
+import Tkinter, tkFileDialog
 
 class ClusterPreviewer(object):
     _clusters = None
     _main_gs = None
     _current_cluster_id = None
 
+    root_window = None
+    _add_save_button = None
     def __init__(self, cluster_roots):
         self._clusters = cluster_roots
         self._initialise_grid()
@@ -16,7 +19,12 @@ class ClusterPreviewer(object):
         self._current_cluster_id = 0
 
         debug('Calculating projections')
+        self._add_save_button = True
         for c in self._clusters:
+            if c.regions is None:
+                debug('Cluster {0!r} has no regions information, cannot save'.format(c))
+                self._add_save_button = False
+
             c.ensure_projections_are_calculated()
             c.ensure_points_of_interest_are_tracked_down()
 
@@ -48,6 +56,25 @@ class ClusterPreviewer(object):
         self._current_cluster_id = (self._current_cluster_id - 1) % len(self._clusters)
         self.draw()
 
+    def _callback_save(self, event):
+        debug('Save clicked')
+
+        # Create a root window that can be closed as otherwise tkFileDialog will create unclosable one
+        if self.root_window is None:
+            self.root_window = Tkinter.Tk()
+            self.root_window.withdraw()  # Closing the newly-created win
+
+        directory = tkFileDialog.askdirectory(title="Select a directory where the resulting clusters will be saved to")
+        if not os.path.exists(directory):
+            os.makedirs(directory)
+
+        print '> Saving clusters to directory {0}'.format(directory)
+        for i, c in enumerate(self._clusters):
+            filename = os.path.join(directory, 'dgw_cluster_{0}.bed'.format(i + 1))
+            c.save_as_encode_track(filename, track_name='DGWCluster{0}'.format(i + 1),
+                                   track_description='DGW Cluster {0}/{1}'.format(i + 1, len(self._clusters)))
+        print '> Saved'
+
     def draw_buttons(self):
         buttons_left = 0.05
         buttons_bottom = 1 - 0.1
@@ -65,6 +92,12 @@ class ClusterPreviewer(object):
                                    button_width, button_height])
         self.button_next = Button(ax_button_next, 'Next')
         self.button_next.on_clicked(self._callback_next)
+
+        if self._add_save_button:
+            ax_button_save = plt.axes([buttons_left + button_width * 2 + button_spacing * 2, buttons_bottom,
+                                       button_width, button_height])
+            self.button_save = Button(ax_button_save, 'Save all')
+            self.button_save.on_clicked(self._callback_save)
 
     def draw(self):
 
@@ -193,11 +226,6 @@ class HierarchicalClusteringViewer(object):
         self.button_preview = Button(ax_button_preview, 'Preview')
         self.button_preview.on_clicked(self._callback_preview)
 
-        #ax_button_save = plt.axes([buttons_left + button_width + button_spacing, buttons_bottom,
-        #                           button_width, button_height])
-
-        #self.button_save = Button(ax_button_save, 'Save')
-        #self.button_save.on_clicked(self._callback_save)
 
     def draw(self):
         leaves = self.draw_dendrogram()

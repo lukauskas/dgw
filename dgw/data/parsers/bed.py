@@ -1,3 +1,4 @@
+from StringIO import StringIO
 import pandas as pd
 from ..containers import Regions
 
@@ -12,7 +13,19 @@ def read_bed(bed_file):
     :return:
     :rtype: `pd.DataFrame`
     """
-    regions = pd.read_csv(bed_file, sep="\t", header=None)
+    f = open(bed_file, 'r')
+    try:
+        s = StringIO()
+        # Filter out all lines that do not start with "chr" as BED files are allowed to contain some junk
+        for line in f:
+            if line.startswith('chr'):
+                s.write(line)
+        s.seek(0)
+        regions = pd.read_csv(s, sep="\t", header=None)
+    finally:
+        f.close()
+        s.close()
+
 
     regions.columns = BED_COLUMNS[:len(regions.columns)]
     if 'name' in regions.columns:
@@ -20,13 +33,18 @@ def read_bed(bed_file):
 
     return Regions(regions)
 
-def write_bed(regions, writable_file):
+def write_bed(regions, writable_file, **track_kwargs):
     import csv
 
     need_closing = False
     if not isinstance(writable_file, file):
         writable_file = open(writable_file, 'w')
         need_closing = True
+
+    if track_kwargs:
+        kwarg_strings = {"{0}=\"{1}\"".format(key, value) for key,value in track_kwargs.iteritems()}
+        track_header = "track {0}\n".format(' '.join(kwarg_strings))
+        writable_file.write(track_header)
 
     writer = csv.writer(writable_file, delimiter='\t', quotechar='"')
     for ix, data in regions.iterrows():

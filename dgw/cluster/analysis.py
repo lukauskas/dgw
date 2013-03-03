@@ -157,6 +157,16 @@ class DTWClusterNode(object, hierarchy.ClusterNode):
     def warping_paths(self, values):
         self._warping_paths = values
 
+    @property
+    def regions(self):
+        """
+        :rtype: Regions
+        """
+        if self._hierarchical_clustering_object.regions is None:
+            return None
+        else:
+            return self._hierarchical_clustering_object.regions.ix[self.index]
+
     def __compute_dtw_warping_paths(self):
         data = self.data
         dtw_function = self._hierarchical_clustering_object.dtw_function
@@ -173,6 +183,19 @@ class DTWClusterNode(object, hierarchy.ClusterNode):
             paths[ix] = path
 
         return paths
+
+    def save_as_encode_track(self, filename, track_name=None, track_description=None):
+        if self.regions is None:
+            raise Exception('Cannot save {0!r} as region locations are not specified'.format(self))
+
+        if track_name:
+            track_kwargs = {'name': track_name}
+            if track_description:
+                track_kwargs['description'] = track_description
+        else:
+            track_kwargs = {}
+        self.regions.to_bed(filename, **track_kwargs)
+
 
     def __project_items_onto_prototype(self):
 
@@ -307,11 +330,12 @@ class HierarchicalClustering(object):
     _distance_threshold = None
     __dtw_args = None
     __dtw_kwargs = None
+    _regions = None
 
     __tree = None
     __tree_nodes_list = None
 
-    def __init__(self, data, linkage_matrix, dtw_function=dtw_std, prototypes=None, prototyping_method='psa'):
+    def __init__(self, data, regions, linkage_matrix, dtw_function=dtw_std, prototypes=None, prototyping_method='psa'):
         """
         Initialises hierarchical clustering analyser.
         Handles linkage calculation, dendrogram plotting and prototype generation.
@@ -345,6 +369,7 @@ class HierarchicalClustering(object):
 
 
         self._data = data
+        self._regions = regions
 
         # small negative distances in linkage matrix are sometimes possible due to rounding errors. Change them to 0
         linkage_matrix[:, 2][linkage_matrix[:, 2] < 0] = 0
@@ -397,6 +422,10 @@ class HierarchicalClustering(object):
         :rtype: AlignmentsData
         """
         return self._data
+
+    @property
+    def regions(self):
+        return self._regions
 
     @property
     def dtw_function(self):

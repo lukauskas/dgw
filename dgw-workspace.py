@@ -22,6 +22,9 @@ assert(isinstance(configuration, Configuration))
 
 if configuration.parsed_regions_filename:
     regions = load_from_pickle(configuration.parsed_regions_filename)
+else:
+    regions = None
+
 if configuration.processed_dataset_filename:
     dataset = load_from_pickle(configuration.processed_dataset_filename)
 else:
@@ -35,7 +38,7 @@ if configuration.linkage_filename:
     linkage = np.load(configuration.linkage_filename)
     prototypes = load_from_pickle(configuration.prototypes_filename)
     warping_paths = load_from_pickle(configuration.warping_paths_filename)
-    hc = dgw.cluster.analysis.HierarchicalClustering(dataset, linkage_matrix=linkage, prototypes=prototypes,
+    hc = dgw.cluster.analysis.HierarchicalClustering(dataset, regions, linkage_matrix=linkage, prototypes=prototypes,
                                                      dtw_function=configuration.dtw_function)
     add_path_data(hc.tree_nodes_list, hc.num_obs, warping_paths)
     hcv = dgw.cluster.HierarchicalClusteringViewer(hc)

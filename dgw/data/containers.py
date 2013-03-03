@@ -25,6 +25,28 @@ class AlignmentsDataIndexer(object):
     def __setitem__(self, key, value):
         self._ndframe_indexer.__setitem__(self, key, value)
 
+class RegionsIndexer(object):
+    """
+    A wrapper around `_NDFrameIndexer` that would return `Regions` objects instead of `pd.DataFrame` objects
+    """
+    _ndframe_indexer = None
+    regions = None
+
+    def __init__(self, ndframe_indexer, regions):
+        self._ndframe_indexer = ndframe_indexer
+        self.regions = regions
+
+    def __getitem__(self, key):
+        result = self._ndframe_indexer.__getitem__(key)
+        if isinstance(result, pd.DataFrame):
+            data = self.regions.__class__(result)
+            return data
+        else:
+            return result
+
+    def __setitem__(self, key, value):
+        self._ndframe_indexer.__setitem__(self, key, value)
+
 class AlignmentsData(object):
 
     _data = None
@@ -177,9 +199,9 @@ class Regions(object):
         from dgw.data.parsers import read_bed
         return cls(read_bed(bed_file))
 
-    def to_bed(self, bed_file):
+    def to_bed(self, bed_file, **track_kwargs):
         from dgw.data.parsers import write_bed
-        return write_bed(self, bed_file)
+        return write_bed(self, bed_file, **track_kwargs)
 
     # --- Functions that provide direct access to the DataFrame behind all this ----------------------------------------
     def __getitem__(self, item):
@@ -208,7 +230,7 @@ class Regions(object):
 
     @property
     def ix(self):
-        return self.data.ix
+        return RegionsIndexer(self.data.ix, self)
 
     @property
     def columns(self):
@@ -364,6 +386,7 @@ class Genes(Regions):
 
         # Add window around these
         starts = tss_locations - window_width
+        starts[starts < 0] = 0
         ends = tss_locations + window_width
 
         regions_df = pd.DataFrame({'chromosome' : self['chromosome'],

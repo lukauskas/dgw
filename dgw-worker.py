@@ -241,7 +241,7 @@ def main():
 
         print '> Computing prototypes'
         # Hierarchical clustering object to compute the prototypes
-        hc = HierarchicalClustering(datasets, linkage, dtw_function=configuration.dtw_function)
+        hc = HierarchicalClustering(datasets, regions, linkage, dtw_function=configuration.dtw_function)
         prototypes = hc.extract_prototypes()
         print '> Saving prototypes to {0!r}'.format(configuration.prototypes_filename)
         serialise(prototypes, configuration.prototypes_filename)
