@@ -9,10 +9,12 @@ import argparse
 import logging
 from math import factorial
 import os
+import fastcluster
 import numpy as np
 import pandas as pd
 import cPickle as pickle
 from datetime import datetime
+from dgw.cluster import HierarchicalClustering, compute_paths
 
 from dgw.data.containers import Regions
 from dgw.data.parsers import read_bam, HighestPileUpFilter
@@ -44,7 +46,7 @@ def argument_parser():
                         help='Do a blank run - just process the dataset.but do not calculate the pairwise distances')
 
     parser.add_argument('--metric', help='Local distance metric to be used in DTW',
-                        choices=['sqeuclidean', 'euclidean', 'cosine'], default='sqeuclidean')
+                        choices=['sqeuclidean', 'euclidean', 'cosine'], default=None)
 
     parser.add_argument('-sb', '--slanted-band', metavar='k', help='Constrain DTW with slanted band of width k',
                         type=int) # TODO: assert > 0
@@ -64,6 +66,7 @@ def argument_parser():
 
     parser.add_argument('-v', '--verbose', help='Turns on displaying of debug messages', action='store_const',
                         const=True, default=False)
+
 
     return parser
 
@@ -129,6 +132,19 @@ def main():
     elif not args.processed_dataset:
         if not args.regions or not args.datasets:
             parser.error('Must specify both --regions and --datasets')
+
+    if args.metric is None:
+        if args.processed_dataset:
+            parser.error('Must provide a metric if using processed dataset')
+        elif len(args.datasets) >= 2:
+            print "> Defaulting to cosine distance as more than 2 datasets given"
+            args.metric = 'cosine'
+        else:
+            print "> Defaulting to sqeuclidean distance as only one dataset given"
+            args.metric = 'sqeuclidean'
+    elif args.metric == 'cosine':
+        if args.datasets and len(args.datasets) < 2:
+            parser.error('Cannot use cosine distance with just one dataset. Choose sqeuclidean or euclidean instead.')
 
     if args.verbose:
         logging.root.setLevel(logging.DEBUG)
@@ -198,6 +214,27 @@ def main():
         # --- Saving of the work --------------
         print '> Saving the pairwise distance matrix to {0!r}'.format(configuration.pairwise_distances_filename)
         np.save(configuration.pairwise_distances_filename, dm)
+
+        # Linkage matrix
+        print '> Computing linkage matrix'
+        linkage = fastcluster.complete(dm)
+
+        print '> Saving linkage matrix to {0!r}'.format(configuration.linkage_filename)
+        np.save(configuration.linkage_filename, linkage)
+
+        print '> Computing prototypes'
+        # Hierarchical clustering object to compute the prototypes
+        hc = HierarchicalClustering(datasets, linkage, dtw_function=configuration.dtw_function)
+        prototypes = hc.extract_prototypes()
+        print '> Saving prototypes to {0!r}'.format(configuration.prototypes_filename)
+        serialise(prototypes, configuration.prototypes_filename)
+
+        print '> Computing warping paths'
+        nodes = hc.tree_nodes_list
+        paths = compute_paths(datasets, nodes, hc.num_obs, configuration.args.n_cpus, **configuration.dtw_kwargs)
+        print '> Saving warping paths to {0!r}'.format(configuration.warping_paths_filename)
+        serialise(paths, configuration.warping_paths_filename)
+
     else:
         print '> Skipping pairwise distances step because of --blank option set'
 

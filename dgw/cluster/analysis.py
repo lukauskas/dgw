@@ -11,13 +11,13 @@ from ..dtw.distance import dtw_std, no_nans_len
 from ..dtw import transformations, dtw_projection
 from ..dtw.parallel import parallel_dtw_paths
 
-def _compute_paths(data, dtw_nodes_list, n, n_processes=None, *dtw_args, **dtw_kwargs):
+def compute_paths(data, dtw_nodes_list, n, n_processes=None, *dtw_args, **dtw_kwargs):
 
     non_leaf_nodes = dtw_nodes_list[n:]
     paths = parallel_dtw_paths(data, non_leaf_nodes, n_processes=n_processes, *dtw_args, **dtw_kwargs)
     return paths
 
-def _to_dtw_tree(linkage, hierarchical_clustering_object, prototyping_function):
+def _to_dtw_tree(linkage, hierarchical_clustering_object, prototypes, prototyping_function):
     """
     Converts a hierarchical clustering linkage matrix `linkage` to hierarchy of `DTWClusterNode`s.
     This is a modification of `scipy.cluster.hierarchy.to_tree` function and the code is mostly taken from it.
@@ -60,7 +60,10 @@ def _to_dtw_tree(linkage, hierarchical_clustering_object, prototyping_function):
         right = d[fj]
         dist = linkage[i, 2]
 
-        prototype = prototyping_function(left.prototype.values, right.prototype.values, left.count, right.count)
+        if prototypes:
+            prototype = prototypes[id]
+        else:
+            prototype = prototyping_function(left.prototype.values, right.prototype.values, left.count, right.count)
 
         nd = DTWClusterNode(id=id, hierarchical_clustering_object=hierarchical_clustering_object,
                             prototype=prototype,
@@ -72,8 +75,15 @@ def _to_dtw_tree(linkage, hierarchical_clustering_object, prototyping_function):
 
     return nd, d
 
-def add_path_data(data, dtw_nodes, n, n_processes=None, **dtw_kwargs):
-    paths = _compute_paths(data, dtw_nodes, n, n_processes=n_processes, **dtw_kwargs)
+def add_path_data(dtw_nodes, n, paths):
+    """
+    Adds precomputed path data to dtw_nodes
+    :param data:
+    :param dtw_nodes:
+    :param n:
+    :param paths:
+    :return:
+    """
     # Loop through non-leaf nodes
     for node in dtw_nodes[n:]:
         node.warping_paths = paths[node.id]
@@ -302,7 +312,7 @@ class HierarchicalClustering(object):
     __tree = None
     __tree_nodes_list = None
 
-    def __init__(self, data, condensed_distance_matrix, linkage_matrix=None, dtw_function=dtw_std, prototyping_method='psa'):
+    def __init__(self, data, linkage_matrix, dtw_function=dtw_std, prototypes=None, prototyping_method='psa'):
         """
         Initialises hierarchical clustering analyser.
         Handles linkage calculation, dendrogram plotting and prototype generation.
@@ -325,40 +335,41 @@ class HierarchicalClustering(object):
 
         :param data: a pd.DataFrame object of the data in clusters
         :type data: AlignmentsData
-        :param condensed_distance_matrix: a condensed distance matrix of this clustering computed by pdist
-        :param linkage_matrix: (optional) linkage_matrix computed by fastcluster.linkage. Will be computed automatically if not provided
+        :param linkage_matrix: linkage_matrix computed by fastcluster.linkage.
         :param dtw_function: DTW calculation function
+        :param prototypes: cluster node prototypes (will be computed if None)
         :param prototyping_method: Averaging method either 'psa', 'standard' or 'standard-unweighted'
         :return:
         """
-        self._condensed_distance_matrix = condensed_distance_matrix
         if not isinstance(data, AlignmentsData):
             raise ValueError('Data should be instance of {0}'.format(AlignmentsData.__name__))
 
-        if not num_obs_y(condensed_distance_matrix) == data.number_of_items:
-            raise ValueError('Mismatch of the number of observations '
-                             'in the condensed distance matrix and the data provided: '
-                             '{0} != {1}'.format(num_obs_y(condensed_distance_matrix), len(data)))
 
         self._data = data
 
-        # Compute linkage matrix if its not provided
-        if linkage_matrix is None:
-            linkage_matrix = fastcluster.complete(condensed_distance_matrix)
-            # small negative distances in linkage matrix are sometimes possible due to rounding errors. Change them to 0
-            linkage_matrix[:, 2][linkage_matrix[:, 2] < 0] = 0
+        # small negative distances in linkage matrix are sometimes possible due to rounding errors. Change them to 0
+        linkage_matrix[:, 2][linkage_matrix[:, 2] < 0] = 0
         self._linkage_matrix = linkage_matrix
 
         self.__dtw_function = dtw_function
 
-        tree, tree_nodes = self.__dtw_tree_from_linkage(linkage_matrix, prototyping_method)
+        tree, tree_nodes = self.__dtw_tree_from_linkage(linkage_matrix, prototypes, prototyping_method)
         self.__tree = tree
         self.__tree_nodes_list = tree_nodes
 
-    def __dtw_tree_from_linkage(self, linkage, method):
+    def extract_prototypes(self):
+        prototypes = {}
+
+        for node in self.tree_nodes_list:
+            prototypes[node.id] = node.prototype
+
+        return prototypes
+
+    def __dtw_tree_from_linkage(self, linkage, prototypes,  method):
         """
         Computes a prototyped tree from linkage matrix
         :param linkage: linkage matrix
+        :param prototypes: possibly precomputed prototypes
         :param method: prototyping method
         :return:
         """
@@ -378,7 +389,7 @@ class HierarchicalClustering(object):
             raise ValueError('Incorrect method supplied: '
                              'only \'psa\', \'standard\' or \'standard-unweighted\' supported')
 
-        return _to_dtw_tree(linkage, self, averaging_func)
+        return _to_dtw_tree(linkage, self, prototypes, averaging_func)
 
     @property
     def data(self):

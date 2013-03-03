@@ -21,6 +21,27 @@ class Configuration(object):
             return None
 
     @property
+    def linkage_filename(self):
+        if not self.args.blank:
+            return '{0}_linkage.npy'.format(self.args.prefix)
+        else:
+            return None
+
+    @property
+    def prototypes_filename(self):
+        if not self.args.blank:
+            return '{0}_prototypes.pickle'.format(self.args.prefix)
+        else:
+            return None
+
+    @property
+    def warping_paths_filename(self):
+        if not self.args.blank:
+            return '{0}_warping_paths.pickle'.format(self.args.prefix)
+        else:
+            return None
+
+    @property
     def configuration_filename(self):
         return '{0}_config.pickle'.format(self.args.prefix)
 
