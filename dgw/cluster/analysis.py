@@ -11,20 +11,20 @@ from ..dtw.distance import dtw_std, no_nans_len
 from ..dtw import transformations, dtw_projection
 from ..dtw.parallel import parallel_dtw_paths
 
-def compute_paths(data, dtw_nodes_list, n, n_processes=None, *dtw_args, **dtw_kwargs):
+def compute_paths(data, dtw_nodes_list, n, n_processes=None, no_dtw=False, *dtw_args, **dtw_kwargs):
 
     non_leaf_nodes = dtw_nodes_list[n:]
-    paths = parallel_dtw_paths(data, non_leaf_nodes, n_processes=n_processes, *dtw_args, **dtw_kwargs)
+    paths = parallel_dtw_paths(data, non_leaf_nodes, n_processes=n_processes, no_dtw=no_dtw, *dtw_args, **dtw_kwargs)
     return paths
 
-def _to_dtw_tree(linkage, hierarchical_clustering_object, prototypes, prototyping_function):
+def _to_dtw_tree(linkage, hierarchical_clustering_object, prototypes, prototyping_function='mean'):
     """
     Converts a hierarchical clustering linkage matrix `linkage` to hierarchy of `DTWClusterNode`s.
     This is a modification of `scipy.cluster.hierarchy.to_tree` function and the code is mostly taken from it.
 
     :param linkage: linkage matrix to convert to the DTW Tree
     :param hierarchical_clustering_object: hierarchical clustering object to work with
-    :param prototyping_function: prototyping function to be used to compute prototypes
+    :param prototyping_function: "reduce" function for prototype calculation, or "mean" to simply use data mean
     """
 
     # Validation
@@ -62,13 +62,28 @@ def _to_dtw_tree(linkage, hierarchical_clustering_object, prototypes, prototypin
 
         if prototypes:
             prototype = prototypes[id]
-        else:
+
+            nd = DTWClusterNode(id=id, hierarchical_clustering_object=hierarchical_clustering_object,
+                                prototype=prototype,
+                                left=left, right=right,
+                                dist=linkage[i, 2])
+            
+        elif callable(prototyping_function):
             prototype = prototyping_function(left.prototype.values, right.prototype.values, left.count, right.count)
 
-        nd = DTWClusterNode(id=id, hierarchical_clustering_object=hierarchical_clustering_object,
-                            prototype=prototype,
-                            left=left, right=right,
-                            dist=linkage[i, 2])
+            nd = DTWClusterNode(id=id, hierarchical_clustering_object=hierarchical_clustering_object,
+                                prototype=prototype,
+                                left=left, right=right,
+                                dist=linkage[i, 2])
+
+        elif prototyping_function == 'mean':
+            nd = DTWClusterNode(id=id, hierarchical_clustering_object=hierarchical_clustering_object,
+                                prototype=None,
+                                left=left, right=right,
+                                dist=linkage[i, 2])
+
+            # A bit hacky, but does job. Doing this as to get to use nd.data
+            nd._prototype = nd.data.mean()
 
         assert(linkage[i, 3] == nd.count)
         d[n + i] = nd
@@ -201,7 +216,7 @@ class DTWClusterNode(object, hierarchy.ClusterNode):
 
         if self.is_leaf():
             # there is no projection, really, return itself
-            return AlignmentsData(pd.Panel({self.id: self.data}))
+            return self.data
         else:
             data = self.data
             prototype = self.prototype
@@ -409,6 +424,8 @@ class HierarchicalClustering(object):
         elif method == 'standard-unweighted':
             averaging_func = lambda x, y, wx, wy: \
                 transformations.dtw_path_averaging(x, y, 1, 1, dtw_function=self.dtw_function)
+        elif method == 'mean':
+            averaging_func = 'mean' # Not a function really, but the code will deal with it
         else:
             raise ValueError('Incorrect method supplied: '
                              'only \'psa\', \'standard\' or \'standard-unweighted\' supported')

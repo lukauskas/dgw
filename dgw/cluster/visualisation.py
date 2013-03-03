@@ -65,6 +65,9 @@ class ClusterPreviewer(object):
             self.root_window.withdraw()  # Closing the newly-created win
 
         directory = tkFileDialog.askdirectory(title="Select a directory where the resulting clusters will be saved to")
+        if not directory: # Filedialog returns empty string if escape is pressed
+            return
+
         if not os.path.exists(directory):
             os.makedirs(directory)
 

@@ -1,7 +1,4 @@
 from logging import debug
-
-__author__ = 'saulius'
-
 from mlpy.dtw import dtw_std as mlpy_dtw_std
 import numpy as np
 
@@ -46,16 +43,21 @@ def parametrised_dtw_wrapper(*dtw_args, **dtw_kwargs):
 
     return f
 
-def dtw_std(x, y, metric='sqeuclidean', dist_only=True, constraint=None, k=None, try_reverse=True, normalise=False, *args, **kwargs):
-    '''
-        Wrapper around mlpy's dtw_std that first strips all NaNs out of the data.
-
-    @param x:
-    @param y:
-    @param args:
-    @param kwargs:
-    @return:
-    '''
+def dtw_std(x, y, metric='sqeuclidean', dist_only=True, constraint=None, k=None, try_reverse=True, normalise=False,
+            *args, **kwargs):
+    """
+    Wrapper arround MLPY's dtw_std that supports cleaning up of NaNs, and reversing of strings.
+    :param x:
+    :param y:
+    :param metric: dtw metric to use `sqeuclidean`, `euclidean` or `cosine`
+    :param dist_only: return distance only
+    :param constraint: constraint of dtw (try `None` or `'slanted_band'`
+    :param k: parameter k needed for slanted band constraint
+    :param try_reverse: Will try reversing one sequence as to get a better distance
+    :param normalise: If set to true, distance will be divided from the length of the longer sequence
+    :param kwargs:
+    :return:
+    """
     def _normalise(ans):
         if normalise:
             return ans / max(no_nans_len(x), no_nans_len(y))

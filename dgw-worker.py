@@ -71,8 +71,11 @@ def argument_parser():
                         const=True, default=False)
 
     parser.add_argument('--output-pairwise-distances', action='store_const', const=True, default=False,
-                        help='If set to true, DGW will output the pairwise distance matrix computed to a file.')
+                        help='If provided, DGW will output the pairwise distance matrix computed to a file.')
 
+    parser.add_argument('--no-dtw', action='store_const', const=True, default=False,
+                        help='If this option is provided, DGW will not use Dynamic Time Warping for region alignments. '
+                             'Use it to compare it with basic methods.')
     return parser
 
 #-- Actual execution of the program
@@ -151,6 +154,10 @@ def main():
         if args.datasets and len(args.datasets) < 2:
             parser.error('Cannot use cosine distance with just one dataset. Choose sqeuclidean or euclidean instead.')
 
+    if args.no_dtw:
+        if args.slanted_band:
+            parser.error("Slanted band constraint can only be used with DTW")
+
     if args.verbose:
         logging.root.setLevel(logging.DEBUG)
 
@@ -214,8 +221,14 @@ def main():
         if args.n_cpus is not None:
             print '> Using {0} processes'.format(args.n_cpus)
 
+        if args.no_dtw:
+            print '> Not using DTW as --no-dtw option is set'
+
         start = datetime.now()
-        dm = parallel_pdist(datasets, args.n_cpus, **configuration.dtw_kwargs)
+        if args.no_dtw:
+            dm = parallel_pdist(datasets, args.n_cpus, no_dtw=True, **configuration.dtw_kwargs)
+        else:
+            dm = parallel_pdist(datasets, args.n_cpus, **configuration.dtw_kwargs)
         end = datetime.now()
 
         delta = end - start
@@ -241,22 +254,26 @@ def main():
 
         print '> Computing prototypes'
         # Hierarchical clustering object to compute the prototypes
-        hc = HierarchicalClustering(datasets, regions, linkage, dtw_function=configuration.dtw_function)
+        if args.no_dtw:
+            hc = HierarchicalClustering(datasets, regions, linkage, dtw_function=configuration.dtw_function,
+                                        prototyping_method='mean')
+        else:
+            hc = HierarchicalClustering(datasets, regions, linkage, dtw_function=configuration.dtw_function)
+
         prototypes = hc.extract_prototypes()
         print '> Saving prototypes to {0!r}'.format(configuration.prototypes_filename)
         serialise(prototypes, configuration.prototypes_filename)
 
         print '> Computing warping paths'
         nodes = hc.tree_nodes_list
-        paths = compute_paths(datasets, nodes, hc.num_obs, configuration.args.n_cpus, **configuration.dtw_kwargs)
+        paths = compute_paths(datasets, nodes, hc.num_obs, n_processes=configuration.args.n_cpus, no_dtw=args.no_dtw,
+                              **configuration.dtw_kwargs)
         print '> Saving warping paths to {0!r}'.format(configuration.warping_paths_filename)
         serialise(paths, configuration.warping_paths_filename)
-
     else:
         print '> Skipping pairwise distances step because of --blank option set'
 
     print '> Saving configuration to {0!r}'.format(configuration.configuration_filename)
-    f = open(configuration.configuration_filename, 'w')
     serialise(configuration, configuration.configuration_filename)
 
     print '> Done'

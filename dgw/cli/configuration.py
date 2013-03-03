@@ -1,3 +1,4 @@
+from dgw.dtw import parametrised_uniform_scaled_distance_wrapper
 from ..dtw.distance import dtw_std, parametrised_dtw_wrapper
 
 class Configuration(object):
@@ -92,4 +93,7 @@ class Configuration(object):
 
     @property
     def dtw_function(self):
-        return parametrised_dtw_wrapper(**self.dtw_kwargs)
+        if self.args.no_dtw:
+            return parametrised_uniform_scaled_distance_wrapper(**self.dtw_kwargs)
+        else:
+            return parametrised_dtw_wrapper(**self.dtw_kwargs)

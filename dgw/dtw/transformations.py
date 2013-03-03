@@ -5,6 +5,7 @@ import numpy as np
 from math import ceil, floor, fabs
 from dgw.data.containers import AlignmentsData
 
+from scipy.spatial.distance import sqeuclidean, euclidean, cosine
 from distance import dtw_std, _strip_nans, no_nans_len
 
 def points_mapped_to(point_on_original_sequence, dtw_path, sequence_a=True):
@@ -24,7 +25,7 @@ def points_mapped_to(point_on_original_sequence, dtw_path, sequence_a=True):
     path_indices = np.nonzero(path_ours == point_on_original_sequence)
     return path_theirs[path_indices]
 
-def uniform_scaling_to_length(sequence, desired_length):
+def uniform_scaling_to_length(sequence, desired_length, output_path=False):
     """
     Uniform scaling procedure, similar to the one provided in [#yankov2007]
     .. [#yankov2007] D Yankov, E Keogh, J Medina, and B Chiu, "Detecting time series motifs under uniform scaling", 2007
@@ -37,14 +38,21 @@ def uniform_scaling_to_length(sequence, desired_length):
     if current_len == 0:
         raise ValueError('Empty sequence cannot be extended')
     elif desired_length == current_len:
-        return sequence
+        if output_path:
+            return sequence, np.asarray(range(desired_length))
+        else:
+            return sequence
     elif desired_length < current_len:
         raise ValueError('Desired length is smaller than current length: {0} < {1}'.format(desired_length, current_len))
 
     scaling_factor = float(current_len) / desired_length
 
     rescaled_sequence = [sequence[int(floor(i*scaling_factor))] for i in range(desired_length)]
-    return rescaled_sequence
+
+    if output_path:
+        return rescaled_sequence, np.asarray([floor(i*scaling_factor) for i in range(desired_length)])
+    else:
+        return rescaled_sequence
 
 def uniform_shrinking_to_length(sequence, desired_length):
     EPSILON = 1e-6
@@ -267,15 +275,46 @@ def sdtw_averaging(sequence_a, sequence_b, weight_a, weight_b, path=None, shrink
     return averaged_path
 
 
+def uniform_scaled_distance(x, y, dist_only=True, metric="sqeuclidean", try_reverse=True, normalise=False):
+    x = np.asarray(x)
+    y = np.asarray(y)
 
+    x = _strip_nans(x)
+    y = _strip_nans(y)
+    len_x = len(x)
+    len_y = len(y)
 
+    # Make sure x is always the shorter sequence
+    if len_x > len_y:
+        x, y = y, x
+        len_x, len_y = len_y, len_x
 
+    x, path = uniform_scaling_to_length(x, len_y, output_path=True)
+    if metric == "sqeuclidean":
+        dist_func = sqeuclidean
+    elif metric == "euclidean":
+        dist_func = euclidean
+    elif metric == "cosine":
+        dist_func = cosine
 
+    dist = dist_func(x, y)
+    if try_reverse:
+        dist_rev = dist_func(x[::-1], y)
+        if dist_rev < dist:
+            dist = dist_rev
+            path = path[::-1]
 
+    if normalise:
+        dist /= float(len_y)
 
+    if dist_only:
+        return dist
+    else:
+        return dist, None, (path, np.asarray(range(len_y)) ) # Cost matrix does not really exist here
 
+def parametrised_uniform_scaled_distance_wrapper(*args, **kwargs):
 
+    def f(x, y, dist_only=False):
+        return uniform_scaled_distance(x, y, dist_only=dist_only, *args, **kwargs)
 
-
-
-
+    return f
