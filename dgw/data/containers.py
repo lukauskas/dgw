@@ -1,3 +1,4 @@
+from logging import debug
 import pandas as pd
 import numpy as np
 
@@ -6,14 +7,18 @@ class AlignmentsDataIndexer(object):
     A wrapper around `_NDFrameIndexer` that would return `AlignmentsData` objects instead of `pd.Panel` objects
     """
     _ndframe_indexer = None
+    _alignments_data = None
 
-    def __init__(self, ndframe_indexer):
+    def __init__(self, ndframe_indexer, alignments_data):
         self._ndframe_indexer = ndframe_indexer
+        self._alignments_data = alignments_data
 
     def __getitem__(self, key):
         result = self._ndframe_indexer.__getitem__(key)
         if isinstance(result, pd.Panel):
-            return AlignmentsData(result)
+            data = AlignmentsData(result)
+            data.points_of_interest = self._alignments_data.points_of_interest
+            return data
         else:
             return result
 
@@ -23,8 +28,9 @@ class AlignmentsDataIndexer(object):
 class AlignmentsData(object):
 
     _data = None
+    _poi = None
     _scale = None
-    def __init__(self, panel, scale='raw'):
+    def __init__(self, panel, poi=None, scale='raw'):
         """
         Initialises `AlignmentsData` with a `panel` provided.
         The panel is assumed to have data sets on the minor axis
@@ -45,10 +51,24 @@ class AlignmentsData(object):
                             .format(type(panel)))
 
         self._scale = scale
+        self.poi = poi
 
     @property
     def data(self):
         return self._data
+
+    @property
+    def points_of_interest(self):
+        return self._poi
+
+    @points_of_interest.setter
+    def points_of_interest(self, poi):
+        if poi is not None:
+            poi_subset = {ix: poi[ix] for ix in self.items if ix in poi}
+            self._poi = poi_subset
+        else:
+            self._poi = {}
+
 
     #-- Functions that simulate pd.Panel behaviour -------------------------------------------------------------------
 
@@ -82,7 +102,7 @@ class AlignmentsData(object):
 
     @property
     def ix(self):
-        return AlignmentsDataIndexer(self.data.ix)
+        return AlignmentsDataIndexer(self.data.ix, self)
 
     def __getitem__(self, item):
         return self.data.__getitem__(item)
@@ -231,6 +251,35 @@ class Regions(object):
         missing_indices = self.index[~self.index.isin(dataset.items)]
         return Regions(self.data.ix[missing_indices])
 
+    def as_bins_of(self, other_regions, resolution=1):
+        other_regions = other_regions.clip_to_resolution(resolution)
+
+        bins = {}
+        for ix, data in self.iterrows():
+            current_start = data['start']
+            current_end = data['end']
+            current_chromosome = data['chromosome']
+
+            try:
+                other = other_regions.ix[ix]
+            except KeyError:
+                continue
+
+            other_start = other['start']
+            other_end = other['end']
+            other_chromosome = other['chromosome']
+
+            if current_chromosome != other_chromosome or (other_end <= current_start) or (other_start > current_end):
+                raise ValueError('Points of interest do not overlap with regions of interest. Failed ix:{0!r}'.format(ix))
+
+            n_bins = (other_end - other_start) / resolution
+            min_bin = max(0, (current_start - other_start) / resolution)
+            max_bin = min(n_bins - 1, (current_end - 1 - other_start) / resolution)
+
+            bins[ix] = np.array(range(min_bin, max_bin+1))
+
+        return bins
+
 
 
     def clip_to_resolution(self, resolution):
@@ -332,4 +381,3 @@ class Genes(Regions):
     def from_gtf(cls, gtf_filename):
         from dgw.data.parsers import read_gtf
         return read_gtf(gtf_filename)
-

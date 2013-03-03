@@ -96,7 +96,6 @@ class DTWClusterNode(object, hierarchy.ClusterNode):
     _projected_data = None
     _warping_paths = None
     _tracked_points = None
-    _points_of_interest = None
 
     def __init__(self, hierarchical_clustering_object, id, prototype, left=None, right=None, dist=0, count=1):
         hierarchy.ClusterNode.__init__(self, id, left=left, right=right, dist=dist, count=count)
@@ -214,7 +213,7 @@ class DTWClusterNode(object, hierarchy.ClusterNode):
             return tracked_points
     @property
     def points_of_interest(self):
-        poi = self._points_of_interest
+        poi = self.data.points_of_interest
         return poi
 
     @property

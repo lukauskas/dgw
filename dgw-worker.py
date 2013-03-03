@@ -34,6 +34,9 @@ def argument_parser():
     parser.add_argument('-pd', '--processed-dataset', metavar='processed_dataset.pd', action=StoreFilenameAction,
                         help='Dataset that has already been processed. E.g. from a previous run.')
 
+    parser.add_argument('-poi', '--points-of-interest', metavar='poi.bed', action=StoreFilenameAction,
+                        help='A BED file listing points of interest in the regions specified')
+
     parser.add_argument('-p', '--prefix', help='Prefix of the output files generated ', default='dgw')
 
     parser.add_argument('--truncate-regions', metavar='X', type=int, help='Only use first X rows of regions '
@@ -164,8 +167,15 @@ def main():
     else:
         regions = None
 
+    if args.points_of_interest:
+        print '> Reading points of interest'
+        poi = Regions.from_bed(args.points_of_interest)
+    else:
+        poi = None
+
     print '> Reading datasets ...'
     datasets, missing_regions, filtered_regions = read_datasets(configuration, regions)
+
 
     if args.datasets:
         if args.output_raw_dataset:
@@ -186,6 +196,10 @@ def main():
         used_regions = len(datasets.items)
         if len(missing_regions) > 0 or len(filtered_regions) > 0:
             print '> {0} regions remaining'.format(used_regions)
+
+        if poi:
+            poi = poi.as_bins_of(regions, resolution=args.resolution)
+            datasets.points_of_interest = poi
 
         # --- Saving of datasets -------------------
         print '> Saving datasets to {0}'.format(configuration.dataset_filename)

@@ -206,7 +206,7 @@ class HierarchicalClusteringViewer(object):
 
         DENDROGRAM_SCALE = 10  # scipy.cluster.hierarachy.dendrogram scales all y axis values by tenfold for some reason
         hc.data.plot_heatmap(subplot_spec=self.gs_heatmap, no_y_axis=True, sort_by=index, share_y_axis=self.ax_dendrogram,
-                             scale_y_axis=DENDROGRAM_SCALE)
+                             scale_y_axis=DENDROGRAM_SCALE, highlighted_points=hc.data.points_of_interest)
 
     def show(self):
         # A5 Paper size

@@ -72,6 +72,7 @@ def plot(alignments, clip_colors=True, titles=None, horizontal_grid=True,
     from matplotlib import gridspec
 
     number_of_datasets = alignments.number_of_datasets
+
     if titles is None:
         titles = alignments.dataset_axis
 
