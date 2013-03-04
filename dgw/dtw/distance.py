@@ -98,7 +98,7 @@ def dtw_std(x, y, metric='sqeuclidean', dist_only=True, constraint=None, k=None,
             path_rev = (_reverse_path(path[0]), path[1])
 
             if scale_first:
-                path_rev = _scaled_path(path, scaling_path, flip_paths)
+                path_rev = _scaled_path(path_rev, scaling_path, flip_paths)
 
             # TODO: Reverse cost matrix here
             cost = None
