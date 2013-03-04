@@ -12,6 +12,7 @@ class ClusterPreviewer(object):
 
     root_window = None
     _add_save_button = None
+    _buttons = None
     def __init__(self, cluster_roots):
         self._clusters = cluster_roots
         self._initialise_grid()
@@ -28,6 +29,7 @@ class ClusterPreviewer(object):
             c.ensure_projections_are_calculated()
             c.ensure_points_of_interest_are_tracked_down()
 
+        self._buttons = []
 
     def gs_prototype(self):
         return self._main_gs[1, 0]
@@ -78,29 +80,46 @@ class ClusterPreviewer(object):
                                    track_description='DGW Cluster {0}/{1}'.format(i + 1, len(self._clusters)))
         print '> Saved'
 
-    def draw_buttons(self):
+    def add_button(self, text, callback):
         buttons_left = 0.05
         buttons_bottom = 1 - 0.1
-
-        button_width = 0.1
+        button_width = 0.15
         button_height = 0.05
-
         button_spacing = 0.02
 
-        ax_button_prev = plt.axes([buttons_left, buttons_bottom, button_width, button_height])
-        self.button_prev = Button(ax_button_prev, 'Previous')
-        self.button_prev.on_clicked(self._callback_previous)
+        ax_button = plt.axes([buttons_left + (button_width + button_spacing) * len(self._buttons),
+                              buttons_bottom, button_width, button_height])
+        self._buttons.append(Button(ax_button, text))
+        self._buttons[-1].on_clicked(callback)
 
-        ax_button_next = plt.axes([buttons_left + button_width + button_spacing, buttons_bottom,
-                                   button_width, button_height])
-        self.button_next = Button(ax_button_next, 'Next')
-        self.button_next.on_clicked(self._callback_next)
+    def _enlarge_heatmap(self, event):
+        plt.figure(figsize=(11.7, 8.3))
+        plt.subplots_adjust(left=0.05, bottom=0.05, top=0.95, right=0.95)
+        current_cluster = self.current_cluster()
+        current_cluster.data.plot_heatmap(horizontal_grid=True,
+                                          sort_by=None, highlighted_points=current_cluster.points_of_interest)
+        plt.show()
+
+    def _enlarge_dtw_heatmap(self, event):
+
+        plt.figure(figsize=(11.7, 8.3))
+        plt.subplots_adjust(left=0.05, bottom=0.05, top=0.95, right=0.95)
+        current_cluster = self.current_cluster()
+        current_cluster.projected_data.plot_heatmap(horizontal_grid=True,
+                                          sort_by=None, highlighted_points=current_cluster.tracked_points_of_interest)
+        plt.show()
+
+
+    def create_buttons(self):
+        self.add_button('Previous', self._callback_previous)
+        self.add_button('Next', self._callback_next)
 
         if self._add_save_button:
-            ax_button_save = plt.axes([buttons_left + button_width * 2 + button_spacing * 2, buttons_bottom,
-                                       button_width, button_height])
-            self.button_save = Button(ax_button_save, 'Save all')
-            self.button_save.on_clicked(self._callback_save)
+            self.add_button('Save all regions', self._callback_save)
+
+        self.add_button('Enlarge heatmap', self._enlarge_heatmap)
+        self.add_button('Enlarge DTW heatmap', self._enlarge_dtw_heatmap)
+
 
     def draw(self):
 
@@ -143,7 +162,7 @@ class ClusterPreviewer(object):
         # A5 Paper size
         plt.figure(num=None, figsize=(12, 10), facecolor='w', edgecolor='k')
         self.title = plt.suptitle("") # Create text object for title
-        self.draw_buttons()
+        self.create_buttons()
         self.draw()
         plt.show()
 
@@ -188,14 +207,14 @@ class HierarchicalClusteringViewer(object):
     def set_up(self):
         self._gs_main = gridspec.GridSpec(2, 2, wspace=0, height_ratios=[1, 15])
         self._figure = plt.gcf()
-        self._ax_dendrogram = plt.subplot(self.gs_dendrogram)
+        self._ax_dendrogram = plt.subplot(self.gs_dendrogram, rasterized=True)
         self._figure.canvas.mpl_connect('button_press_event', self._onclick_listener)
 
         self.draw_buttons()
 
     def draw_dendrogram(self):
         ax_dendrogram = self.ax_dendrogram
-        plt.subplot(ax_dendrogram)
+        plt.subplot(ax_dendrogram, rasterized=True)
         hc = self.hierarchical_clustering_object
 
         dendrogram_dict = hc.dendrogram(orientation='right', get_leaves=True,
@@ -237,7 +256,7 @@ class HierarchicalClusteringViewer(object):
 
         DENDROGRAM_SCALE = 10  # scipy.cluster.hierarachy.dendrogram scales all y axis values by tenfold for some reason
         hc.data.plot_heatmap(subplot_spec=self.gs_heatmap, no_y_axis=True, sort_by=index, share_y_axis=self.ax_dendrogram,
-                             scale_y_axis=DENDROGRAM_SCALE, highlighted_points=hc.data.points_of_interest)
+                             scale_y_axis=DENDROGRAM_SCALE, highlighted_points=hc.data.points_of_interest, rasterized=True)
 
     def show(self):
         # A5 Paper size

@@ -265,8 +265,8 @@ class TestProjection(unittest.TestCase):
         assert_array_equal(path_answer, dtw_function_answer)
 
     def test_projection_is_the_same_regardless_of_whether_input_is_reversed(self):
-        a = np.arange(10, 20, 1)
-        b = np.arange(20, 50, 1)
+        a = np.random.randn(10, 5)
+        b = np.random.randn(20, 5)
 
         dtw_function = parametrised_dtw_wrapper(try_reverse=True)
         ans_norm = dtw_projection(a, b, dtw_function)

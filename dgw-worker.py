@@ -161,7 +161,7 @@ def main():
             parser.error('Cannot use cosine distance with just one dataset. Choose sqeuclidean or euclidean instead.')
 
     if args.no_dtw:
-        # Thats what no-dtw actually does
+        # That's what no-dtw actually does
         args.slanted_band = 0
         args.scale = True
         if args.prototyping_method is None:

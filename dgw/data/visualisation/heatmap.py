@@ -52,7 +52,8 @@ def raw_plot_data_as_heatmap(data_frame, ax=None, highlight_mask=None, *args, **
     return result
 
 def plot(alignments, clip_colors=True, titles=None, horizontal_grid=True,
-         no_y_axis=False, sort_by='length', subplot_spec=None, share_y_axis=None, scale_y_axis=None, highlighted_points={}):
+         no_y_axis=False, sort_by='length', subplot_spec=None, share_y_axis=None, scale_y_axis=None, highlighted_points={},
+         rasterized=True):
     """
 
     :param alignments: `AlignmentsData` object
@@ -189,7 +190,8 @@ def plot(alignments, clip_colors=True, titles=None, horizontal_grid=True,
         # Cut most of the columns that are NaNs out of the plot
         data_to_plot = data_to_plot[data_to_plot.columns[:max_len]]
 
-        result = raw_plot_data_as_heatmap(data_to_plot, vmin=min_value, vmax=max_value, extent=extent, highlight_mask=highlight_mask)
+        result = raw_plot_data_as_heatmap(data_to_plot, vmin=min_value, vmax=max_value, extent=extent,
+                                          highlight_mask=highlight_mask, rasterized=rasterized)
         debug(plt.gca().get_ylim())
         debug(plt.gca().get_xlim())
 
