@@ -74,6 +74,7 @@ where `~/python_dev/python` is the desired location to install python to (change
 Note the tilde (`~`) indicating this is under `$HOME` directory -- directory my user has access to.
 
 At this point you should have a `python2.7` executable at `~/python_dev/python/bin/`.
+
 3. Set up PATH variables
 ```
 $ export PATH=~/python_dev/python/bin:$PATH
