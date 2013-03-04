@@ -15,6 +15,8 @@ import numpy as np
 import pandas as pd
 import cPickle as pickle
 from datetime import datetime
+from multiprocessing import cpu_count
+
 from dgw.cluster import HierarchicalClustering, compute_paths
 
 from dgw.data.containers import Regions
@@ -58,8 +60,8 @@ def argument_parser():
     parser.add_argument('--normalise', const=True, default=False, action='store_const',
                         help='Normalise the DTW distances by dividing them by the length of longer sequence')
 
-    parser.add_argument('-n', '--n-cpus', metavar='N', type=int,
-                        help='Use up to N CPUs when calculating pairwise distances.'
+    parser.add_argument('-n', '--n-processes', metavar='N', type=int,
+                        help='Use up to N process when calculating pairwise distances.'
                              ' Defaults to the maximum number available.')
 
     parser.add_argument('--output-raw-dataset', action='store_const', const=True, default=False,
@@ -100,20 +102,20 @@ def read_regions(regions_filename, truncate_regions):
 
     return regions, total_len, used_len
 
-def read_datasets(configuration, regions):
-    if configuration.args.datasets:
-        if configuration.args.min_pileup:
-            data_filters = [HighestPileUpFilter(configuration.args.min_pileup)]
+def read_datasets(args, regions):
+    if args.datasets:
+        if args.min_pileup:
+            data_filters = [HighestPileUpFilter(args.min_pileup)]
         else:
             data_filters = []
 
-        return read_bam(configuration.args.datasets, regions,
-                        resolution=configuration.args.resolution,
-                        extend_to=configuration.args.extend_to,
+        return read_bam(args.datasets, regions,
+                        resolution=args.resolution,
+                        extend_to=args.extend_to,
                         data_filters=data_filters,
                         output_removed_indices=True)
     else:
-        processed_dataset_file = configuration.processed_dataset_filename
+        processed_dataset_file = args.processed_dataset
         logging.debug('Reading processed dataset {0!r}'.format(processed_dataset_file))
 
         processed_dataset = deserialise(processed_dataset_file)
@@ -143,16 +145,16 @@ def main():
 
     args = parser.parse_args()
     if (args.regions or args.datasets) and args.processed_dataset:
-        parser.error('Must specify either both --regions and --datasets or --processed_dataset only.')
+        parser.error('Must specify either both --regions and --dataset or --processed_dataset only.')
     elif not args.processed_dataset:
         if not args.regions or not args.datasets:
-            parser.error('Must specify both --regions and --datasets')
+            parser.error('Must specify both --regions and --dataset')
 
     if args.metric is None:
         if args.processed_dataset:
             parser.error('Must provide a metric if using processed dataset')
         elif len(args.datasets) >= 2:
-            print "> Defaulting to cosine distance as more than 2 datasets given"
+            print "> Defaulting to cosine distance as more than 2 dataset given"
             args.metric = 'cosine'
         else:
             print "> Defaulting to sqeuclidean distance as only one dataset given"
@@ -193,16 +195,15 @@ def main():
     else:
         poi = None
 
-    print '> Reading datasets ...'
-    datasets, missing_regions, filtered_regions = read_datasets(configuration, regions)
-
+    print '> Reading dataset ...'
+    dataset, missing_regions, filtered_regions = read_datasets(args, regions)
 
     if args.datasets:
         if args.output_raw_dataset:
             print '> Serialising raw dataset to {0}'.format(configuration.raw_dataset_filename)
-            serialise(datasets, configuration.raw_dataset_filename)
+            serialise(dataset, configuration.raw_dataset_filename)
 
-        datasets = datasets.to_log_scale()
+        dataset = dataset.to_log_scale()
 
         if len(missing_regions) > 0:
             print "> {0} regions were not found in the dataset, they were saved to {1}".format(len(missing_regions),
@@ -216,31 +217,36 @@ def main():
             regions.ix[filtered_regions].to_bed(configuration.filtered_regions_filename, track_title='DGWFilteredRegions',
                                         track_description='Regions that were filtered out from the dataset')
 
-        used_regions = len(datasets.items)
+        used_regions = len(dataset.items)
         if len(missing_regions) > 0 or len(filtered_regions) > 0:
             print '> {0} regions remaining'.format(used_regions)
 
         if poi:
             poi = poi.as_bins_of(regions, resolution=args.resolution)
-            datasets.points_of_interest = poi
+            dataset.points_of_interest = poi
 
-        # --- Saving of datasets -------------------
-        print '> Saving datasets to {0}'.format(configuration.dataset_filename)
-        serialise(datasets, configuration.dataset_filename)
+
     else:
         print "> Not converting dataset to log scale as processed dataset already provided"
+
+    # --- Saving of dataset -------------------
+    print '> Saving dataset to {0}'.format(configuration.dataset_filename)
+    serialise(dataset, configuration.dataset_filename)
 
     if not args.blank:
         # --- actual work ---------------------------
         print '> Calculating pairwise distances (this might take a while) ...'
-        if args.n_cpus is not None:
-            print '> Using {0} processes'.format(args.n_cpus)
+        if args.n_processes is not None:
+            print '> Using {0} processes'.format(args.n_processes)
+        else:
+            args.n_processes = cpu_count()
+            print '> Using all available cpu cores ({0})'.format(args.n_processes)
 
         if args.no_dtw:
             print '> Not using DTW as --no-dtw option is set'
 
         start = datetime.now()
-        dm = parallel_pdist(datasets, args.n_cpus, **configuration.dtw_kwargs)
+        dm = parallel_pdist(dataset, args.n_processes, **configuration.dtw_kwargs)
         end = datetime.now()
 
         delta = end - start
@@ -266,7 +272,7 @@ def main():
 
         print '> Computing prototypes'
         # Hierarchical clustering object to compute the prototypes
-        hc = HierarchicalClustering(datasets, regions, linkage, dtw_function=configuration.dtw_function,
+        hc = HierarchicalClustering(dataset, regions, linkage, dtw_function=configuration.dtw_function,
                                     prototyping_method=configuration.prototyping_method)
         prototypes = hc.extract_prototypes()
         print '> Saving prototypes to {0!r}'.format(configuration.prototypes_filename)
@@ -274,7 +280,7 @@ def main():
 
         print '> Computing warping paths'
         nodes = hc.tree_nodes_list
-        paths = compute_paths(datasets, nodes, hc.num_obs, n_processes=configuration.args.n_cpus,
+        paths = compute_paths(dataset, nodes, hc.num_obs, n_processes=args.n_processes,
                               **configuration.dtw_kwargs)
         print '> Saving warping paths to {0!r}'.format(configuration.warping_paths_filename)
         serialise(paths, configuration.warping_paths_filename)
@@ -282,7 +288,11 @@ def main():
         print '> Skipping pairwise distances step because of --blank option set'
 
     print '> Saving configuration to {0!r}'.format(configuration.configuration_filename)
-    serialise(configuration, configuration.configuration_filename)
+    f = open(configuration.configuration_filename, 'w')
+    try:
+        configuration.to_json(f)
+    finally:
+        f.close()
 
     print '> Done'
 

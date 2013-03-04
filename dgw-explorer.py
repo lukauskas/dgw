@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 import argparse
+import os
 import numpy as np
 import cPickle as pickle
 import dgw
@@ -40,12 +41,16 @@ def main():
     args = parser.parse_args()
 
     try:
-        configuration = load_from_pickle(args.configuration_file)
+        configuration = Configuration.from_json(args.configuration_file)
     except Exception, e:
         parser.error('Error opening configuration file provided: {0!r}'.format(e))
+    finally:
+        args.configuration_file.close()
 
     if not isinstance(configuration, Configuration):
         parser.error('Invalid configuration file provided. Make sure you are specifying the right file')
+
+    configuration.directory = os.path.dirname(args.configuration_file.name)
 
     if not configuration.linkage_filename:
         parser.error('No linkage filename provided, cannot explore a --blank run')
@@ -55,17 +60,13 @@ def main():
     else:
         regions = None
 
-    if configuration.processed_dataset_filename:
-        dataset = strict_load(configuration.processed_dataset_filename)
-    else:
-        dataset = strict_load(configuration.dataset_filename)
+    dataset = strict_load(configuration.dataset_filename)
 
     if configuration.linkage_filename:
         try:
             linkage = np.load(configuration.linkage_filename)
         except Exception, e:
             parser.error('Error reading linkage file {0!r}, got {1!r}',format(linkage, e))
-
 
         prototypes = strict_load(configuration.prototypes_filename)
         warping_paths = strict_load(configuration.warping_paths_filename)
