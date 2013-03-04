@@ -236,31 +236,53 @@ class TestPathAveraging(unittest.TestCase):
         average_path2 = dtw_path_averaging(a, b, path=path2)
         assert_array_equal(correct_ans2, average_path2)
 
-class TestProjectionIsTheSameRegardlessOfWhetherDtwFunctionOrPathProvided(unittest.TestCase):
+class TestProjection(unittest.TestCase):
 
     def setUp(self):
         np.random.seed(42)
-        self.a = np.random.randn(20)
-        self.b = np.random.randn(30)
 
-    def test_dtw_std(self):
+    def test_dtw_std_is_the_same_regardless_of_whether_path_is_computed_or_provided(self):
+        a = np.random.randn(20)
+        b = np.random.randn(30)
         dtw_function = dtw_std
 
-        dist, cost, path = dtw_function(self.a, self.b, dist_only=False)
-        path_answer = dtw_projection(self.a, self.b, path=path)
-        dtw_function_answer = dtw_projection(self.a, self.b, dtw_function=dtw_function)
+        dist, cost, path = dtw_function(a, b, dist_only=False)
+        path_answer = dtw_projection(a, b, path=path)
+        dtw_function_answer = dtw_projection(a, b, dtw_function=dtw_function)
         assert_array_equal(path_answer, dtw_function_answer)
 
 
-    def test_dtw_sb(self):
+    def test_dtw_sb_is_the_same_regardless_of_whether_path_is_computed_or_provided(self):
+        np.random.seed(42)
+        a = np.random.randn(20)
+        b = np.random.randn(30)
+
         dtw_function = parametrised_dtw_wrapper(constraint='slanted_band', k=4)
 
-        dist, cost, path = dtw_function(self.a, self.b, dist_only=False)
-        path_answer = dtw_projection(self.a, self.b, path=path)
-        dtw_function_answer = dtw_projection(self.a, self.b, dtw_function=dtw_function)
+        dist, cost, path = dtw_function(a, b, dist_only=False)
+        path_answer = dtw_projection(a, b, path=path)
+        dtw_function_answer = dtw_projection(a, b, dtw_function=dtw_function)
         assert_array_equal(path_answer, dtw_function_answer)
 
+    def test_projection_is_the_same_regardless_of_whether_input_is_reversed(self):
+        a = np.arange(10, 20, 1)
+        b = np.arange(20, 50, 1)
 
+        dtw_function = parametrised_dtw_wrapper(try_reverse=True)
+        ans_norm = dtw_projection(a, b, dtw_function)
+        ans_reverse = dtw_projection(a[::-1], b, dtw_function)
+
+        assert_array_almost_equal(ans_norm, ans_reverse)
+
+    def test_projection_is_reversed_when_base_is_reversed(self):
+        a = np.arange(10, 20, 1)
+        b = np.arange(20, 50, 1)
+
+        dtw_function = parametrised_dtw_wrapper(try_reverse=True)
+        ans_norm = dtw_projection(a, b, dtw_function)
+        ans_reverse = dtw_projection(a, b[::-1], dtw_function)
+
+        assert_array_equal(ans_norm[::-1], ans_reverse)
 
 class TestSdtwAveraging(unittest.TestCase):
 
