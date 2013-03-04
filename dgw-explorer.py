@@ -40,9 +40,9 @@ if configuration.linkage_filename:
     prototypes = load_from_pickle(configuration.prototypes_filename)
     warping_paths = load_from_pickle(configuration.warping_paths_filename)
 
-
     hc = dgw.cluster.analysis.HierarchicalClustering(dataset, regions, linkage_matrix=linkage, prototypes=prototypes,
                                                      dtw_function=configuration.dtw_function,
                                                      prototyping_method=configuration.prototyping_method)
     add_path_data(hc.tree_nodes_list, hc.num_obs, warping_paths)
     hcv = dgw.cluster.visualisation.HierarchicalClusteringViewer(hc)
+    hcv.show()
