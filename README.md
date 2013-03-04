@@ -22,7 +22,6 @@ You should be able to directly install DGW dependencies by using `pip` on linux:
 pip install numpy 
 pip install scipy 
 pip install pandas
-pip install mlpy
 pip install pysam 
 pip install fastcluster 
 pip install matplotlib
