@@ -44,8 +44,25 @@ Finally install modified MLPY:
 pip install -e git://github.com/sauliusl/mlpy.git#egg=mlpy
 ```
 
-### Mac OS X & Windows
-It is probably easies to install `numpy`, `scipy`, `pandas` and `matplotlib` on Windows via Enthought python distribution. This distribution is free for academic use. See 
+### Mac OS X 
+Probably the most reliable way of installing `numpy`, `scipy`, `pandas`, `matplotlib` and `pysam` is via MacPorts (https://www.macports.org/)
+This can be achieved by
+
+```
+port install python27 py27-numpy py27-scipy py27-pandas py27-matplotlib py27-pysam 
+```
+
+Then the remaining dependancies, `fastcluster` and `mlpy` can be installed from pip
+```
+pip install fastcluster
+pip install mlpy
+```
+
+Alternatively, Enthought Python Distribution can be used to install these packages (see instructions for Windows).
+However `matplotlib` may not work correctly as EPD does not install python as a framework
+
+### Windows
+It is probably easiest to install `numpy`, `scipy`, `pandas` and `matplotlib` on Windows via Enthought python distribution. This distribution is free for academic use. See 
 http://www.enthought.com/products/epd.php for instructions how to download and install it.
 
 Unfortunately EPD 7.3 ships with an outdated version of `pandas` package that is not compatible with DGW, therefore you would have to upgrade it using pip in order to run it.
@@ -111,6 +128,5 @@ Make sure you use the newly installed `pip-2.7`, which will be in your local dir
 After the dependencies have been set up, clone this repository:
 
 ```
-git clone 
-
-
+git clone
+```
