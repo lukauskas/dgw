@@ -86,6 +86,8 @@ sh setuptools-0.6c11-py2.7.egg
 easy_install-2.7 pip
 ```
 
+6. Once pip is installed, you can install dependencies for DGW as per linux installations step.
+Make sure you use the newly installed `pip-2.7`, which will be in your local directory and not the one that comes with system
 
 
 
