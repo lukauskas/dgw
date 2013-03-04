@@ -1,49 +1,83 @@
 #!/usr/bin/env python
-import pandas as pd
+import argparse
 import numpy as np
-import matplotlib.pyplot as plt
 import cPickle as pickle
 import dgw
 from dgw.cli import Configuration
-
-import sys
 from dgw.cluster import add_path_data
 import dgw.cluster.visualisation
 
-configuration_loc = 'dgw_config.pickle' if len(sys.argv) < 2 else sys.argv[1]
-
-def load_from_pickle(filename):
-    f = open(filename, 'rb')
+def load_from_pickle(f):
+    if isinstance(f, basestring):
+        f = open(f, 'rb')
+        close = True
+    else:
+        close = False
     try:
         return pickle.load(f)
     finally:
-        f.close()
+        if close:
+            f.close()
 
-configuration = load_from_pickle(configuration_loc)
-assert(isinstance(configuration, Configuration))
+def strict_load(filename):
+    try:
+        data = load_from_pickle(filename)
+        return data
+    except Exception, e:
+        raise Exception("Failed to read {0!r}, got {1!r}. "
+                        "Make sure that you have all files output from DGW in the same directory as the config file"
+                         .format(filename, e))
 
-if configuration.parsed_regions_filename:
-    regions = load_from_pickle(configuration.parsed_regions_filename)
-else:
-    regions = None
 
-if configuration.processed_dataset_filename:
-    dataset = load_from_pickle(configuration.processed_dataset_filename)
-else:
-    dataset = load_from_pickle(configuration.dataset_filename)
-    if configuration.raw_dataset_filename:
-        raw_dataset = load_from_pickle(configuration.raw_dataset_filename)
+def argument_parser():
+    parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+    parser.add_argument('configuration_file', metavar='dgw_config_file.dgw', type=argparse.FileType('r'))
 
-if configuration.pairwise_distances_filename:
-    dm = np.load(configuration.pairwise_distances_filename)
-if configuration.linkage_filename:
-    linkage = np.load(configuration.linkage_filename)
-    prototypes = load_from_pickle(configuration.prototypes_filename)
-    warping_paths = load_from_pickle(configuration.warping_paths_filename)
+    return parser
 
-    hc = dgw.cluster.analysis.HierarchicalClustering(dataset, regions, linkage_matrix=linkage, prototypes=prototypes,
-                                                     dtw_function=configuration.dtw_function,
-                                                     prototyping_method=configuration.prototyping_method)
-    add_path_data(hc.tree_nodes_list, hc.num_obs, warping_paths)
-    hcv = dgw.cluster.visualisation.HierarchicalClusteringViewer(hc)
-    hcv.show()
+def main():
+    parser = argument_parser()
+    args = parser.parse_args()
+
+    try:
+        configuration = load_from_pickle(args.configuration_file)
+    except Exception, e:
+        parser.error('Error opening configuration file provided: {0!r}'.format(e))
+
+    if not isinstance(configuration, Configuration):
+        parser.error('Invalid configuration file provided. Make sure you are specifying the right file')
+
+    if not configuration.linkage_filename:
+        parser.error('No linkage filename provided, cannot explore a --blank run')
+
+    if configuration.parsed_regions_filename:
+        regions = strict_load(configuration.parsed_regions_filename)
+    else:
+        regions = None
+
+    if configuration.processed_dataset_filename:
+        dataset = strict_load(configuration.processed_dataset_filename)
+    else:
+        dataset = strict_load(configuration.dataset_filename)
+
+    if configuration.linkage_filename:
+        try:
+            linkage = np.load(configuration.linkage_filename)
+        except Exception, e:
+            parser.error('Error reading linkage file {0!r}, got {1!r}',format(linkage, e))
+
+
+        prototypes = strict_load(configuration.prototypes_filename)
+        warping_paths = strict_load(configuration.warping_paths_filename)
+
+        print "> Processing data"
+        hc = dgw.cluster.analysis.HierarchicalClustering(dataset, regions, linkage_matrix=linkage, prototypes=prototypes,
+                                                         dtw_function=configuration.dtw_function,
+                                                         prototyping_method=configuration.prototyping_method)
+        add_path_data(hc.tree_nodes_list, hc.num_obs, warping_paths)
+        hcv = dgw.cluster.visualisation.HierarchicalClusteringViewer(hc)
+        print "> Displaying explorer"
+        hcv.show()
+
+if __name__ == '__main__':
+    main()
