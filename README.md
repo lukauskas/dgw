@@ -1,9 +1,8 @@
 Dynamic Genome Warping (DGW)
 ===============
 
-# Installation
-`numpy`, `scipy`, `pandas==0.10.1`, `mlpy`, `pysam`, `fastcluster` and `matplotlib` packages.
-
+# Prerequisites
+DGW depends on `numpy`, `scipy`, `pandas==0.10.1`, `mlpy`, `pysam`, `fastcluster` and `matplotlib` packages.
 
 ## MLPY
 DGW depends on modified version of MLPY, available from https://github.com/sauliusl/mlpy
@@ -20,7 +19,13 @@ Note that mlpy depends on GSL (with header-files). Please look for instructions 
 ### Linux
 You should be able to directly install DGW dependencies by using `pip` on linux:
 ```
-pip install --uprgrade numpy scipy pandas mlpy pysam fastcluster matplotlib
+pip install numpy 
+pip install scipy 
+pip install pandas
+pip install mlpy
+pip install pysam 
+pip install fastcluster 
+pip install matplotlib
 ```
 
 Finally install modified MLPY:
@@ -89,7 +94,11 @@ easy_install-2.7 pip
 6. Once pip is installed, you can install dependencies for DGW as per linux installations step.
 Make sure you use the newly installed `pip-2.7`, which will be in your local directory and not the one that comes with system
 
+# Installation
 
+After the dependencies have been set up, clone this repository:
 
+```
+git clone 
 
 
