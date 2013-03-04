@@ -206,14 +206,14 @@ def main():
         if len(missing_regions) > 0:
             print "> {0} regions were not found in the dataset, they were saved to {1}".format(len(missing_regions),
                                                                                 configuration.missing_regions_filename)
-            missing_regions.to_bed(configuration.missing_regions_filename, track_title='DGWMissingRegions',
+            regions.ix[missing_regions].to_bed(configuration.missing_regions_filename, track_title='DGWMissingRegions',
                                    track_description='Regions that are in input, but missing from the dataset')
 
         if len(filtered_regions) > 0:
             print "> {0} regions were filtered out from dataset due to --min-pileup constraint, they were saved to {1}".format(len(filtered_regions),
                                                                                            configuration.filtered_regions_filename)
-            filtered_regions.to_bed(configuration.missing_regions_filename, track_title='DGWFilteredRegions',
-                                    track_description='Regions that were filtered out from the dataset')
+            regions.ix[filtered_regions].to_bed(configuration.filtered_regions_filename, track_title='DGWFilteredRegions',
+                                        track_description='Regions that were filtered out from the dataset')
 
         used_regions = len(datasets.items)
         if len(missing_regions) > 0 or len(filtered_regions) > 0:
