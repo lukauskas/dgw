@@ -49,6 +49,12 @@ def dtw_std(x, y, metric='sqeuclidean', dist_only=True, constraint=None, k=None,
 
         return path
 
+    def _reverse_path(path):
+        n = path.max()
+        path = n - path
+        return path
+
+
 
     x = np.asarray(x, dtype=np.float)
     y = np.asarray(y, dtype=np.float)
@@ -89,7 +95,7 @@ def dtw_std(x, y, metric='sqeuclidean', dist_only=True, constraint=None, k=None,
             return _normalise(dist, max_len), cost, path
         else:  # dist_only = False and reverse_ans is smaller
             dist, cost, path = reverse_ans
-            path_rev = (path[0][::-1], path[1])
+            path_rev = (_reverse_path(path[0]), path[1])
 
             if scale_first:
                 path_rev = _scaled_path(path, scaling_path, flip_paths)
