@@ -1,13 +1,7 @@
-from itertools import izip
-from logging import debug
-import fastcluster
 import scipy.cluster.hierarchy as hierarchy
-from scipy.spatial.distance import num_obs_y
 import pandas as pd
 import numpy as np
-import matplotlib.pyplot as plt
 from ..data.containers import AlignmentsData
-from dgw.dtw.utilities import no_nans_len
 from ..dtw.distance import dtw_std
 from ..dtw import transformations, dtw_projection
 from ..dtw.parallel import parallel_dtw_paths
