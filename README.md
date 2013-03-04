@@ -49,3 +49,45 @@ Don't forget MLPY:
 pip install -e git://github.com/sauliusl/mlpy.git#egg=mlpy
 ```
 
+# Installing Python 2.7 to a non-root environment
+The above steps need python to be installed on the system.
+If you do not have Python2.7, you need to install it.
+The following steps show how to install python to an environment on linux you do not have root access to.
+
+1. Download and extract Python sources:
+```
+$ wget http://www.python.org/ftp/python/2.7.3/Python-2.7.3.tgz
+$ tar xvf Python-2.7.3
+```
+2. Install python to local location
+```
+$ cd Python-2.7.3
+$ ./configure
+$ make altinstall prefix=~/python_dev/python/ exec-prefix=~/python_dev/python
+```
+where `~/python_dev/python` is the desired location to install python to (change as appropriate).
+Note the tilde (`~`) indicating this is under `$HOME` directory -- directory my user has access to.
+
+At this point you should have a `python2.7` executable at `~/python_dev/python/bin/`.
+3. Set up PATH variables
+```
+$ export PATH=~/python_dev/python/bin:$PATH
+$ export PYTHONPATH=~/python_dev/python/lib/python2.7/site-packages/
+```
+
+4. Download and install setuptools. Make sure that your `PYTHONPATH` variable is set correctly before doing this.
+```
+wget https://pypi.python.org/packages/2.7/s/setuptools/setuptools-0.6c11-py2.7.egg#md5=fe1f997bc722265116870bc7919059ea
+sh setuptools-0.6c11-py2.7.egg
+```
+
+5. You now should be able to install pip by:
+```
+easy_install-2.7 pip
+```
+
+
+
+
+
+
