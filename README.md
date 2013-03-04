@@ -12,7 +12,13 @@ pip install cython
 pip install -e git://github.com/sauliusl/mlpy.git#egg=mlpy
 ```
 Cython is required for compilation of mlpy from source.
-Note that mlpy depends on GSL (with header-files). Please look for instructions on how to install it on your platform if the installation fails.
+Note that mlpy depends on GSL (with header-files). 
+Please look for instructions on how to install it on your platform if the installation fails.
+
+On ubuntu this can be installed by 
+```
+apt-get install libgsl0-dev
+```
 
 ## Platform-specific instructions
 
@@ -22,11 +28,16 @@ You should be able to directly install DGW dependencies by using `pip` on linux:
 pip install numpy 
 pip install scipy 
 pip install pandas
-pip install mlpy
 pip install pysam 
 pip install fastcluster 
 pip install matplotlib
 ```
+Note that some packages, e.g. `scipy` depend on dev versions of some of the GNU libraries, 
+you will likely to have to install them before proceeding, for instance, on ubuntu you will need to:
+```
+apt-get install libblas-dev liblapack-dev gfortran
+```
+Similarly, you can install `numpy` and `scipy` using apt-get (or other package manager) if you like.
 
 Finally install modified MLPY:
 ```
