@@ -26,6 +26,12 @@ pip install pysam
 pip install fastcluster 
 pip install matplotlib
 ```
+Note that some packages, e.g. `scipy` depend on dev versions of some of the GNU libraries, 
+you will likely to have to install them before proceeding, for instance, on ubuntu you will need to:
+```
+apt-get install libblas-dev liblapack-dev gfortran
+```
+Similarly, you can install `numpy` and `scipy` using apt-get (or other package manager) if you like.
 
 Finally install modified MLPY:
 ```
