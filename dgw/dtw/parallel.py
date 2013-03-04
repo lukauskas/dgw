@@ -7,7 +7,6 @@ import ctypes
 from logging import debug
 
 from dgw.dtw.distance import dtw_std
-from dgw.dtw.transformations import  uniform_scaled_distance
 
 __all__ = ['parallel_pdist']
 
@@ -22,7 +21,7 @@ def combinations_count(n_items):
 
 def _parallel_dtw_worker(data_buffer, operations_generator, data_buffer_shape, result_buffer,
                          scheduling_queue, exception_queue,
-                         no_dtw, dtw_args, dtw_kwargs):
+                         dtw_args, dtw_kwargs):
     """
     A worker function for parallel_pdist that is executed on a separate process.
 
@@ -40,7 +39,6 @@ def _parallel_dtw_worker(data_buffer, operations_generator, data_buffer_shape, r
     :param scheduling_queue: multiprocessing-safe queue to read processing schedule from
     :type scheduling_queue: multiprocessing.Queue
     :param exception_queue: queue that any exceptions that occur will be pushed into
-    :param no_dtw: if set to true DTW will not be used
     :param dtw_args: args passed into `dtw_std` or `uniform_scaled_distance`
     :param dtw_kwargs: kwargs passed into `dtw_std` or `uniform_scaled_distance`
     :return:
@@ -71,10 +69,7 @@ def _parallel_dtw_worker(data_buffer, operations_generator, data_buffer_shape, r
             for i, (x, y) in enumerate(data_indices):
                 a = data_view[x]
                 b = data_view[y]
-                if no_dtw:
-                    result = uniform_scaled_distance(a, b, *dtw_args, **dtw_kwargs)
-                else:
-                    result = dtw_std(a, b, *dtw_args, **dtw_kwargs)
+                result = dtw_std(a, b, *dtw_args, **dtw_kwargs)
                 result_buffer[start + i] = result
 
             debug('PROCESS {0}: Iteration end'.format(pid))
@@ -93,7 +88,7 @@ def _parallel_dtw_worker(data_buffer, operations_generator, data_buffer_shape, r
 def _pdist_operations_generator_factory(indices):
     return itertools.combinations(indices, 2)
 
-def _parallel_dtw(three_dim_array, _operations_generator_factory, n_operations, n_processes=None, no_dtw=False, *dtw_args, **dtw_kwargs):
+def _parallel_dtw(three_dim_array, _operations_generator_factory, n_operations, n_processes=None, *dtw_args, **dtw_kwargs):
     """
     Runs DTW on parallel
     :param three_dim_array: three-dimensional numpy array of data
@@ -102,7 +97,6 @@ def _parallel_dtw(three_dim_array, _operations_generator_factory, n_operations, 
        where is and js are the operations that need to be computed. See e.g. `_pdist_operations_generator_factory`
     :param n_operations: length of _operations_generator (as generators should not have __len__ method)
     :param n_processes: number of processes to use (defaults to maximum number of CPU cores)
-    :param no_dtw: if set to true, `uniform_scaled_distance` will be used instead
     :param dtw_args: args to pass to dtw
     :param dtw_kwargs: kwargs to pass to dtw
     :return:
@@ -157,7 +151,7 @@ def _parallel_dtw(three_dim_array, _operations_generator_factory, n_operations, 
     for i in xrange(n_processes):
         p = Process(target=_parallel_dtw_worker,
                     args=(data_buffer, _operations_generator_factory, shape, result_buffer, scheduling_queue,
-                          exception_queue, no_dtw, dtw_args, dtw_kwargs))
+                          exception_queue, dtw_args, dtw_kwargs))
         processes.append(p)
 
     # Start all processes
@@ -177,14 +171,13 @@ def _parallel_dtw(three_dim_array, _operations_generator_factory, n_operations, 
     # Convert the result to numpy array in the end
     return np.frombuffer(result_buffer)
 
-def parallel_pdist(three_dim_array, n_processes=None, no_dtw=False, *dtw_args, **dtw_kwargs):
+def parallel_pdist(three_dim_array, n_processes=None, *dtw_args, **dtw_kwargs):
     """
     Calculates pairwise DTW distance for all the rows in three_dim_array provided.
     This module is similar to scipy.spatial.distance.pdist, but uses all CPU cores available, rather than one.
     :param three_dim_array: numpy data array [observations x max(sequence_lengths) x ndim ]
     :param n_processes: number of processes to spawn usage to the number specified.
                         Will default to the number of (virtual) CPUs available if not set
-    :param no_dtw: if passed in `uniform_scaled_distance` will be used instead of DTW
     :param dtw_args: `args` to be passed into `dtw_std`
     :param dtw_kwargs: `kwargs` to be passed into `dtw_std`
     :return: condensed distance matrix (just as `scipy.spatial.distance.pdist`)
@@ -193,11 +186,13 @@ def parallel_pdist(three_dim_array, n_processes=None, no_dtw=False, *dtw_args, *
     n_items = three_dim_array.shape[0]
     number_of_combinations = combinations_count(n_items)
 
-    return _parallel_dtw(three_dim_array, _pdist_operations_generator_factory, number_of_combinations, no_dtw=no_dtw,
-                         n_processes=n_processes,*dtw_args, **dtw_kwargs)
+    return _parallel_dtw(three_dim_array, _pdist_operations_generator_factory, number_of_combinations,
+                         n_processes=n_processes, *dtw_args, **dtw_kwargs)
 
 
-def _path_calculation_worker(data_buffer, shape, prototypes_buffer, prototypes_shape, scheduling_queue, results_queue, exception_queue, no_dtw, dtw_args, dtw_kwargs):
+def _path_calculation_worker(data_buffer, shape, prototypes_buffer, prototypes_shape,
+                             scheduling_queue, results_queue, exception_queue,
+                             dtw_args, dtw_kwargs):
     import sys
     import traceback
     import os
@@ -217,10 +212,7 @@ def _path_calculation_worker(data_buffer, shape, prototypes_buffer, prototypes_s
             x = data_view[data_i]
             base = prototypes_view[base_i]
 
-            if not no_dtw:
-                _, _, path = dtw_std(x, base, dist_only=False, *dtw_args, **dtw_kwargs)
-            else:
-                _, _, path = uniform_scaled_distance(x, base, dist_only=False, *dtw_args, **dtw_kwargs)
+            _, _, path = dtw_std(x, base, dist_only=False, *dtw_args, **dtw_kwargs)
 
             results_queue.put((work_id, path))
 
@@ -235,7 +227,7 @@ def _path_calculation_worker(data_buffer, shape, prototypes_buffer, prototypes_s
         exception_queue.put(e)
         traceback.print_exc()
 
-def parallel_dtw_paths(full_data, nodes, n_processes=None, no_dtw=False, *dtw_args, **dtw_kwargs):
+def parallel_dtw_paths(full_data, nodes, n_processes=None, *dtw_args, **dtw_kwargs):
     def _read_results_of_queue_till_empty(queue, ans_dict):
         debug('Queue full, reading results till can proceed further')
         number_of_answers = 0
@@ -315,7 +307,7 @@ def parallel_dtw_paths(full_data, nodes, n_processes=None, no_dtw=False, *dtw_ar
     for i in xrange(n_processes):
         p = Process(target=_path_calculation_worker,
                     args=(data_buffer, shape, prototypes_buffer, prototypes_shape, scheduling_queue, answers_queue,
-                          exception_queue, no_dtw, dtw_args, dtw_kwargs))
+                          exception_queue, dtw_args, dtw_kwargs))
         processes.append(p)
 
     # Buffer to store results

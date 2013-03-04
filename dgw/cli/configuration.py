@@ -1,5 +1,4 @@
-from dgw.dtw import parametrised_uniform_scaled_distance_wrapper
-from ..dtw.distance import dtw_std, parametrised_dtw_wrapper
+from ..dtw.distance import parametrised_dtw_wrapper
 
 class Configuration(object):
     """
@@ -87,13 +86,16 @@ class Configuration(object):
         if self.args.slanted_band is not None:
             kw['constraint'] = 'slanted_band'
             kw['k'] = self.args.slanted_band
+        if self.args.scale:
+            kw['scale_first'] = True
 
         kw['normalise'] = self.args.normalise
         return kw
 
     @property
     def dtw_function(self):
-        if self.args.no_dtw:
-            return parametrised_uniform_scaled_distance_wrapper(**self.dtw_kwargs)
-        else:
-            return parametrised_dtw_wrapper(**self.dtw_kwargs)
+        return parametrised_dtw_wrapper(**self.dtw_kwargs)
+
+    @property
+    def prototyping_method(self):
+        return self.args.prototyping_method

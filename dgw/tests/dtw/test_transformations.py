@@ -1,8 +1,11 @@
 import unittest
+
 import numpy as np
-from dgw.dtw import parametrised_dtw_wrapper
-from dgw.dtw.transformations import *
 from numpy.testing import assert_array_equal, assert_array_almost_equal
+
+from dgw.dtw import parametrised_dtw_wrapper, uniform_scaling_to_length
+from dgw.dtw.scaling import uniform_shrinking_to_length
+from dgw.dtw.transformations import *
 
 
 class TestScaling(unittest.TestCase):

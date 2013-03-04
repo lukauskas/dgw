@@ -1,12 +1,14 @@
 from itertools import izip
 from logging import debug
+
 import pandas as pd
 import numpy as np
-from math import ceil, floor, fabs
-from dgw.data.containers import AlignmentsData
 
-from scipy.spatial.distance import sqeuclidean, euclidean, cosine
-from distance import dtw_std, _strip_nans, no_nans_len
+from dgw.data.containers import AlignmentsData
+from dgw.dtw.scaling import uniform_scaling_to_length, uniform_shrinking_to_length
+from dgw.dtw.utilities import _strip_nans, no_nans_len
+from distance import dtw_std
+
 
 def points_mapped_to(point_on_original_sequence, dtw_path, sequence_a=True):
     """
@@ -24,103 +26,6 @@ def points_mapped_to(point_on_original_sequence, dtw_path, sequence_a=True):
 
     path_indices = np.nonzero(path_ours == point_on_original_sequence)
     return path_theirs[path_indices]
-
-def uniform_scaling_to_length(sequence, desired_length, output_path=False):
-    """
-    Uniform scaling procedure, similar to the one provided in [#yankov2007]
-    .. [#yankov2007] D Yankov, E Keogh, J Medina, and B Chiu, "Detecting time series motifs under uniform scaling", 2007
-    :param sequence:
-    :param desired_length:
-    :return:
-    """
-    sequence = _strip_nans(sequence)
-    current_len = len(sequence)
-    if current_len == 0:
-        raise ValueError('Empty sequence cannot be extended')
-    elif desired_length == current_len:
-        if output_path:
-            return sequence, np.asarray(range(desired_length))
-        else:
-            return sequence
-    elif desired_length < current_len:
-        raise ValueError('Desired length is smaller than current length: {0} < {1}'.format(desired_length, current_len))
-
-    scaling_factor = float(current_len) / desired_length
-
-    rescaled_sequence = [sequence[int(floor(i*scaling_factor))] for i in range(desired_length)]
-
-    if output_path:
-        return rescaled_sequence, np.asarray([floor(i*scaling_factor) for i in range(desired_length)])
-    else:
-        return rescaled_sequence
-
-def uniform_shrinking_to_length(sequence, desired_length):
-    EPSILON = 1e-6
-
-    sequence = np.asarray(sequence, dtype=float)
-    sequence = _strip_nans(sequence)
-
-    current_length = len(sequence)
-
-    if current_length == 0:
-        raise ValueError('Cannot shrink sequence of length 0')
-    elif current_length < desired_length:
-        raise ValueError('Desired length greater than current length: {0} > {1}'.format(desired_length, current_length))
-    elif current_length == desired_length:
-        return sequence
-
-    if desired_length <= 0:
-        raise ValueError('Invalid length desired: {0}'.format(desired_length))
-
-    # This is essentially how many points in the current sequence will be mapped to a single point in the newone
-    shrink_factor = float(current_length) / desired_length
-
-    try:
-        ndim = sequence.shape[1]
-    except IndexError:
-        ndim = 0
-    if ndim == 0:
-        new_sequence = np.empty(desired_length)
-    else:
-        new_sequence = np.empty((desired_length, ndim))
-
-    for i in range(desired_length):
-        start = i * shrink_factor
-        end = (i + 1) * shrink_factor
-
-        s = 0
-        d = 0
-
-        left_bound = int(floor(start))
-
-        if fabs(start - left_bound) <= EPSILON:
-            left_bound_input = 1
-        else:
-            left_bound_input = ceil(start) - start
-
-        if left_bound_input >= EPSILON:
-            s += sequence[left_bound] * left_bound_input
-            d += left_bound_input
-
-        right_bound = int(floor(end))
-        right_bound_input = end - floor(end)
-
-        if right_bound_input >= EPSILON:  # Epsilon to prevent rounding errors interfering
-            s += sequence[right_bound] * right_bound_input
-            d += right_bound_input
-
-        for j in xrange(left_bound + 1, right_bound):
-            s += sequence[j]
-            d += 1.0
-
-        assert(abs(d - shrink_factor) < 0.000001)
-
-        new_sequence[i] = s / d
-
-    return new_sequence
-
-
-
 
 def dtw_projection(sequence, base_sequence, dtw_function=dtw_std, path=None):
     """
@@ -273,48 +178,3 @@ def sdtw_averaging(sequence_a, sequence_b, weight_a, weight_b, path=None, shrink
         averaged_path = uniform_shrinking_to_length(averaged_path, max(len(_strip_nans(sequence_a)),
                                                                        len(_strip_nans(sequence_b))))
     return averaged_path
-
-
-def uniform_scaled_distance(x, y, dist_only=True, metric="sqeuclidean", try_reverse=True, normalise=False):
-    x = np.asarray(x)
-    y = np.asarray(y)
-
-    x = _strip_nans(x)
-    y = _strip_nans(y)
-    len_x = len(x)
-    len_y = len(y)
-
-    # Make sure x is always the shorter sequence
-    if len_x > len_y:
-        x, y = y, x
-        len_x, len_y = len_y, len_x
-
-    x, path = uniform_scaling_to_length(x, len_y, output_path=True)
-    if metric == "sqeuclidean":
-        dist_func = sqeuclidean
-    elif metric == "euclidean":
-        dist_func = euclidean
-    elif metric == "cosine":
-        dist_func = cosine
-
-    dist = dist_func(x, y)
-    if try_reverse:
-        dist_rev = dist_func(x[::-1], y)
-        if dist_rev < dist:
-            dist = dist_rev
-            path = path[::-1]
-
-    if normalise:
-        dist /= float(len_y)
-
-    if dist_only:
-        return dist
-    else:
-        return dist, None, (path, np.asarray(range(len_y)) ) # Cost matrix does not really exist here
-
-def parametrised_uniform_scaled_distance_wrapper(*args, **kwargs):
-
-    def f(x, y, dist_only=False):
-        return uniform_scaled_distance(x, y, dist_only=dist_only, *args, **kwargs)
-
-    return f

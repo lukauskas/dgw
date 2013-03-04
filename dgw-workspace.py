@@ -42,6 +42,7 @@ if configuration.linkage_filename:
 
 
     hc = dgw.cluster.analysis.HierarchicalClustering(dataset, regions, linkage_matrix=linkage, prototypes=prototypes,
-                                                     dtw_function=configuration.dtw_function)
+                                                     dtw_function=configuration.dtw_function,
+                                                     prototyping_method=configuration.prototyping_method)
     add_path_data(hc.tree_nodes_list, hc.num_obs, warping_paths)
     hcv = dgw.cluster.visualisation.HierarchicalClusteringViewer(hc)

@@ -7,14 +7,15 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 from ..data.containers import AlignmentsData
-from ..dtw.distance import dtw_std, no_nans_len
+from dgw.dtw.utilities import no_nans_len
+from ..dtw.distance import dtw_std
 from ..dtw import transformations, dtw_projection
 from ..dtw.parallel import parallel_dtw_paths
 
-def compute_paths(data, dtw_nodes_list, n, n_processes=None, no_dtw=False, *dtw_args, **dtw_kwargs):
+def compute_paths(data, dtw_nodes_list, n, n_processes=None, *dtw_args, **dtw_kwargs):
 
     non_leaf_nodes = dtw_nodes_list[n:]
-    paths = parallel_dtw_paths(data, non_leaf_nodes, n_processes=n_processes, no_dtw=no_dtw, *dtw_args, **dtw_kwargs)
+    paths = parallel_dtw_paths(data, non_leaf_nodes, n_processes=n_processes, *dtw_args, **dtw_kwargs)
     return paths
 
 def _to_dtw_tree(linkage, hierarchical_clustering_object, prototypes, prototyping_function='mean'):
@@ -67,7 +68,7 @@ def _to_dtw_tree(linkage, hierarchical_clustering_object, prototypes, prototypin
                                 prototype=prototype,
                                 left=left, right=right,
                                 dist=linkage[i, 2])
-            
+
         elif callable(prototyping_function):
             prototype = prototyping_function(left.prototype.values, right.prototype.values, left.count, right.count)
 
@@ -239,7 +240,7 @@ class DTWClusterNode(object, hierarchy.ClusterNode):
 
         if self.is_leaf():
             # Nothing to track
-            return {self.id: self.points_of_interest}
+            return self.points_of_interest
         else:
             points_of_interest = self.points_of_interest
             warping_paths = self.warping_paths
@@ -365,6 +366,8 @@ class HierarchicalClustering(object):
                 see `dgw.transformations.dtw_path_averaging`
             Unweighted standard average of DTW path (prototyping_method='standard-unweighted')
                 similar to the standard method above, but does not bias sequences higher up the tree
+            Mean (prototyping_method='mean')
+                simply the mean of the data
 
 
         .. [#Niennattrakul:2009ep] Vit Niennattrakul and Chotirat Ann Ratanamahatana "Shape averaging under Time Warping",
@@ -376,7 +379,7 @@ class HierarchicalClustering(object):
         :param linkage_matrix: linkage_matrix computed by fastcluster.linkage.
         :param dtw_function: DTW calculation function
         :param prototypes: cluster node prototypes (will be computed if None)
-        :param prototyping_method: Averaging method either 'psa', 'standard' or 'standard-unweighted'
+        :param prototyping_method: Averaging method either 'psa', 'standard', 'standard-unweighted', 'mean'
         :return:
         """
         if not isinstance(data, AlignmentsData):

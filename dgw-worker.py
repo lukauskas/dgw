@@ -76,6 +76,12 @@ def argument_parser():
     parser.add_argument('--no-dtw', action='store_const', const=True, default=False,
                         help='If this option is provided, DGW will not use Dynamic Time Warping for region alignments. '
                              'Use it to compare it with basic methods.')
+
+    parser.add_argument('--scale', action="store_const", const="True", default=False,
+                        help='Scale the sequence uniformly to the length of the longer sequence before doing DTW')
+
+    parser.add_argument('--prototyping_method', default=None, choices=['psa', 'standard', 'standard-unweighted', 'mean'])
+
     return parser
 
 #-- Actual execution of the program
@@ -155,8 +161,14 @@ def main():
             parser.error('Cannot use cosine distance with just one dataset. Choose sqeuclidean or euclidean instead.')
 
     if args.no_dtw:
-        if args.slanted_band:
-            parser.error("Slanted band constraint can only be used with DTW")
+        # Thats what no-dtw actually does
+        args.slanted_band = 0
+        args.scale = True
+        if args.prototyping_method is None:
+            args.prototyping_method = 'mean'
+    else:
+        if args.prototyping_method is None:
+            args.prototyping_method = 'psa'
 
     if args.verbose:
         logging.root.setLevel(logging.DEBUG)
@@ -225,10 +237,7 @@ def main():
             print '> Not using DTW as --no-dtw option is set'
 
         start = datetime.now()
-        if args.no_dtw:
-            dm = parallel_pdist(datasets, args.n_cpus, no_dtw=True, **configuration.dtw_kwargs)
-        else:
-            dm = parallel_pdist(datasets, args.n_cpus, **configuration.dtw_kwargs)
+        dm = parallel_pdist(datasets, args.n_cpus, **configuration.dtw_kwargs)
         end = datetime.now()
 
         delta = end - start
@@ -254,19 +263,15 @@ def main():
 
         print '> Computing prototypes'
         # Hierarchical clustering object to compute the prototypes
-        if args.no_dtw:
-            hc = HierarchicalClustering(datasets, regions, linkage, dtw_function=configuration.dtw_function,
-                                        prototyping_method='mean')
-        else:
-            hc = HierarchicalClustering(datasets, regions, linkage, dtw_function=configuration.dtw_function)
-
+        hc = HierarchicalClustering(datasets, regions, linkage, dtw_function=configuration.dtw_function,
+                                    prototyping_method=configuration.prototyping_method)
         prototypes = hc.extract_prototypes()
         print '> Saving prototypes to {0!r}'.format(configuration.prototypes_filename)
         serialise(prototypes, configuration.prototypes_filename)
 
         print '> Computing warping paths'
         nodes = hc.tree_nodes_list
-        paths = compute_paths(datasets, nodes, hc.num_obs, n_processes=configuration.args.n_cpus, no_dtw=args.no_dtw,
+        paths = compute_paths(datasets, nodes, hc.num_obs, n_processes=configuration.args.n_cpus,
                               **configuration.dtw_kwargs)
         print '> Saving warping paths to {0!r}'.format(configuration.warping_paths_filename)
         serialise(paths, configuration.warping_paths_filename)

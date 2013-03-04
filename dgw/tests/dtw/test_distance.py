@@ -4,7 +4,8 @@ from scipy.spatial.distance import cosine
 import numpy as np
 from numpy.testing import *
 
-from dgw.dtw.distance import _strip_nans, dtw_std
+from dgw.dtw.distance import dtw_std
+from dgw.dtw.utilities import _strip_nans
 
 
 class TestStripNans(unittest.TestCase):

@@ -6,7 +6,8 @@ from matplotlib.ticker import FuncFormatter, IndexLocator
 import numpy as np
 import matplotlib
 import pandas as pd
-from dgw.dtw import no_nans_len
+from dgw.dtw.utilities import no_nans_len
+
 
 def dataset_ticks(dataset, scale=1):
     """

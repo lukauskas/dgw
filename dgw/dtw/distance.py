@@ -1,34 +1,7 @@
-from logging import debug
 from mlpy.dtw import dtw_std as mlpy_dtw_std
 import numpy as np
-
-def _strip_nans(sequence):
-    '''
-        Strips NaNs that are padded to the right of each peak if they are of unequal length
-    :param sequence:
-    :return:
-    '''
-
-    try:
-        lookup = np.all(np.isnan(sequence), axis=1)
-    except ValueError:
-        # Will get thrown for one-dimensional arrays
-        return sequence[~np.isnan(sequence)]
-
-    sequence = sequence[~lookup]
-    if np.any(np.isnan(sequence)):
-        raise ValueError('Inconsistent NaNs between dimensions')
-
-    return sequence
-
-def no_nans_len(sequence):
-    """
-    Returns length of the sequence after removing all the nans from it.
-
-    :param sequence:
-    :return:
-    """
-    return len(_strip_nans(sequence))
+from dgw.dtw.scaling import uniform_scaling_to_length
+from dgw.dtw.utilities import _strip_nans, no_nans_len
 
 def parametrised_dtw_wrapper(*dtw_args, **dtw_kwargs):
     """
@@ -44,7 +17,7 @@ def parametrised_dtw_wrapper(*dtw_args, **dtw_kwargs):
     return f
 
 def dtw_std(x, y, metric='sqeuclidean', dist_only=True, constraint=None, k=None, try_reverse=True, normalise=False,
-            *args, **kwargs):
+            scale_first=False, *args, **kwargs):
     """
     Wrapper arround MLPY's dtw_std that supports cleaning up of NaNs, and reversing of strings.
     :param x:
@@ -55,14 +28,27 @@ def dtw_std(x, y, metric='sqeuclidean', dist_only=True, constraint=None, k=None,
     :param k: parameter k needed for slanted band constraint
     :param try_reverse: Will try reversing one sequence as to get a better distance
     :param normalise: If set to true, distance will be divided from the length of the longer sequence
+    :param scale_first: If set to true, the shorte sequence will be scaled to the length of the longer sequence before DTW
     :param kwargs:
     :return:
     """
-    def _normalise(ans):
+    def _normalise(ans, max_len):
         if normalise:
-            return ans / max(no_nans_len(x), no_nans_len(y))
+            return ans / max_len
         else:
             return ans
+
+    def _scaled_path(path, scaling_path, flip_paths):
+        path_x = np.asarray([scaling_path[i] for i in path[0]])
+        path_y = path[1]
+
+        if flip_paths:
+            path = (path_y, path_x)
+        else:
+            path = (path_x, path_y)
+
+        return path
+
 
     x = np.asarray(x, dtype=np.float)
     y = np.asarray(y, dtype=np.float)
@@ -70,20 +56,44 @@ def dtw_std(x, y, metric='sqeuclidean', dist_only=True, constraint=None, k=None,
     x = _strip_nans(x)
     y = _strip_nans(y)
 
+    max_len = max(len(x), len(y))
+    if scale_first:
+        if len(x) >= len(y):
+            x, y = y, x
+            flip_paths = True
+        else:
+            flip_paths = False
+
+        x, scaling_path = uniform_scaling_to_length(x, len(y), output_scaling_path=True)
+
     regular_ans = mlpy_dtw_std(x, y, metric=metric, dist_only=dist_only, constraint=constraint, k=k, *args, **kwargs)
     if not try_reverse:
-        return _normalise(regular_ans)
+        if dist_only:
+            return _normalise(regular_ans)
+        else:
+            dist, cost, path = regular_ans
+            dist = _normalise(dist, max_len)
+
+            if scale_first:
+                path = _scaled_path(path, scaling_path, flip_paths)
+
+            return dist, cost, path
     else:
         reverse_ans = mlpy_dtw_std(x[::-1], y, metric=metric, dist_only=dist_only, constraint=constraint, k=k, *args, **kwargs)
         if dist_only:
-            return _normalise(min(regular_ans, reverse_ans))
+            return _normalise(min(regular_ans, reverse_ans), max_len)
         elif reverse_ans[0] >= regular_ans[0]:
             dist, cost, path = regular_ans
-            return _normalise(dist), cost, path
+            if scale_first:
+                path = _scaled_path(path, scaling_path, flip_paths)
+            return _normalise(dist, max_len), cost, path
         else:  # dist_only = False and reverse_ans is smaller
             dist, cost, path = reverse_ans
             path_rev = (path[0][::-1], path[1])
 
+            if scale_first:
+                path_rev = _scaled_path(path, scaling_path, flip_paths)
+
             # TODO: Reverse cost matrix here
             cost = None
-            return _normalise(dist), cost, path_rev
+            return _normalise(dist, max_len), cost, path_rev
