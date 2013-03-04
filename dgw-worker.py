@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 """
 A worker module for Dynamic Genome Warping.
 
