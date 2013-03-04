@@ -29,6 +29,8 @@ def uniform_scaling_to_length(sequence, desired_length, output_scaling_path=Fals
 
     if output_scaling_path:
         return rescaled_sequence, np.asarray([int(floor(i * scaling_factor)) for i in range(desired_length)])
+    else:
+        return rescaled_sequence
 
 
 def uniform_shrinking_to_length(sequence, desired_length):
