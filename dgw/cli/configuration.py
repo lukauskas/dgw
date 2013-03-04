@@ -65,14 +65,14 @@ class Configuration(object):
     @property
     def missing_regions_filename(self):
         if self.args.regions:
-            return '{0}_missing_regions.pd'.format(self.args.prefix)
+            return '{0}_missing_regions.bed'.format(self.args.prefix)
         else:
             return None
 
     @property
     def filtered_regions_filename(self):
         if self.args.regions:
-            return '{0}_filtered_regions.pd'.format(self.args.prefix)
+            return '{0}_filtered_regions.bed'.format(self.args.prefix)
         else:
             return None
 

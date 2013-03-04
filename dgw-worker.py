@@ -180,8 +180,8 @@ def main():
         print '> Reading regions from {0!r} ....'.format(args.regions)
         regions, total_regions, used_regions = read_regions(args.regions, args.truncate_regions)
 
-        # --- saving of regions ----------
-        print '> Saving regions to {0}'.format(configuration.parsed_regions_filename)
+        # --- Serialise the regions as they will be needed in explorer ----------
+        print '> Serialising regions to {0}'.format(configuration.parsed_regions_filename)
         serialise(regions, configuration.parsed_regions_filename)
     else:
         regions = None
@@ -198,7 +198,7 @@ def main():
 
     if args.datasets:
         if args.output_raw_dataset:
-            print '> Saving raw dataset to {0}'.format(configuration.raw_dataset_filename)
+            print '> Serialising raw dataset to {0}'.format(configuration.raw_dataset_filename)
             serialise(datasets, configuration.raw_dataset_filename)
 
         datasets = datasets.to_log_scale()
@@ -206,11 +206,14 @@ def main():
         if len(missing_regions) > 0:
             print "> {0} regions were not found in the dataset, they were saved to {1}".format(len(missing_regions),
                                                                                 configuration.missing_regions_filename)
-            serialise(missing_regions, configuration.missing_regions_filename)
+            missing_regions.to_bed(configuration.missing_regions_filename, track_title='DGWMissingRegions',
+                                   track_description='Regions that are in input, but missing from the dataset')
+
         if len(filtered_regions) > 0:
             print "> {0} regions were filtered out from dataset due to --min-pileup constraint, they were saved to {1}".format(len(filtered_regions),
                                                                                            configuration.filtered_regions_filename)
-            serialise(filtered_regions, configuration.missing_regions_filename)
+            filtered_regions.to_bed(configuration.missing_regions_filename, track_title='DGWFilteredRegions',
+                                    track_description='Regions that were filtered out from the dataset')
 
         used_regions = len(datasets.items)
         if len(missing_regions) > 0 or len(filtered_regions) > 0:
@@ -222,7 +225,6 @@ def main():
 
         # --- Saving of datasets -------------------
         print '> Saving datasets to {0}'.format(configuration.dataset_filename)
-        # TODO: Pickle is likely to fuck-up here (not 64bit safe), and this is not strictly necessary!
         serialise(datasets, configuration.dataset_filename)
     else:
         print "> Not converting dataset to log scale as processed dataset already provided"
