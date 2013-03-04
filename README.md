@@ -12,7 +12,13 @@ pip install cython
 pip install -e git://github.com/sauliusl/mlpy.git#egg=mlpy
 ```
 Cython is required for compilation of mlpy from source.
-Note that mlpy depends on GSL (with header-files). Please look for instructions on how to install it on your platform if the installation fails.
+Note that mlpy depends on GSL (with header-files). 
+Please look for instructions on how to install it on your platform if the installation fails.
+
+On ubuntu this can be installed by 
+```
+apt-get install libgsl0-dev
+```
 
 ## Platform-specific instructions
 
