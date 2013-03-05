@@ -207,7 +207,12 @@ class Regions(object):
     def __getitem__(self, item):
         result = self.data[item]
         if isinstance(result, pd.DataFrame):
-            return self.__class__(result)
+            try:
+                # Try returining it as the same class
+                return self.__class__(result)
+            except ValueError:
+                # If not valid, return as DataFrame
+                return result
         return result
 
     def iterrows(self):
@@ -394,6 +399,34 @@ class Genes(Regions):
                                    'end' : ends}, index=self.index)
 
         return Regions(regions_df)
+
+    def get_exon_regions(self, exon_number):
+        """
+        Returns exon regions for particular exon_number provided (0-based)
+        :param exon_number: exon number - 0 based. I.e. use 0 to get regions of first exon
+        :return:
+        """
+        if 'exonStarts' not in self.columns or 'exonEnds' not in self.columns:
+            raise Exception('No exon data available, sorry')
+
+        sub_df = self[['chromosome', 'exonStarts', 'exonEnds']]
+        new_df = []
+        for ix, row in sub_df.iterrows():
+
+            exon_starts = row['exonStarts'].split(',')
+            exon_ends = row['exonEnds'].split(',')
+            chromosome = row['chromosome']
+
+            try:
+                start = exon_starts[exon_number]
+                end = exon_ends[exon_number]
+            except IndexError:
+                start = np.nan
+                end = np.nan
+
+            new_df.append({'chromosome': chromosome, 'start': start, 'end': end})
+        new_df = pd.DataFrame(new_df, index=self.index)
+        return Regions(new_df)
 
     @classmethod
     def from_encode_known_genes(cls, encode_known_genes_filename):

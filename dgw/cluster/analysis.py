@@ -244,6 +244,7 @@ class DTWClusterNode(object, hierarchy.ClusterNode):
                 tracked_points[ix] = mapped_points
 
             return tracked_points
+
     @property
     def points_of_interest(self):
         poi = self.data.points_of_interest

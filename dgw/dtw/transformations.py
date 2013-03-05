@@ -10,7 +10,7 @@ from dgw.dtw.utilities import _strip_nans, no_nans_len
 from distance import dtw_std
 
 
-def points_mapped_to(point_on_original_sequence, dtw_path, sequence_a=True):
+def points_mapped_to(points_on_original_sequence, dtw_path, sequence_a=True):
     """
     Returns all indices on the sequence b that are mapped to the index on sequence_a provided.
 
@@ -24,8 +24,10 @@ def points_mapped_to(point_on_original_sequence, dtw_path, sequence_a=True):
     else:
         path_theirs, path_ours = dtw_path
 
-    path_indices = np.nonzero(path_ours == point_on_original_sequence)
-    return path_theirs[path_indices]
+    indices = set()
+    for p in points_on_original_sequence:
+        indices.update(np.nonzero(path_ours == p)[0])
+    return path_theirs[sorted(indices)]
 
 def dtw_projection(sequence, base_sequence, dtw_function=dtw_std, path=None):
     """

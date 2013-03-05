@@ -85,14 +85,22 @@ def argument_parser():
 
     parser.add_argument('--prototyping_method', default=None, choices=['psa', 'standard', 'standard-unweighted', 'mean'])
 
+    parser.add_argument('--min-bins', default=4, help='Specifies the minimal length of region in bins in order for it '
+                                                      'to be processed.', type=int)
+    parser.add_argument('--max-bins', default=None, help='Specifies the maximum length of region in bins '
+                                                          'in order for it to be processed',
+                        type=int)
+
     return parser
 
 #-- Actual execution of the program
 
-def read_regions(regions_filename, truncate_regions):
+def read_regions(regions_filename, truncate_regions, resolution):
     regions = Regions.from_bed(regions_filename)
     total_len = len(regions)
     print '> {0} regions of interest read'.format(total_len)
+
+    regions = regions.clip_to_resolution(resolution)
 
     used_len = total_len
     if truncate_regions:
@@ -104,10 +112,9 @@ def read_regions(regions_filename, truncate_regions):
 
 def read_datasets(args, regions):
     if args.datasets:
+        data_filters = []
         if args.min_pileup:
-            data_filters = [HighestPileUpFilter(args.min_pileup)]
-        else:
-            data_filters = []
+            data_filters.append(HighestPileUpFilter(args.min_pileup))
 
         return read_bam(args.datasets, regions,
                         resolution=args.resolution,
@@ -181,11 +188,30 @@ def main():
     # --- pre-processing ------------------------
     if args.regions:
         print '> Reading regions from {0!r} ....'.format(args.regions)
-        regions, total_regions, used_regions = read_regions(args.regions, args.truncate_regions)
+        regions, total_regions, used_regions = read_regions(args.regions, args.truncate_regions, args.resolution)
 
-        # --- Serialise the regions as they will be needed in explorer ----------
-        print '> Serialising regions to {0}'.format(configuration.parsed_regions_filename)
-        serialise(regions, configuration.parsed_regions_filename)
+        too_short_regions = (regions.lengths / args.resolution) < args.min_bins  # Set the threshold to 4 bins
+        too_short_regions = regions.ix[too_short_regions[too_short_regions].index]
+
+        print '> {0} regions have their length shorter than {1} bins. Saving them to {2!r} as they won\'t be processed'\
+            .format(len(too_short_regions), args.min_bins, configuration.too_short_regions_filename)
+        too_short_regions.to_bed(configuration.too_short_regions_filename)
+
+        regions = regions.ix[regions.index - too_short_regions.index]
+
+        if args.max_bins:
+            too_long_regions = (regions.lengths / args.resolution) >= args.max_bins
+            too_long_regions = regions.ix[too_long_regions[too_long_regions].index]
+
+            print '> {0} regions have their length longer than {1} bins. ' \
+                  'Saving them to {2!r} as they won\'t be processed due to --max-bins constraint'\
+                  .format(len(too_long_regions), args.max_bins, configuration.too_long_regions_filename)
+            too_long_regions.to_bed(configuration.too_long_regions_filename)
+
+            regions = regions.ix[regions.index - too_long_regions.index]
+
+        print '> {0} regions remain'.format(len(regions))
+
     else:
         regions = None
 
@@ -217,15 +243,17 @@ def main():
             regions.ix[filtered_regions].to_bed(configuration.filtered_regions_filename, track_title='DGWFilteredRegions',
                                         track_description='Regions that were filtered out from the dataset')
 
-        used_regions = len(dataset.items)
+        # Get remaining regions
+        regions = regions.ix[dataset.items]
         if len(missing_regions) > 0 or len(filtered_regions) > 0:
-            print '> {0} regions remaining'.format(used_regions)
-
+            print '> {0} regions remaining'.format(len(regions))
         if poi:
             poi = poi.as_bins_of(regions, resolution=args.resolution)
             dataset.points_of_interest = poi
 
-
+        # --- Serialise the regions as they will be needed in explorer ----------
+        print '> Serialising regions to {0}'.format(configuration.parsed_regions_filename)
+        serialise(regions, configuration.parsed_regions_filename)
     else:
         print "> Not converting dataset to log scale as processed dataset already provided"
 

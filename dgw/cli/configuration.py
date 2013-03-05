@@ -20,6 +20,8 @@ class Configuration(object):
         'config': '{prefix}_config.dgw',
         'missing_regions': '{prefix}_missing_regions.pickle',
         'filtered_regions': '{prefix}_filtered_regions.pickle',
+        'too_short_regions' : '{prefix}_too_short_regions.bed',
+        'too_long_regions' : '{prefix}_too_long_regions.bed',
         'dataset': '{prefix}_dataset.pd',
         'raw_dataset': '{prefix}_dataset_raw.pd',
         'regions': '{prefix}_regions.pd',
@@ -75,6 +77,10 @@ class Configuration(object):
             self._save_default_filename('regions', prefix)
             self._save_default_filename('missing_regions', prefix)
             self._save_default_filename('filtered_regions', prefix)
+            self._save_default_filename('too_short_regions', prefix)
+
+            if args.max_bins:
+                self._save_default_filename('too_long_regions', prefix)
 
         self._save_default_filename('dataset', prefix)
         if args.output_raw_dataset:
@@ -132,6 +138,14 @@ class Configuration(object):
     @property
     def filtered_regions_filename(self):
         return self._get_filename('filtered_regions')
+
+    @property
+    def too_short_regions_filename(self):
+        return self._get_filename('too_short_regions')
+
+    @property
+    def too_long_regions_filename(self):
+        return self._get_filename('too_long_regions')
 
     def _dtw_kwargs_from_args(self, args):
         kw = {'metric': args.metric}
