@@ -1,4 +1,5 @@
 from StringIO import StringIO
+from logging import debug
 import pandas as pd
 from ..containers import Regions
 
@@ -25,11 +26,15 @@ def read_bed(bed_file):
     finally:
         f.close()
         s.close()
-
-
     regions.columns = BED_COLUMNS[:len(regions.columns)]
+
+    if len(regions.name) != len(regions.name.drop_duplicates()):
+        raise Exception('Input BED file {0!r} contains duplicate values in name column. '
+                        'Please ensure the names of the regions are unique'.format(bed_file))
+
     if 'name' in regions.columns:
         regions = regions.set_index('name')
+
 
     return Regions(regions)
 
