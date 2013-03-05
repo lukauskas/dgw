@@ -3,7 +3,6 @@ import os
 import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
 from matplotlib.widgets import Button
-import Tkinter, tkFileDialog
 
 class ClusterPreviewer(object):
     _clusters = None
@@ -13,7 +12,11 @@ class ClusterPreviewer(object):
     root_window = None
     _add_save_button = None
     _buttons = None
-    def __init__(self, cluster_roots):
+    def __init__(self, cluster_roots, output_directory, configuration_filename, cut_level):
+        self.output_directory = output_directory
+        self.cut_level = cut_level
+        self.configuration_filename = configuration_filename
+
         self._clusters = cluster_roots
         self._initialise_grid()
 
@@ -61,23 +64,17 @@ class ClusterPreviewer(object):
     def _callback_save(self, event):
         debug('Save clicked')
 
-        # Create a root window that can be closed as otherwise tkFileDialog will create unclosable one
-        if self.root_window is None:
-            self.root_window = Tkinter.Tk()
-            self.root_window.withdraw()  # Closing the newly-created win
-
-        directory = tkFileDialog.askdirectory(title="Select a directory where the resulting clusters will be saved to")
-        if not directory: # Filedialog returns empty string if escape is pressed
-            return
-
+        directory = os.path.join(self.output_directory, '{0}_{1}'.format(self.configuration_filename, self.cut_level))
         if not os.path.exists(directory):
             os.makedirs(directory)
 
         print '> Saving clusters to directory {0}'.format(directory)
         for i, c in enumerate(self._clusters):
-            filename = os.path.join(directory, 'dgw_cluster_{0}.bed'.format(i + 1))
+            filename = os.path.join(directory, 'cluster_{0}.bed'.format(i + 1))
             c.save_as_encode_track(filename, track_name='DGWCluster{0}'.format(i + 1),
-                                   track_description='DGW Cluster {0}/{1}'.format(i + 1, len(self._clusters)))
+                                   track_description='DGW Cluster {0}/{1} (cut level: {2})'.format(i + 1,
+                                                                                                   len(self._clusters),
+                                                                                                   self.cut_level))
         print '> Saved'
 
     def add_button(self, text, callback):
@@ -174,8 +171,10 @@ class HierarchicalClusteringViewer(object):
     _line = None
     _cut_xdata = 0
 
-    def __init__(self, hierarchical_clustering_object):
+    def __init__(self, hierarchical_clustering_object, output_directory, configuration_file):
         self._hierarchical_clustering_object = hierarchical_clustering_object
+        self.output_directory = output_directory
+        self.configuration_file = configuration_file
 
     @property
     def clusters(self):
@@ -229,7 +228,7 @@ class HierarchicalClusteringViewer(object):
             return
 
         # Else, if we have clusters
-        pw = ClusterPreviewer(self.clusters)
+        pw = ClusterPreviewer(self.clusters, self.output_directory, self.configuration_file, self._cut_xdata)
         pw.show()
 
     def _callback_save(self, event):

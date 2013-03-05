@@ -8,6 +8,7 @@ from dgw.cli import Configuration
 from dgw.cluster import add_path_data
 import dgw.cluster.visualisation
 
+
 def load_from_pickle(f):
     if isinstance(f, basestring):
         f = open(f, 'rb')
@@ -33,6 +34,7 @@ def strict_load(filename):
 def argument_parser():
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument('configuration_file', metavar='dgw_config_file.dgw', type=argparse.FileType('r'))
+    parser.add_argument('-O', '--output', metavar='output_directory', default="output")
 
     return parser
 
@@ -76,7 +78,9 @@ def main():
                                                          dtw_function=configuration.dtw_function,
                                                          prototyping_method=configuration.prototyping_method)
         add_path_data(hc.tree_nodes_list, hc.num_obs, warping_paths)
-        hcv = dgw.cluster.visualisation.HierarchicalClusteringViewer(hc)
+        configuration_basename = os.path.basename(args.configuration_file.name)
+        hcv = dgw.cluster.visualisation.HierarchicalClusteringViewer(hc, output_directory=args.output,
+                                                                     configuration_file=configuration_basename)
         print "> Displaying explorer"
         hcv.show()
 
