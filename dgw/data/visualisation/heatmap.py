@@ -51,8 +51,8 @@ def raw_plot_data_as_heatmap(data_frame, ax=None, highlight_mask=None, *args, **
 
     return result
 
-def plot(alignments, clip_colors=True, titles=None, horizontal_grid=True,
-         no_y_axis=False, sort_by='length', subplot_spec=None, share_y_axis=None, scale_y_axis=None, highlighted_points={},
+def plot(alignments, clip_colors=False, titles=None, horizontal_grid=True,
+         no_y_axis=False, sort_by=None, subplot_spec=None, share_y_axis=None, scale_y_axis=None, highlighted_points={},
          rasterized=True):
     """
 
@@ -68,6 +68,7 @@ def plot(alignments, clip_colors=True, titles=None, horizontal_grid=True,
     :param scale_y_axis: plot will scale the y axis by the specified number (linearly) if set.
     :type scale_y_axis: int
     :param highlighted_points: a (index, array) dictionary of points that should be highlighted in the heatmap
+    :param: rasterized: whether to rasterize the plot or not (faster rending for rasterized)
     :return: returns the shared y axis
     """
     import matplotlib.pyplot as plt

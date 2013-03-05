@@ -22,6 +22,7 @@ class Configuration(object):
         'filtered_regions': '{prefix}_filtered_regions.pickle',
         'too_short_regions' : '{prefix}_too_short_regions.bed',
         'too_long_regions' : '{prefix}_too_long_regions.bed',
+        'no_poi_regions' : '{prefix}_no_poi_regions.bed',
         'dataset': '{prefix}_dataset.pd',
         'raw_dataset': '{prefix}_dataset_raw.pd',
         'regions': '{prefix}_regions.pd',
@@ -86,6 +87,9 @@ class Configuration(object):
         if args.output_raw_dataset:
             self._save_default_filename('raw_dataset', prefix)
 
+        if args.points_of_interest and args.ignore_no_poi_regions:
+            self._save_default_filename('no_poi_regions', prefix)
+
 
     def _save_default_filename(self, file_type, prefix):
         self.FILENAMES[file_type] = self.DEFAULT_FILENAMES[file_type].format(prefix=prefix)
@@ -146,6 +150,10 @@ class Configuration(object):
     @property
     def too_long_regions_filename(self):
         return self._get_filename('too_long_regions')
+
+    @property
+    def no_poi_regions_filename(self):
+        return self._get_filename('no_poi_regions')
 
     def _dtw_kwargs_from_args(self, args):
         kw = {'metric': args.metric}

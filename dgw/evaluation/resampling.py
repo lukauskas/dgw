@@ -49,7 +49,7 @@ def mutate_sequence(sequence, prob):
     sequence = np.asarray(sequence)
     length = no_nans_len(sequence)
 
-    prob_adjusted = prob / length
+    prob_adjusted = prob
 
     for i in range(length):
         mutate = np.random.choice([True, False], p=[prob_adjusted, 1 - prob_adjusted])

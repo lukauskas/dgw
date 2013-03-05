@@ -73,7 +73,7 @@ class AlignmentsData(object):
                             .format(type(panel)))
 
         self._scale = scale
-        self.poi = poi
+        self.points_of_interest = poi
 
     @property
     def data(self):
@@ -91,6 +91,10 @@ class AlignmentsData(object):
         else:
             self._poi = {}
 
+    def drop_no_pois(self):
+        common_index = self.items & self.points_of_interest
+
+        return self.ix[common_index]
 
     #-- Functions that simulate pd.Panel behaviour -------------------------------------------------------------------
 
@@ -145,8 +149,10 @@ class AlignmentsData(object):
         if self._scale == 'log':
             return self
 
-        new_data = (self.data + 2).apply(np.log) # Adding +2 so we have no zeros in log output
-        return AlignmentsData(new_data, scale='log')
+        new_data = (self.data + 2).apply(np.log)  # Adding +2 so we have no zeros in log output
+        ad = AlignmentsData(new_data, scale='log')
+        ad.points_of_interest = self.points_of_interest
+        return ad
 
     def plot_heatmap(self, *args, **kwargs):
         """
@@ -421,8 +427,8 @@ class Genes(Regions):
             chromosome = row['chromosome']
 
             try:
-                start = exon_starts[exon_number]
-                end = exon_ends[exon_number]
+                start = int(exon_starts[exon_number])
+                end = int(exon_ends[exon_number])
             except IndexError:
                 start = np.nan
                 end = np.nan

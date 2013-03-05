@@ -10,6 +10,7 @@ import argparse
 import logging
 from math import factorial
 import os
+import random
 import fastcluster
 import numpy as np
 import pandas as pd
@@ -94,6 +95,9 @@ def argument_parser():
     parser.add_argument('--ignore-poi-non-overlaps', default=False, action='store_const', const=True,
                         help='If set to true, DGW will silently ignore -pois that do not overlap with the regions')
 
+    parser.add_argument('--ignore-no-poi-regions', default=False, action='store_const', const=True,
+                        help='If set to true, DGW will silently ignore regions having no points of interest in them')
+
     return parser
 
 #-- Actual execution of the program
@@ -107,9 +111,9 @@ def read_regions(regions_filename, truncate_regions, resolution):
 
     used_len = total_len
     if truncate_regions:
-        print '> Using only first {0} regions from {1!r}'.format(truncate_regions, regions_filename)
+        print '> Using only a random sample of {0} regions from {1!r}'.format(truncate_regions, regions_filename)
         used_len = truncate_regions
-        regions = regions.head(truncate_regions)
+        regions = regions.ix[random.sample(regions.index, truncate_regions)]
 
     return regions, total_len, used_len
 
@@ -195,23 +199,24 @@ def main():
 
         too_short_regions = (regions.lengths / args.resolution) < args.min_bins  # Set the threshold to 4 bins
         too_short_regions = regions.ix[too_short_regions[too_short_regions].index]
+        if len(too_short_regions) > 0:
+            print '> {0} regions have their length shorter than {1} bins. Saving them to {2!r} as they won\'t be processed'\
+                .format(len(too_short_regions), args.min_bins, configuration.too_short_regions_filename)
+            too_short_regions.to_bed(configuration.too_short_regions_filename)
 
-        print '> {0} regions have their length shorter than {1} bins. Saving them to {2!r} as they won\'t be processed'\
-            .format(len(too_short_regions), args.min_bins, configuration.too_short_regions_filename)
-        too_short_regions.to_bed(configuration.too_short_regions_filename)
-
-        regions = regions.ix[regions.index - too_short_regions.index]
+            regions = regions.ix[regions.index - too_short_regions.index]
 
         if args.max_bins:
             too_long_regions = (regions.lengths / args.resolution) >= args.max_bins
             too_long_regions = regions.ix[too_long_regions[too_long_regions].index]
 
-            print '> {0} regions have their length longer than {1} bins. ' \
-                  'Saving them to {2!r} as they won\'t be processed due to --max-bins constraint'\
-                  .format(len(too_long_regions), args.max_bins, configuration.too_long_regions_filename)
-            too_long_regions.to_bed(configuration.too_long_regions_filename)
+            if len(too_long_regions) > 0:
+                print '> {0} regions have their length longer than {1} bins. ' \
+                      'Saving them to {2!r} as they won\'t be processed due to --max-bins constraint'\
+                      .format(len(too_long_regions), args.max_bins, configuration.too_long_regions_filename)
+                too_long_regions.to_bed(configuration.too_long_regions_filename)
 
-            regions = regions.ix[regions.index - too_long_regions.index]
+                regions = regions.ix[regions.index - too_long_regions.index]
 
         print '> {0} regions remain'.format(len(regions))
 
@@ -228,11 +233,22 @@ def main():
     dataset, missing_regions, filtered_regions = read_datasets(args, regions)
 
     if args.datasets:
-        if args.output_raw_dataset:
-            print '> Serialising raw dataset to {0}'.format(configuration.raw_dataset_filename)
-            serialise(dataset, configuration.raw_dataset_filename)
 
-        dataset = dataset.to_log_scale()
+        if poi:
+            poi = poi.as_bins_of(regions, resolution=args.resolution, ignore_non_overlaps=args.ignore_poi_non_overlaps)
+            dataset.points_of_interest = poi
+
+            if args.ignore_no_poi_regions:
+                poi_dataset = dataset.drop_no_pois()
+                if len(poi_dataset) != len(dataset):
+                    dropped_regions = regions.ix[dataset.items - poi_dataset.items]
+                    print '> {0} regions were removed as they have no POI data with them ' \
+                          'and --no-poi-regions was set'.format(len(dropped_regions))
+                    print '> Saving them to {0!r}'.format(configuration.no_poi_regions_filename)
+                    dropped_regions.to_bed(configuration.no_poi_regions_filename)
+                    dataset = poi_dataset
+                    del dropped_regions
+                del poi_dataset
 
         if len(missing_regions) > 0:
             print "> {0} regions were not found in the dataset, they were saved to {1}".format(len(missing_regions),
@@ -249,10 +265,14 @@ def main():
         # Get remaining regions
         regions = regions.ix[dataset.items]
         if len(missing_regions) > 0 or len(filtered_regions) > 0:
-            print '> {0} regions remaining'.format(len(regions))
-        if poi:
-            poi = poi.as_bins_of(regions, resolution=args.resolution, ignore_non_overlaps=args.ignore_poi_non_overlaps)
-            dataset.points_of_interest = poi
+            print '> {0} regions remaining and will be processed'.format(len(regions))
+
+
+        if args.output_raw_dataset:
+            print '> Serialising raw dataset to {0}'.format(configuration.raw_dataset_filename)
+            serialise(dataset, configuration.raw_dataset_filename)
+
+        dataset = dataset.to_log_scale()
 
         # --- Serialise the regions as they will be needed in explorer ----------
         print '> Serialising regions to {0}'.format(configuration.parsed_regions_filename)
