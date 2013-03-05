@@ -91,6 +91,9 @@ def argument_parser():
                                                           'in order for it to be processed',
                         type=int)
 
+    parser.add_argument('--ignore-poi-non-overlaps', default=False, action='store_const', const=True,
+                        help='If set to true, DGW will silently ignore -pois that do not overlap with the regions')
+
     return parser
 
 #-- Actual execution of the program
@@ -248,7 +251,7 @@ def main():
         if len(missing_regions) > 0 or len(filtered_regions) > 0:
             print '> {0} regions remaining'.format(len(regions))
         if poi:
-            poi = poi.as_bins_of(regions, resolution=args.resolution)
+            poi = poi.as_bins_of(regions, resolution=args.resolution, ignore_non_overlaps=args.ignore_poi_non_overlaps)
             dataset.points_of_interest = poi
 
         # --- Serialise the regions as they will be needed in explorer ----------

@@ -278,7 +278,7 @@ class Regions(object):
         missing_indices = self.index[~self.index.isin(dataset.items)]
         return Regions(self.data.ix[missing_indices])
 
-    def as_bins_of(self, other_regions, resolution=1):
+    def as_bins_of(self, other_regions, resolution=1, ignore_non_overlaps=False):
         other_regions = other_regions.clip_to_resolution(resolution)
 
         bins = {}
@@ -297,7 +297,10 @@ class Regions(object):
             other_chromosome = other['chromosome']
 
             if current_chromosome != other_chromosome or (other_end <= current_start) or (other_start > current_end):
-                raise ValueError('Points of interest do not overlap with regions of interest. Failed ix:{0!r}'.format(ix))
+                if ignore_non_overlaps:
+                    continue
+                else:
+                    raise ValueError('Points of interest do not overlap with regions of interest. Failed ix:{0!r}'.format(ix))
 
             n_bins = (other_end - other_start) / resolution
             min_bin = max(0, (current_start - other_start) / resolution)
