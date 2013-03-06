@@ -409,17 +409,18 @@ class Genes(Regions):
 
         return Regions(regions_df)
 
-    def regions_around_first_splicing_site(self, window_width):
+    def regions_around_splicing_site(self, splicing_site, window_width):
         """
         Return a `Regions` object with windows around first splicing site
+        :param splicing_site: number of the splicing site to get (0 based - "0" for first splicing site)
         :param window_width:
         :return:
         """
-        first_exon = self.get_exon_regions(0)
+        exon = self.get_exon_regions(splicing_site)
 
-        exon_genes = self.ix[first_exon.index]
+        exon_genes = self.ix[exon.index]
 
-        ss = first_exon[exon_genes.strand == '+']['end'].append(first_exon[exon_genes.strand == '-']['start'])
+        ss = exon[exon_genes.strand == '+']['end'].append(exon[exon_genes.strand == '-']['start'])
         ss = ss.ix[self.index]
 
         starts = ss - window_width
@@ -430,26 +431,31 @@ class Genes(Regions):
 
         return Regions(regions_df)
 
-    def get_exon_regions(self, exon_number):
+    def get_exon_regions(self, exon_number, account_for_antisense=True):
         """
         Returns exon regions for particular exon_number provided (0-based)
         :param exon_number: exon number - 0 based. I.e. use 0 to get regions of first exon
+        :param account_for_antisense: if set to true, it will automatically account for antisense genes and return correct exon
         :return:
         """
         if 'exonStarts' not in self.columns or 'exonEnds' not in self.columns:
             raise Exception('No exon data available, sorry')
 
-        sub_df = self[['chromosome', 'exonStarts', 'exonEnds']]
+        sub_df = self[['chromosome', 'exonStarts', 'exonEnds', 'strand']]
         new_df = []
         for ix, row in sub_df.iterrows():
-
-            exon_starts = row['exonStarts'].split(',')
-            exon_ends = row['exonEnds'].split(',')
+            exon_starts = row['exonStarts'].strip(',').split(',')
+            exon_ends = row['exonEnds'].strip(',').split(',')
             chromosome = row['chromosome']
 
+            if account_for_antisense and row['strand'] == '-':
+                exon_i = len(exon_starts) - 1 - exon_number
+            else:
+                exon_i = exon_number
+
             try:
-                start = int(exon_starts[exon_number])
-                end = int(exon_ends[exon_number])
+                start = int(exon_starts[exon_i])
+                end = int(exon_ends[exon_i])
             except IndexError:
                 start = np.nan
                 end = np.nan
