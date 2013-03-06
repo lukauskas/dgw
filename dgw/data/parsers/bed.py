@@ -54,8 +54,7 @@ def write_bed(regions, writable_file, **track_kwargs):
     writer = csv.writer(writable_file, delimiter='\t', quotechar='"')
     for ix, data in regions.iterrows():
 
-        row = list(data[['chromosome', 'start', 'end']])
-        row.append(ix) # Index == name is the fourth positional argument
+        row = [data['chromosome'], int(data['start']), int(data['end']), ix]
 
         # Score is the fifth
         if 'score' in data:

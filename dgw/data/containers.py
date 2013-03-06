@@ -409,6 +409,27 @@ class Genes(Regions):
 
         return Regions(regions_df)
 
+    def regions_around_first_splicing_site(self, window_width):
+        """
+        Return a `Regions` object with windows around first splicing site
+        :param window_width:
+        :return:
+        """
+        first_exon = self.get_exon_regions(0)
+
+        exon_genes = self.ix[first_exon.index]
+
+        ss = first_exon[exon_genes.strand == '+']['start'].append(first_exon[exon_genes.strand == '-']['end'])
+        ss = ss.ix[self.index]
+
+        starts = ss - window_width
+        ends = ss + window_width
+
+        regions_df = pd.DataFrame({'chromosome': exon_genes['chromosome'],
+                                  'start': starts, 'end': ends}, index=exon_genes.index)
+
+        return Regions(regions_df)
+
     def get_exon_regions(self, exon_number):
         """
         Returns exon regions for particular exon_number provided (0-based)

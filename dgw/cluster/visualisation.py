@@ -68,13 +68,34 @@ class ClusterPreviewer(object):
         if not os.path.exists(directory):
             os.makedirs(directory)
 
-        print '> Saving clusters to directory {0}'.format(directory)
+        bed_directory = os.path.join(directory, 'bed')
+        if not os.path.exists(bed_directory):
+            os.makedirs(bed_directory)
+
+        heatmaps_directory = os.path.join(directory, 'heatmaps')
+        if not os.path.exists(heatmaps_directory):
+            os.makedirs(heatmaps_directory)
+
+
+        print '> Saving BED files to directory {0}'.format(bed_directory)
         for i, c in enumerate(self._clusters):
-            filename = os.path.join(directory, 'cluster_{0}.bed'.format(i + 1))
+            filename = os.path.join(bed_directory, 'cluster_{0}.bed'.format(i + 1))
             c.save_as_encode_track(filename, track_name='DGWCluster{0}'.format(i + 1),
                                    track_description='DGW Cluster {0}/{1} (cut level: {2})'.format(i + 1,
                                                                                                    len(self._clusters),
                                                                                                    self.cut_level))
+
+        print '> Saving heatmaps to directory {0}'.format(heatmaps_directory)
+        for i, c in enumerate(self._clusters):
+
+            filename_reg = os.path.join(heatmaps_directory, 'cluster-{0}.eps'.format(i + 1))
+            self._plot_regular_heatmap_on_figure(c)
+            plt.savefig(filename_reg)
+
+            filename_projected = os.path.join(heatmaps_directory, 'cluster-warped-{0}.eps'.format(i + 1))
+            self._plot_projected_heatmap_on_figure(c)
+            plt.savefig(filename_projected)
+
         print '> Saved'
 
     def add_button(self, text, callback):
@@ -89,21 +110,24 @@ class ClusterPreviewer(object):
         self._buttons.append(Button(ax_button, text))
         self._buttons[-1].on_clicked(callback)
 
-    def _enlarge_heatmap(self, event):
+    def _plot_regular_heatmap_on_figure(self, cluster):
         plt.figure(figsize=(11.7, 8.3))
         plt.subplots_adjust(left=0.05, bottom=0.05, top=0.95, right=0.95)
-        current_cluster = self.current_cluster()
-        current_cluster.data.plot_heatmap(horizontal_grid=True,
-                                          sort_by=None, highlighted_points=current_cluster.points_of_interest)
+        cluster.data.plot_heatmap(horizontal_grid=True,
+                                          sort_by=None, highlighted_points=cluster.points_of_interest)
+
+    def _plot_projected_heatmap_on_figure(self, cluster):
+        plt.figure(figsize=(11.7, 8.3))
+        plt.subplots_adjust(left=0.05, bottom=0.05, top=0.95, right=0.95)
+        cluster.projected_data.plot_heatmap(horizontal_grid=True,
+                                                    sort_by=None, highlighted_points=cluster.tracked_points_of_interest)
+
+    def _enlarge_heatmap(self, event):
+        self._plot_regular_heatmap_on_figure(self.current_cluster())
         plt.show()
 
     def _enlarge_dtw_heatmap(self, event):
-
-        plt.figure(figsize=(11.7, 8.3))
-        plt.subplots_adjust(left=0.05, bottom=0.05, top=0.95, right=0.95)
-        current_cluster = self.current_cluster()
-        current_cluster.projected_data.plot_heatmap(horizontal_grid=True,
-                                          sort_by=None, highlighted_points=current_cluster.tracked_points_of_interest)
+        self._plot_projected_heatmap_on_figure(self.current_cluster())
         plt.show()
 
 
@@ -112,7 +136,7 @@ class ClusterPreviewer(object):
         self.add_button('Next', self._callback_next)
 
         if self._add_save_button:
-            self.add_button('Save all regions', self._callback_save)
+            self.add_button('Save all clusters', self._callback_save)
 
         self.add_button('Enlarge heatmap', self._enlarge_heatmap)
         self.add_button('Enlarge DTW heatmap', self._enlarge_dtw_heatmap)
