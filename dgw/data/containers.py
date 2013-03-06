@@ -419,7 +419,7 @@ class Genes(Regions):
 
         exon_genes = self.ix[first_exon.index]
 
-        ss = first_exon[exon_genes.strand == '+']['start'].append(first_exon[exon_genes.strand == '-']['end'])
+        ss = first_exon[exon_genes.strand == '+']['end'].append(first_exon[exon_genes.strand == '-']['start'])
         ss = ss.ix[self.index]
 
         starts = ss - window_width
