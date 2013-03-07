@@ -1,3 +1,4 @@
+from logging import debug
 import scipy.cluster.hierarchy as hierarchy
 import pandas as pd
 import numpy as np
@@ -134,6 +135,12 @@ class DTWClusterNode(object, hierarchy.ClusterNode):
 
     @property
     def index(self):
+        return self._index
+
+    def reindex(self, new_index):
+        # Make sure they are the same elements just in different order
+        assert(len(new_index & self._index) == len(self._index) == len(new_index))
+        self._index = new_index
         return self._index
 
     @property
@@ -517,11 +524,33 @@ class HierarchicalClustering(object):
         while queue:
             current_node = queue.pop()
             if current_node.dist > t:
-                queue.add(current_node.get_left())
                 queue.add(current_node.get_right())
+                queue.add(current_node.get_left())
             else:
                 clusters.add(current_node)
         return ClusterAssignments(self, clusters, t)
+
+    def cut_and_resort(self, cut_threshold, index):
+        """
+        Cuts the dendrogram based on the color list returned by `scipy.cluster.hierarchy.dedrogram`
+        :param cut_threshold: cut threhsold to cut clusters at
+        :param index: index of nodes that is already in order
+        :return: clusters
+        """
+        cluster_assignments = self.cut(cut_threshold)
+
+        already_asigned_indices = pd.Index([])
+        for cluster in cluster_assignments:
+            cluster_index = cluster.index
+            sub_index = pd.Index([i for i in index if i in cluster_index])
+            cluster.reindex(sub_index)
+
+            if len(already_asigned_indices & sub_index):
+                raise Exception("There is some overlap between cluster cuts. There shouldn't be")
+            already_asigned_indices =  (already_asigned_indices | sub_index)
+
+        return cluster_assignments
+
 
 class ClusterAssignments(object):
     _hierarchical_clustering_object = None
@@ -536,7 +565,7 @@ class ClusterAssignments(object):
 
         clusters = []
         # Store clusters in decreasing number of elements
-        for cluster_root in sorted(self._cluster_roots, key=lambda x: x.count, reverse=True):
+        for cluster_root in self._cluster_roots: #sorted(self._cluster_roots, key=lambda x: x.count, reverse=True):
             clusters.append(cluster_root)
         self._clusters = clusters
         self._cut_depth = cut_depth

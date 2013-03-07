@@ -203,7 +203,11 @@ class HierarchicalClusteringViewer(object):
     @property
     def clusters(self):
         if self._cut_xdata > 0:
-            return self._hierarchical_clustering_object.cut(self._cut_xdata)
+
+            dendrogram_dict = self._hierarchical_clustering_object.dendrogram(orientation='right', get_leaves=True,
+                                            color_threshold=self._cut_xdata, no_plot=True)
+            index = self._hierarchical_clustering_object.data.items[dendrogram_dict['leaves']]
+            return self._hierarchical_clustering_object.cut_and_resort(self._cut_xdata, index)
         else:
             return []
 
@@ -241,7 +245,7 @@ class HierarchicalClusteringViewer(object):
         hc = self.hierarchical_clustering_object
 
         dendrogram_dict = hc.dendrogram(orientation='right', get_leaves=True,
-                                        distance_sort=True, color_threshold=self._cut_xdata)
+                                        color_threshold=self._cut_xdata)
         leaves = dendrogram_dict['leaves']
         plt.setp(plt.gca().get_xticklabels(), rotation='vertical', fontsize=7)
         plt.gca().get_yaxis().set_visible(False)
@@ -291,6 +295,7 @@ class HierarchicalClusteringViewer(object):
     def cut_line(self, xdata):
 
         self._cut_xdata = xdata
+        self._colors_list = None
         self.draw_dendrogram()
         if self._line is not None:
             self._line.set_xdata(xdata)
