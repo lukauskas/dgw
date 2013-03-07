@@ -539,6 +539,7 @@ class HierarchicalClustering(object):
         """
         cluster_assignments = self.cut(cut_threshold)
 
+
         already_asigned_indices = pd.Index([])
         for cluster in cluster_assignments:
             cluster_index = cluster.index
@@ -565,7 +566,7 @@ class ClusterAssignments(object):
 
         clusters = []
         # Store clusters in decreasing number of elements
-        for cluster_root in self._cluster_roots: #sorted(self._cluster_roots, key=lambda x: x.count, reverse=True):
+        for cluster_root in sorted(self._cluster_roots, key=lambda x: x.count, reverse=True):
             clusters.append(cluster_root)
         self._clusters = clusters
         self._cut_depth = cut_depth

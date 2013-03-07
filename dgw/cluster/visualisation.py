@@ -194,6 +194,9 @@ class HierarchicalClusteringViewer(object):
     _ax_dendrogram = None
     _line = None
     _cut_xdata = 0
+    _sorted_index = None
+    _last_clusters = None
+    _last_xdata = None
 
     def __init__(self, hierarchical_clustering_object, output_directory, configuration_file):
         self._hierarchical_clustering_object = hierarchical_clustering_object
@@ -203,11 +206,12 @@ class HierarchicalClusteringViewer(object):
     @property
     def clusters(self):
         if self._cut_xdata > 0:
-
-            dendrogram_dict = self._hierarchical_clustering_object.dendrogram(orientation='right', get_leaves=True,
-                                            color_threshold=self._cut_xdata, no_plot=True)
-            index = self._hierarchical_clustering_object.data.items[dendrogram_dict['leaves']]
-            return self._hierarchical_clustering_object.cut_and_resort(self._cut_xdata, index)
+            if self._last_xdata != self._cut_xdata:
+                index = self.sorted_index
+                assert(index is not None)
+                self._last_clusters = self._hierarchical_clustering_object.cut_and_resort(self._cut_xdata, index)
+                self._last_xdata = self._cut_xdata
+            return self._last_clusters
         else:
             return []
 
@@ -239,17 +243,25 @@ class HierarchicalClusteringViewer(object):
 
         self.draw_buttons()
 
+    @property
+    def sorted_index(self):
+        return self._sorted_index
+
     def draw_dendrogram(self):
         ax_dendrogram = self.ax_dendrogram
         plt.subplot(ax_dendrogram, rasterized=True)
         hc = self.hierarchical_clustering_object
 
-        dendrogram_dict = hc.dendrogram(orientation='right', get_leaves=True,
+        dendrogram_dict = hc.dendrogram(orientation='right', get_leaves=True,  distance_sort=True,
                                         color_threshold=self._cut_xdata)
         leaves = dendrogram_dict['leaves']
         plt.setp(plt.gca().get_xticklabels(), rotation='vertical', fontsize=7)
         plt.gca().get_yaxis().set_visible(False)
-        return leaves
+
+        if self._sorted_index is None:
+            self._sorted_index = hc.data.items[leaves]
+
+
 
     def _callback_preview(self, event):
         if not self.clusters:
@@ -277,12 +289,13 @@ class HierarchicalClusteringViewer(object):
 
 
     def draw(self):
-        leaves = self.draw_dendrogram()
+        self.draw_dendrogram()
         hc = self.hierarchical_clustering_object
-        index = hc.data.items[leaves]
+        sorted_index = self.sorted_index
+        assert(sorted_index is not None)
 
         DENDROGRAM_SCALE = 10  # scipy.cluster.hierarachy.dendrogram scales all y axis values by tenfold for some reason
-        hc.data.plot_heatmap(subplot_spec=self.gs_heatmap, no_y_axis=True, sort_by=index, share_y_axis=self.ax_dendrogram,
+        hc.data.plot_heatmap(subplot_spec=self.gs_heatmap, no_y_axis=True, sort_by=sorted_index, share_y_axis=self.ax_dendrogram,
                              scale_y_axis=DENDROGRAM_SCALE, highlighted_points=hc.data.points_of_interest, rasterized=True)
 
     def show(self):
