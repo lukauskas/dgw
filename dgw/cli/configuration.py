@@ -273,12 +273,19 @@ class Configuration(object):
 
 
 def load_configuration_from_file(configuration_file):
+    if isinstance(configuration_file, basestring):
+        configuration_file = open(configuration_file, 'r')
+        should_close = True
+    else:
+        should_close = False
+
     try:
         configuration = Configuration.from_json(configuration_file)
     except Exception, e:
         raise Exception('Error opening configuration file provided: {0!r}'.format(e))
     finally:
-        configuration_file.close()
+        if should_close:
+            configuration_file.close()
 
 
     return configuration
