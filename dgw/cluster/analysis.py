@@ -1,3 +1,4 @@
+from collections import defaultdict
 from logging import debug
 import scipy.cluster.hierarchy as hierarchy
 import pandas as pd
@@ -245,10 +246,11 @@ class DTWClusterNode(object, hierarchy.ClusterNode):
         else:
             points_of_interest = self.points_of_interest
             warping_paths = self.warping_paths
-            tracked_points = {}
-            for ix, poi in points_of_interest.iteritems():
-                mapped_points = transformations.points_mapped_to(poi, warping_paths[ix])
-                tracked_points[ix] = mapped_points
+            tracked_points = defaultdict(lambda: {})
+            for ix, pois in points_of_interest.iteritems():
+                for j, poi in pois.iteritems():
+                    mapped_points = transformations.points_mapped_to(poi, warping_paths[ix])
+                    tracked_points[ix][j] = mapped_points
 
             return tracked_points
 

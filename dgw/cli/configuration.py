@@ -11,6 +11,7 @@ class Configuration(object):
     _prefix = None
     _dtw_kwargs = None
     _prototyping_method = None
+    _resolution = None
 
     DEFAULT_FILENAMES = {
         'pairwise_distances': '{prefix}_pairwise_distances.npy',
@@ -38,10 +39,12 @@ class Configuration(object):
             self._generate_filenames_from_prefix_and_args(args.prefix, args)
             self._dtw_kwargs = self._dtw_kwargs_from_args(args)
             self._prototyping_method = args.prototyping_method
+            self._resolution = args.resolution
         else:
             self.FILENAMES = initial_variables['FILENAMES']
             self._dtw_kwargs = initial_variables['dtw_kwargs']
             self._prototyping_method = initial_variables['prototyping_method']
+            self._resolution = initial_variables['resolution']
 
     @property
     def directory(self):
@@ -51,6 +54,9 @@ class Configuration(object):
     def directory(self, value):
         self._directory = value
 
+    @property
+    def resolution(self):
+        return self._resolution
 
     def _generate_filenames_from_prefix_and_args(self, prefix, args):
         """
@@ -182,7 +188,8 @@ class Configuration(object):
     def to_json(self, file):
         data = {'FILENAMES': self.FILENAMES,
                 'dtw_kwargs': self.dtw_kwargs,
-                'prototyping_method': self._prototyping_method}
+                'prototyping_method': self._prototyping_method,
+                'resolution': self._resolution}
 
         return json.dump(data, file)
 

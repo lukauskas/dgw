@@ -236,6 +236,8 @@ def main():
 
         if poi:
             poi = poi.as_bins_of(regions, resolution=args.resolution, ignore_non_overlaps=args.ignore_poi_non_overlaps)
+            # TODO: remove this hack and rewrite it properly
+            poi = {ix: {0: value} for ix,value in poi.iteritems()}
             dataset.points_of_interest = poi
 
             if args.ignore_no_poi_regions:

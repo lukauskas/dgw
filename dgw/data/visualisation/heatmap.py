@@ -1,4 +1,5 @@
 from __future__ import print_function
+from collections import defaultdict
 from logging import debug
 import matplotlib.pyplot as plt
 from matplotlib import cm
@@ -30,7 +31,7 @@ def dataset_ticks(dataset, scale=1):
 
     return FuncFormatter(f)
 
-def raw_plot_data_as_heatmap(data_frame, ax=None, highlight_mask=None, *args, **kwargs):
+def raw_plot_data_as_heatmap(data_frame, ax=None, highlight_masks=None, *args, **kwargs):
     if ax is None:
         ax = plt.gca()
 
@@ -40,14 +41,14 @@ def raw_plot_data_as_heatmap(data_frame, ax=None, highlight_mask=None, *args, **
     # Plot the array using JET colourmap, draw NaNs as white
     cmap = matplotlib.cm.get_cmap('jet')
     cmap.set_bad('#FFFFFF', 1.0)
-
+    AVAILABLE_COLORS = ['w', 'k']
     result = ax.imshow(masked_arr, origin='lower', cmap=cmap, aspect="auto", interpolation='nearest', *args, **kwargs)
-
-    if highlight_mask is not None:
-        highlight_cmap = matplotlib.cm.get_cmap('bone')
-        cmap.set_bad('#000000', 0)
-        ax.imshow(highlight_mask, origin='lower', cmap=highlight_cmap, aspect="auto", interpolation='nearest',
-                           *args, **kwargs)
+    if highlight_masks is not None:
+        for j, mask in highlight_masks.iteritems():
+            highlight_cmap = matplotlib.colors.ListedColormap([AVAILABLE_COLORS[j]])
+            highlight_cmap.set_bad('#000000', 0)
+            ax.imshow(highlight_masks[j], origin='lower', cmap=highlight_cmap, aspect="auto", interpolation='nearest',
+                               *args, **kwargs)
 
     return result
 
@@ -149,17 +150,21 @@ def plot(alignments, clip_colors=False, titles=None, horizontal_grid=True,
         extent = [0, max_len, 0, alignments.number_of_items * scale_y_axis] # Multiply by 10 as that is what matplotlib's dendrogram returns
 
     if highlighted_points:
-        highlight_mask = np.zeros((alignments.number_of_items, max_len), dtype=np.bool)
+        highlight_masks = defaultdict(lambda: np.zeros((alignments.number_of_items, max_len), dtype=np.bool))
         for i, ix in enumerate(sorted_index):
             try:
-                points = highlighted_points[ix]
+                points_of_interest = highlighted_points[ix]
             except KeyError:
                 continue
-            highlight_mask[i][points] = 1
 
-        highlight_mask = np.ma.masked_where(highlight_mask == 0, highlight_mask)
+            for j, points in points_of_interest.iteritems():
+                highlight_masks[j][i][points] = 1
+
+        for j in highlight_masks.iterkeys():
+            highlight_masks[j] = np.ma.masked_where(highlight_masks[j] <= 0, highlight_masks[j])
+
     else:
-        highlight_mask = None
+        highlight_masks = None
 
     for i, (ix, title) in enumerate(zip(alignments.dataset_axis, titles)):
         t_gs = gs[:, i] if horizontal_grid else gs[i, 1]
@@ -192,7 +197,7 @@ def plot(alignments, clip_colors=False, titles=None, horizontal_grid=True,
         data_to_plot = data_to_plot[data_to_plot.columns[:max_len]]
 
         result = raw_plot_data_as_heatmap(data_to_plot, vmin=min_value, vmax=max_value, extent=extent,
-                                          highlight_mask=highlight_mask, rasterized=rasterized)
+                                          highlight_masks=highlight_masks, rasterized=rasterized)
         debug(plt.gca().get_ylim())
         debug(plt.gca().get_xlim())
 
