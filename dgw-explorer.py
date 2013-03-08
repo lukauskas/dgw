@@ -40,7 +40,6 @@ def main():
 
     configuration = load_configuration_from_file(args.configuration_file)
     args.configuration_file.close()
-    configuration.directory = os.path.dirname(args.configuration_file.name)
 
     if configuration.blank:
         parser.error('Cannot explore a --blank run of DGW')

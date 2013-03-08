@@ -273,6 +273,11 @@ class Configuration(object):
 
 
 def load_configuration_from_file(configuration_file):
+    """
+    Loads configuration object from configuration file
+    :param configuration_file:
+    :return:
+    """
     if isinstance(configuration_file, basestring):
         configuration_file = open(configuration_file, 'r')
         should_close = True
@@ -287,5 +292,5 @@ def load_configuration_from_file(configuration_file):
         if should_close:
             configuration_file.close()
 
-
+    configuration.directory = os.path.dirname(configuration_file.name)
     return configuration
