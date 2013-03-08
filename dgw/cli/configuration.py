@@ -1,6 +1,31 @@
 import json
 import os
+import cPickle as pickle
+import dgw
+from dgw.cluster import add_path_data
 from ..dtw.distance import parametrised_dtw_wrapper
+import numpy as np
+
+def load_from_pickle(f):
+    if isinstance(f, basestring):
+        f = open(f, 'rb')
+        close = True
+    else:
+        close = False
+    try:
+        return pickle.load(f)
+    finally:
+        if close:
+            f.close()
+
+def strict_load(filename):
+    try:
+        data = load_from_pickle(filename)
+        return data
+    except Exception, e:
+        raise Exception("Failed to read {0!r}, got {1!r}. "
+                        "Make sure that you have all files output from DGW in the same directory as the config file"
+        .format(filename, e))
 
 class Configuration(object):
     """
@@ -196,3 +221,64 @@ class Configuration(object):
     @classmethod
     def from_json(cls, file):
         return Configuration(initial_variables=json.load(file))
+
+
+    @property
+    def blank(self):
+        return self.linkage_filename is None
+
+    def load_regions(self):
+        return strict_load(self.parsed_regions_filename)
+
+    def load_dataset(self):
+        return strict_load(self.dataset_filename)
+
+    def load_linkage(self):
+        try:
+            linkage = np.load(self.linkage_filename)
+        except Exception, e:
+            raise IOError('Error reading linkage file {0!r}, got {1!r}', format(linkage, e))
+        return linkage
+
+    def load_prototypes(self):
+        return strict_load(self.prototypes_filename)
+
+    def load_warping_paths(self):
+        return strict_load(self.warping_paths_filename)
+
+    def create_hierarchical_clustering_object(self, dataset=None, regions=None):
+        if self.blank:
+            raise Exception('Cannot create HierarchicalClustering object from a blank runk')
+
+        if dataset is None:
+            dataset = self.load_dataset()
+
+        if regions is None:
+            regions = self.load_regions()
+        linkage = self.load_linkage()
+        prototypes = self.load_prototypes()
+        dtw_function = self.dtw_function
+        prototyping_method = self.prototyping_method
+        warping_paths = self.load_warping_paths()
+
+        hc = dgw.cluster.analysis.HierarchicalClustering(dataset, regions, linkage_matrix=linkage, prototypes=prototypes,
+                                                         dtw_function=dtw_function,
+                                                         prototyping_method=prototyping_method)
+        add_path_data(hc.tree_nodes_list, hc.num_obs, warping_paths)
+
+        return hc
+
+
+
+
+
+def load_configuration_from_file(configuration_file):
+    try:
+        configuration = Configuration.from_json(configuration_file)
+    except Exception, e:
+        raise Exception('Error opening configuration file provided: {0!r}'.format(e))
+    finally:
+        configuration_file.close()
+
+
+    return configuration
