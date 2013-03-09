@@ -32,14 +32,17 @@ def graph_from_node_list_to_file(node_list, file_object):
 
 def prototype_images_from_node_list(node_list, output_directory):
     print '> Saving images to {0!r}'.format(output_directory)
-    plt.figure(figsize=(3, 2))
+    ndims = node_list[0].prototype.shape[1]
+    plt.figure(figsize=(3 * ndims, 2))
     for node in node_list:
-
         filename = '{0}.png'.format(node.id)
         full_filename = os.path.join(output_directory, filename)
         print '> Saving {0}'.format(full_filename)
+        prototype_T = node.prototype.T
+        for i in xrange(ndims):
+            plt.subplot(1, ndims, i+1)
+            plt.plot(prototype_T[i])
 
-        plt.plot(node.prototype)
         plt.savefig(full_filename)
         plt.clf()
 
