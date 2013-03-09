@@ -32,7 +32,7 @@ def argument_parser():
 
 
     parser.add_argument('-r', '--regions', metavar='regions_of_interest.bed', action=StoreFilenameAction,
-                        help='A BED file listing genome regions that will be processed')
+                        help='A BED file listing genome regions that will be processed', required=True)
     parser.add_argument('-d', '--datasets', metavar='dataset.bam', nargs='+', action=StoreUniqueFilenameAction,
                         help='One or more datasets to be analysed using DGW. Must be BAM files.')
     parser.add_argument('-pd', '--processed-dataset', metavar='processed_dataset.pd', action=StoreFilenameAction,
@@ -158,8 +158,8 @@ def main():
     parser = argument_parser()
 
     args = parser.parse_args()
-    if (args.regions or args.datasets) and args.processed_dataset:
-        parser.error('Must specify either both --regions and --dataset or --processed_dataset only.')
+    if args.datasets and args.processed_dataset:
+        parser.error('Must specify either --dataset or --processed_dataset only.')
     elif not args.processed_dataset:
         if not args.regions or not args.datasets:
             parser.error('Must specify both --regions and --dataset')
@@ -193,35 +193,31 @@ def main():
     configuration = Configuration(args)
 
     # --- pre-processing ------------------------
-    if args.regions:
-        print '> Reading regions from {0!r} ....'.format(args.regions)
-        regions, total_regions, used_regions = read_regions(args.regions, args.truncate_regions, args.resolution)
+    print '> Reading regions from {0!r} ....'.format(args.regions)
+    regions, total_regions, used_regions = read_regions(args.regions, args.truncate_regions, args.resolution)
 
-        too_short_regions = (regions.lengths / args.resolution) < args.min_bins  # Set the threshold to 4 bins
-        too_short_regions = regions.ix[too_short_regions[too_short_regions].index]
-        if len(too_short_regions) > 0:
-            print '> {0} regions have their length shorter than {1} bins. Saving them to {2!r} as they won\'t be processed'\
-                .format(len(too_short_regions), args.min_bins, configuration.too_short_regions_filename)
-            too_short_regions.to_bed(configuration.too_short_regions_filename)
+    too_short_regions = (regions.lengths / args.resolution) < args.min_bins  # Set the threshold to 4 bins
+    too_short_regions = regions.ix[too_short_regions[too_short_regions].index]
+    if len(too_short_regions) > 0:
+        print '> {0} regions have their length shorter than {1} bins. Saving them to {2!r} as they won\'t be processed'\
+            .format(len(too_short_regions), args.min_bins, configuration.too_short_regions_filename)
+        too_short_regions.to_bed(configuration.too_short_regions_filename)
 
-            regions = regions.ix[regions.index - too_short_regions.index]
+        regions = regions.ix[regions.index - too_short_regions.index]
 
-        if args.max_bins:
-            too_long_regions = (regions.lengths / args.resolution) >= args.max_bins
-            too_long_regions = regions.ix[too_long_regions[too_long_regions].index]
+    if args.max_bins:
+        too_long_regions = (regions.lengths / args.resolution) >= args.max_bins
+        too_long_regions = regions.ix[too_long_regions[too_long_regions].index]
 
-            if len(too_long_regions) > 0:
-                print '> {0} regions have their length longer than {1} bins. ' \
-                      'Saving them to {2!r} as they won\'t be processed due to --max-bins constraint'\
-                      .format(len(too_long_regions), args.max_bins, configuration.too_long_regions_filename)
-                too_long_regions.to_bed(configuration.too_long_regions_filename)
+        if len(too_long_regions) > 0:
+            print '> {0} regions have their length longer than {1} bins. ' \
+                  'Saving them to {2!r} as they won\'t be processed due to --max-bins constraint'\
+                  .format(len(too_long_regions), args.max_bins, configuration.too_long_regions_filename)
+            too_long_regions.to_bed(configuration.too_long_regions_filename)
 
-                regions = regions.ix[regions.index - too_long_regions.index]
+            regions = regions.ix[regions.index - too_long_regions.index]
 
-        print '> {0} regions remain'.format(len(regions))
-
-    else:
-        regions = None
+    print '> {0} regions remain'.format(len(regions))
 
     if args.points_of_interest:
         print '> Reading points of interest'
@@ -276,11 +272,21 @@ def main():
 
         dataset = dataset.to_log_scale()
 
-        # --- Serialise the regions as they will be needed in explorer ----------
-        print '> Serialising regions to {0}'.format(configuration.parsed_regions_filename)
-        serialise(regions, configuration.parsed_regions_filename)
+
     else:
+        missing_regions = regions.index - dataset.items
+
+        if len(missing_regions) > 0:
+            print "> {0} regions were not found in the dataset, they were saved to {1}".format(len(missing_regions),
+                                                                                    configuration.missing_regions_filename)
+            regions.ix[missing_regions].to_bed(configuration.missing_regions_filename, track_title='DGWMissingRegions',
+                                               track_description='Regions that are in input, but missing from the dataset')
+
         print "> Not converting dataset to log scale as processed dataset already provided"
+
+    # --- Serialise the regions as they will be needed in explorer ----------
+    print '> Serialising regions to {0}'.format(configuration.parsed_regions_filename)
+    serialise(regions, configuration.parsed_regions_filename)
 
     # --- Saving of dataset -------------------
     print '> Saving dataset to {0}'.format(configuration.dataset_filename)
