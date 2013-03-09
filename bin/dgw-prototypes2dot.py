@@ -16,14 +16,25 @@ def argument_parser():
                         action=StoreFilenameAction)
 
     parser.add_argument('output_directory', help='Output directory')
+    parser.add_argument('-c', '--cut', metavar='X', type=float,
+                        help="Mark all nodes with distances < X as to show nodes that "
+                             "would be in the same cluster if the dendrogram "
+                             "is cut at distance threshold X")
+    parser.add_argument('--no-images', action='store_const', const=True, default=False,
+                        help='Do not generate images, just the dotfile. Useful if you want to save time '
+                             'and compare different --cut thresholds')
     return parser
 
-def graph_from_node_list_to_file(node_list, file_object):
+def graph_from_node_list_to_file(node_list, file_object, cut_threshold=None):
     file_object.write('graph dgw_clustering {\n')
     file_object.write('node [style="filled"];')
 
     for node in node_list:
-        file_object.write('"{0}" [label="{0} - {1}", image="{0}.png"];\n'.format(node.id, node.dist))
+        if cut_threshold is not None and node.dist < cut_threshold:
+            file_object.write('"{0}" [label="{0} - {1}", image="{0}.png", fillcolor="green"];\n'.format(node.id,
+                                                                                                        node.dist))
+        else:
+            file_object.write('"{0}" [label="{0} - {1}", image="{0}.png"];\n'.format(node.id, node.dist))
         if not node.is_leaf():
             file_object.write('"{0}" -- "{1}";\n'.format(node.id, node.get_left().id))
             file_object.write('"{0}" -- "{1}";\n'.format(node.id, node.get_right().id))
@@ -57,13 +68,16 @@ def main():
     if not os.path.exists(output_directory):
         os.makedirs(output_directory)
 
-    prototype_images_from_node_list(tree_nodes, output_directory)
+    if not args.no_images:
+        prototype_images_from_node_list(tree_nodes, output_directory)
 
     print '> Creating a dot graph'
 
     f = open(os.path.join(output_directory, 'graph.dot'), 'w')
-    graph_from_node_list_to_file(tree_nodes, f)
-    f.close()
+    try:
+        graph_from_node_list_to_file(tree_nodes, f, args.cut)
+    finally:
+        f.close()
 
     print '> Done'
 
