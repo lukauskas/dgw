@@ -37,7 +37,7 @@ def prototype_images_from_node_list(node_list, output_directory):
         filename = '{0}.png'.format(node.id)
         full_filename = os.path.join(output_directory, filename)
         print '> Saving {0}'.format(full_filename)
-        prototype_T = node.prototype.T
+        prototype_T = node.prototype.values.T
         for i in xrange(ndims):
             plt.subplot(1, ndims, i+1)
             plt.plot(prototype_T[i])
