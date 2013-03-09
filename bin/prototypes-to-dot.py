@@ -1,11 +1,10 @@
+#!/usr/bin/env python
 import argparse
 import os
 from dgw.cli import StoreFilenameAction
 from dgw.cli.configuration import load_configuration_from_file
 
 import matplotlib.pyplot as plt
-
-__author__ = 'saulius'
 
 def argument_parser():
 
