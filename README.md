@@ -130,3 +130,10 @@ After the dependencies have been set up, clone this repository:
 ```
 git clone
 ```
+
+set up your PATH and PYTHONPATH variables to point to the location of the new repository, on unix:
+```
+export PYTHONPATH=$PYTHONPATH:/directory/where/dgw/is/checked/out
+export PATH=$PATH:/directory/where/dgw/is/checked/out/bin
+```
+Note the "bin" in the end of PATH directory -- this is where the main executables of package lie in
