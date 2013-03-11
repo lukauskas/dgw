@@ -43,7 +43,7 @@ def argument_parser():
 
     parser.add_argument('-p', '--prefix', help='Prefix of the output files generated ', default='dgw')
 
-    parser.add_argument('--truncate-regions', metavar='X', type=int, help='Only use first X rows of regions '
+    parser.add_argument('--random-sample', metavar='X', type=int, help='Only use a random sample of X regions '
                                                                            'rather than the full dataset')
 
     parser.add_argument('-res', '--resolution', help='Read resolution', type=int, default=50)
@@ -104,7 +104,7 @@ def argument_parser():
 
 #-- Actual execution of the program
 
-def read_regions(regions_filename, truncate_regions, resolution):
+def read_regions(regions_filename, random_sample, resolution):
     regions = Regions.from_bed(regions_filename)
     total_len = len(regions)
     print '> {0} regions of interest read'.format(total_len)
@@ -112,10 +112,10 @@ def read_regions(regions_filename, truncate_regions, resolution):
     regions = regions.clip_to_resolution(resolution)
 
     used_len = total_len
-    if truncate_regions:
-        print '> Using only a random sample of {0} regions from {1!r}'.format(truncate_regions, regions_filename)
-        used_len = truncate_regions
-        regions = regions.ix[random.sample(regions.index, truncate_regions)]
+    if random_sample:
+        print '> Using only a random sample of {0} regions from {1!r}'.format(random_sample, regions_filename)
+        used_len = random_sample
+        regions = regions.ix[random.sample(regions.index, random_sample)]
 
     return regions, total_len, used_len
 
@@ -196,7 +196,7 @@ def main():
 
     # --- pre-processing ------------------------
     print '> Reading regions from {0!r} ....'.format(args.regions)
-    regions, total_regions, used_regions = read_regions(args.regions, args.truncate_regions, args.resolution)
+    regions, total_regions, used_regions = read_regions(args.regions, args.random_sample, args.resolution)
 
     too_short_regions = (regions.lengths / args.resolution) < args.min_bins  # Set the threshold to 4 bins
     too_short_regions = regions.ix[too_short_regions[too_short_regions].index]
@@ -311,9 +311,9 @@ def main():
         delta = end - start
         print '> Pairwise distances calculation took {0} s'.format(delta.total_seconds())
 
-        if args.truncate_regions:
-            multiplier = binomial_coefficent(total_regions, 2) / float(binomial_coefficent(args.truncate_regions, 2))
-            print '> Expected calculation duration if truncate_regions was not used: {0} s'\
+        if args.random_sample:
+            multiplier = binomial_coefficent(total_regions, 2) / float(binomial_coefficent(args.random_sample, 2))
+            print '> Expected calculation duration if random-sample was not used: {0} s'\
                    .format(delta.total_seconds() * multiplier)
 
 
