@@ -1,10 +1,12 @@
 Dynamic Genome Warping (DGW)
 ===============
 
-# Prerequisites
-DGW depends on `numpy`, `scipy`, `pandas==0.10.1`, `mlpy`, `pysam`, `fastcluster` and `matplotlib` packages.
+# Installation
 
-## MLPY
+## Prerequisites
+DGW depends on `numpy`, `scipy`, `pandas==0.10.1`, `mlpy`, `pysam`, `fastcluster`, `matplotlib` and modified `mlpy` packages (see below).
+
+### MLPY
 DGW depends on modified version of MLPY, available from https://github.com/sauliusl/mlpy
 You can install it by
 ```
@@ -82,7 +84,7 @@ Don't forget MLPY:
 pip install -e git://github.com/sauliusl/mlpy.git#egg=mlpy
 ```
 
-# Installing Python 2.7 to a non-root environment
+## Installing Python 2.7 to a non-root environment
 The above steps need python to be installed on the system.
 If you do not have Python2.7, you need to install it.
 The following steps show how to install python to an environment on linux you do not have root access to.
@@ -123,17 +125,68 @@ easy_install-2.7 pip
 6. Once pip is installed, you can install dependencies for DGW as per linux installations step.
 Make sure you use the newly installed `pip-2.7`, which will be in your local directory and not the one that comes with system
 
-# Installation
+# Installation of DGW
 
-After the dependencies have been set up, clone this repository:
+DGW has to be installed directly from the source. You can obtain source by cloning the DGW repository.
 
 ```
 git clone
 ```
 
-set up your PATH and PYTHONPATH variables to point to the location of the new repository, on unix:
+In order to be able to use DGW from any location in your system
+set up your PATH and PYTHONPATH variables to point to the location of the new repository, on unix this is done:
 ```
 export PYTHONPATH=$PYTHONPATH:/directory/where/dgw/is/checked/out
 export PATH=$PATH:/directory/where/dgw/is/checked/out/bin
 ```
-Note the "bin" in the end of PATH directory -- this is where the main executables of package lie in
+Note the "bin" in the end of PATH directory -- this is where the main executables of package lie in. 
+You may want to add these two lines to your `~/.bashrc` so they are executed every time you open your shell.
+
+# Usage
+
+DGW is split into two parts - computationally demanding part, `dgw-worker` and an exploratory part - `dgw-explorer`.
+
+## `dgw-worker`
+
+The worker part of the module is responsible for the actual hard work done in clustering the data. It preprocesses the data, computes intermediate representations, calculates DTW distances between the data, performs hierarchical clustering and calculates prototypes of the clusters.
+
+### Sample usage
+
+Typically, `dgw-worker` would be run as follows:
+```
+dgw-worker.py -r tss_regions.bed  -d wgEncodeBroadHistoneK562H3k4me3StdAlnRep1.bam wgEncodeBroadHistoneK562Pol2bStdAlnRep1.bam --prefix dgw_example
+```
+In this case we are providing a bed file of regions of interest we want to cluster (`-r tss_regions.bed`), two datasets to work on (`-d wgEncodeBroadHistoneK562H3k4me3StdAlnRep1.bam wgEncodeBroadHistoneK562Pol2bStdAlnRep1.bam`) and setting the prefix of files that will be output to `dgw_example`.
+
+The DGW-worker will take all alignments from both datasets at regions in the `tss_regions.bed`. These alignments will then be extended and put into bins of 50 base pairs wide (use `-res` parameter to change this width).
+Then the unexpressed regions that have no bin with more than 10 reads in them (`-min-pileup` constraint to change) will be ignored. Note that these ignored regions are then saved to `{prefix}_filtered_regions.bed` file.
+The remaining data will be normalised by adding two artificial reads for each bin and then taking the log of the number of reads in the bins.
+The remaining regions will then be clustered hierarchically using DTW distance with default parameters.
+
+### Output
+The worker will output 8 files to the working directory where `{prefix}` is the prefix specified by `--prefix` argument.
+
+* `{prefix}_config.dgw` -- The main file storing the configuration of DGW that was used to produce the other files.
+* `{prefix}_dataset.pd` -- Processed dataset after the normalisation. This can then be passed in a subsequent DGW session as `--processed-dataset` parameter.
+* `{prefix}_filtered_regions.bed` -- Regions that were filtered out of the original regions set due to preprocessing constraints.
+* `{prefix}_linkage.npy` -- Precomputed linkage matrix that is used in hierarchical clustering 
+* `{prefix}_missing_regions.bed` -- regions that were in the BED file provided as an input, but were not in one of the BAM files.
+* `{prefix}_prototypes.pickle` -- computed prototypes of the clusters
+* `{prefix}_regions.pd` -- regions that were processed, saved in DGW-readable format
+* `{prefix}_warping_paths.pickle` -- computed warping paths of the original data projected onto prototypes
+
+### Points of interest
+In some cases one would want to track some points of interest and their locations after warping. `dgw-worker` can also be run with a `-poi` parameter specified, for instance:
+
+```
+dgw-worker.py -r tss_regions.bed -poi first_splicing_site_locations.bed  -d wgEncodeBroadHistoneK562H3k4me3StdAlnRep1.bam wgEncodeBroadHistoneK562Pol2bStdAlnRep1.bam --prefix dgw_example
+```
+
+The regions in `first_splicing_site_locations.bed` must have the same names as the regions in `tss_regions.bed` otherwise DGW won't be able to match them. Also have a look at `--ignore-poi-non-overlaps` id some of the regions in the input file may not contain some of the regions listed as points of interest.
+Similarly, `--ignore-no-poi-regions` will make DGW ignore those regions in input file that do not contain any of the points of interest provided.
+
+## `dgw-explorer`
+
+
+
+
