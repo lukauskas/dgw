@@ -30,75 +30,79 @@ def argument_parser():
 
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 
-
-    parser.add_argument('-r', '--regions', metavar='regions_of_interest.bed', action=StoreFilenameAction,
+    input_group = parser.add_argument_group('Input arguments')
+    input_group.add_argument('-r', '--regions', metavar='regions_of_interest.bed', action=StoreFilenameAction,
                         help='A BED file listing genome regions that will be processed', required=True)
-    parser.add_argument('-d', '--datasets', metavar='dataset.bam', nargs='+', action=StoreUniqueFilenameAction,
+
+    input_group.add_argument('-d', '--datasets', metavar='dataset.bam', nargs='+', action=StoreUniqueFilenameAction,
                         help='One or more datasets to be analysed using DGW. Must be BAM files.')
-    parser.add_argument('-pd', '--processed-dataset', metavar='processed_dataset.pd', action=StoreFilenameAction,
-                        help='Dataset that has already been processed. E.g. from a previous run.')
+    input_group.add_argument('-pd', '--processed-dataset', metavar='processed_dataset.pd', action=StoreFilenameAction,
+                        help='Dataset that has already been processed. E.g. from a previous run. Can be used instead of -d')
 
-    parser.add_argument('-poi', '--points-of-interest', metavar='poi.bed', action=StoreFilenameAction,
-                        help='A BED file listing points of interest in the regions specified')
+    points_of_interest_group = parser.add_argument_group('Points of interest')
 
-    parser.add_argument('-p', '--prefix', help='Prefix of the output files generated ', default='dgw')
+    points_of_interest_group.add_argument('-poi', '--points-of-interest', metavar='poi.bed', action=StoreFilenameAction,
+                        help='A BED file listing points of interest (e.g. transcription start sites) '
+                             'in the regions specified by --regions')
+    points_of_interest_group.add_argument('--ignore-poi-non-overlaps', default=False, action='store_const', const=True,
+                        help='If set to true, DGW will silently ignore points of interest that do not overlap with the regions')
+    points_of_interest_group.add_argument('--ignore-no-poi-regions', default=False, action='store_const', const=True,
+                        help='If set to true, DGW will silently ignore regions having no points of interest in them')
 
-    parser.add_argument('--random-sample', metavar='X', type=int, help='Only use a random sample of X regions '
-                                                                           'rather than the full dataset')
+    dtw_parameters_group = parser.add_argument_group('DTW parameters')
+    dtw_parameters_group.add_argument('-res', '--resolution', help='Read resolution', type=int, default=50)
+    dtw_parameters_group.add_argument('-ext', '--extend_to', help='Extend reads to specified length', type=int, default=200)
+    dtw_parameters_group.add_argument('--metric', help='Local distance metric to be used in DTW',
+                        choices=['sqeuclidean', 'euclidean', 'cosine'], default=None)
+    dtw_parameters_group.add_argument('-sb', '--slanted-band', metavar='k',
+                                     help='Constrain DTW with slanted band of width k', type=int) # TODO: assert > 0
+    dtw_parameters_group.add_argument('--normalise', const=True, default=False, action='store_const',
+                        help='Normalise the DTW distances by dividing them by the length of longer sequence')
+    dtw_parameters_group.add_argument('--no-dtw', action='store_const', const=True, default=False,
+                        help='If this option is provided, DGW will not use Dynamic Time Warping for region alignments. '
+                             'Use it to compare it with basic methods.')
+    dtw_parameters_group.add_argument('--scale', action="store_const", const="True", default=False,
+                        help='Scale the sequence uniformly to the length of the longer sequence before doing DTW')
+    dtw_parameters_group.add_argument('-wp', '--warping-penalty', default=0, type=float)
 
-    parser.add_argument('-res', '--resolution', help='Read resolution', type=int, default=50)
-    parser.add_argument('-ext', '--extend_to', help='Extend reads to specified length', type=int, default=200)
+    dgw_options_group = parser.add_argument_group('DGW options')
+    dgw_options_group.add_argument('-p', '--prefix', help='Prefix of the output files generated ', default='dgw')
 
-    parser.add_argument('--blank', action='store_const', const=True, default=False,
+    dgw_options_group.add_argument('--random-sample', metavar='X', type=int, help='Only use a random sample of X regions '
+                                                                       'rather than the full dataset')
+    dgw_options_group.add_argument('--blank', action='store_const', const=True, default=False,
                         help='Do a blank run - just process the dataset.but do not calculate the pairwise distances')
 
-    parser.add_argument('--metric', help='Local distance metric to be used in DTW',
-                        choices=['sqeuclidean', 'euclidean', 'cosine'], default=None)
-
-    parser.add_argument('-sb', '--slanted-band', metavar='k', help='Constrain DTW with slanted band of width k',
-                        type=int) # TODO: assert > 0
-
-    parser.add_argument('--normalise', const=True, default=False, action='store_const',
-                        help='Normalise the DTW distances by dividing them by the length of longer sequence')
-
-    parser.add_argument('-n', '--n-processes', metavar='N', type=int,
+    dgw_options_group.add_argument('-n', '--n-processes', metavar='N', type=int,
                         help='Use up to N process when calculating pairwise distances.'
                              ' Defaults to the maximum number available.')
 
-    parser.add_argument('--output-raw-dataset', action='store_const', const=True, default=False,
+    dgw_options_group.add_argument('--output-raw-dataset', action='store_const', const=True, default=False,
                         help='Output raw dataset as well as normalised one')
 
-    parser.add_argument('-mp', '--min-pileup', metavar='H', type=int, default=10,
-                        help='Only cluster these regions that have at least one pileup column of H or more reads. ')
-
-    parser.add_argument('-v', '--verbose', help='Turns on displaying of debug messages', action='store_const',
+    dgw_options_group.add_argument('-v', '--verbose', help='Turns on displaying of debug messages', action='store_const',
                         const=True, default=False)
+    dgw_options_group.add_argument('--prototyping_method', default=None, choices=['psa', 'standard', 'standard-unweighted', 'mean'])
 
-    parser.add_argument('--output-pairwise-distances', action='store_const', const=True, default=False,
-                        help='If provided, DGW will output the pairwise distance matrix computed to a file.')
 
-    parser.add_argument('--no-dtw', action='store_const', const=True, default=False,
-                        help='If this option is provided, DGW will not use Dynamic Time Warping for region alignments. '
-                             'Use it to compare it with basic methods.')
+    preprocessing_group = parser.add_argument_group('Preprocessing')
+    preprocessing_group.add_argument('-mp', '--min-pileup', metavar='H', type=int, default=10,
+                        help='Only cluster these regions that have at least one bin that contains H or more reads. ')
 
-    parser.add_argument('--scale', action="store_const", const="True", default=False,
-                        help='Scale the sequence uniformly to the length of the longer sequence before doing DTW')
 
-    parser.add_argument('--prototyping_method', default=None, choices=['psa', 'standard', 'standard-unweighted', 'mean'])
+    preprocessing_group.add_argument('--output-pairwise-distances', action='store_const', const=True, default=False,
+                        help='If provided, DGW will output the intermediate pairwise distance matrix computed.')
 
-    parser.add_argument('--min-bins', default=4, help='Specifies the minimal length of region in bins in order for it '
+
+
+
+    preprocessing_group.add_argument('--min-bins', default=4, help='Specifies the minimal length of region in bins in order for it '
                                                       'to be processed.', type=int)
-    parser.add_argument('--max-bins', default=None, help='Specifies the maximum length of region in bins '
+    preprocessing_group.add_argument('--max-bins', default=1000, help='Specifies the maximum length of region in bins '
                                                           'in order for it to be processed',
                         type=int)
 
-    parser.add_argument('--ignore-poi-non-overlaps', default=False, action='store_const', const=True,
-                        help='If set to true, DGW will silently ignore -pois that do not overlap with the regions')
 
-    parser.add_argument('--ignore-no-poi-regions', default=False, action='store_const', const=True,
-                        help='If set to true, DGW will silently ignore regions having no points of interest in them')
-
-    parser.add_argument('-wp', '--warping-penalty', default=0, type=float)
 
     return parser
 
