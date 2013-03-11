@@ -94,20 +94,20 @@ class ClusterPreviewer(object):
 
             filename_reg = os.path.join(heatmaps_directory, 'cluster-{0}.eps'.format(i + 1))
             f = self._plot_regular_heatmap_on_figure(c)
-            plt.savefig(filename_reg)
+            f.savefig(filename_reg)
             plt.close(f)
 
 
             filename_projected = os.path.join(heatmaps_directory, 'cluster-warped-{0}.eps'.format(i + 1))
             f = self._plot_projected_heatmap_on_figure(c)
-            plt.savefig(filename_projected)
+            f.savefig(filename_projected)
             plt.close(f)
 
         print '> Saving prototypes to directory {0}'.format(prototypes_directory)
         for i, c in enumerate(self._clusters):
             filename_prototype = os.path.join(prototypes_directory, 'cluster-{0}.eps'.format(i + 1))
-            self._plot_prototype_on_figure(c)
-            plt.savefig(filename_prototype)
+            f = self._plot_prototype_on_figure(c)
+            f.savefig(filename_prototype)
             plt.close(f)
 
         print '> Saved'
@@ -127,7 +127,9 @@ class ClusterPreviewer(object):
     def _plot_prototype_on_figure(self, cluster):
         f = plt.figure()
         plt.subplots_adjust(left=0.05, bottom=0.05, top=0.95, right=0.95)
-        cluster.prototype.plot()
+        cluster.prototype.plot(ax=f.gca())
+
+        return f
 
     def _plot_regular_heatmap_on_figure(self, cluster):
         f = plt.figure(figsize=(11.7, 8.3))
