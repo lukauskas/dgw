@@ -52,7 +52,8 @@ def argument_parser():
     dtw_parameters_group = parser.add_argument_group('DTW parameters')
     dtw_parameters_group.add_argument('-res', '--resolution', help='Read resolution', type=int, default=50)
     dtw_parameters_group.add_argument('-ext', '--extend_to', help='Extend reads to specified length', type=int, default=200)
-    dtw_parameters_group.add_argument('--metric', help='Local distance metric to be used in DTW',
+    dtw_parameters_group.add_argument('--metric', help='Local distance metric to be used in DTW. Defaults to sqeuclidean '
+                                                       'for one dataset, and cosine when more than one dataset is available',
                         choices=['sqeuclidean', 'euclidean', 'cosine'], default=None)
     dtw_parameters_group.add_argument('-sb', '--slanted-band', metavar='k',
                                      help='Constrain DTW with slanted band of width k', type=int) # TODO: assert > 0

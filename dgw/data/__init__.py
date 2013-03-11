@@ -1,4 +1,4 @@
 import visualisation
-import containers
 
 from parsers import *
+from containers import *
