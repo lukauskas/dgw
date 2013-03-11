@@ -1,10 +1,12 @@
 Dynamic Genome Warping (DGW)
 ===============
 
-# Prerequisites
-DGW depends on `numpy`, `scipy`, `pandas==0.10.1`, `mlpy`, `pysam`, `fastcluster` and `matplotlib` packages.
+# Installation
 
-## MLPY
+## Prerequisites
+DGW depends on `numpy`, `scipy`, `pandas==0.10.1`, `mlpy`, `pysam`, `fastcluster`, `matplotlib` and modified `mlpy` packages (see below).
+
+### MLPY
 DGW depends on modified version of MLPY, available from https://github.com/sauliusl/mlpy
 You can install it by
 ```
@@ -82,7 +84,7 @@ Don't forget MLPY:
 pip install -e git://github.com/sauliusl/mlpy.git#egg=mlpy
 ```
 
-# Installing Python 2.7 to a non-root environment
+## Installing Python 2.7 to a non-root environment
 The above steps need python to be installed on the system.
 If you do not have Python2.7, you need to install it.
 The following steps show how to install python to an environment on linux you do not have root access to.
@@ -123,17 +125,21 @@ easy_install-2.7 pip
 6. Once pip is installed, you can install dependencies for DGW as per linux installations step.
 Make sure you use the newly installed `pip-2.7`, which will be in your local directory and not the one that comes with system
 
-# Installation
+# Installation of DGW
 
-After the dependencies have been set up, clone this repository:
+DGW has to be installed directly from the source. You can obtain source by cloning the DGW repository.
 
 ```
 git clone
 ```
 
-set up your PATH and PYTHONPATH variables to point to the location of the new repository, on unix:
+In order to be able to use DGW from any location in your system
+set up your PATH and PYTHONPATH variables to point to the location of the new repository, on unix this is done:
 ```
 export PYTHONPATH=$PYTHONPATH:/directory/where/dgw/is/checked/out
 export PATH=$PATH:/directory/where/dgw/is/checked/out/bin
 ```
-Note the "bin" in the end of PATH directory -- this is where the main executables of package lie in
+Note the "bin" in the end of PATH directory -- this is where the main executables of package lie in. 
+You may want to add these two lines to your `~/.bashrc` so they are executed every time you open your shell.
+
+
