@@ -188,6 +188,8 @@ class Configuration(object):
 
     def _dtw_kwargs_from_args(self, args):
         kw = {'metric': args.metric}
+        if args.warping_penalty is not None:
+            kw['warping_penalty'] = args.warping_penalty
         if args.slanted_band is not None:
             kw['constraint'] = 'slanted_band'
             kw['k'] = args.slanted_band

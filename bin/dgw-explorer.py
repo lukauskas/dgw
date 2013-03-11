@@ -47,24 +47,27 @@ def main():
     regions = configuration.load_regions()
     dataset = configuration.load_dataset()
 
+    standard_highlight_colours = ["k", "w"]
+    highlight_colours = {}
     if args.points_of_interest:
-        combined_poi = defaultdict(lambda: {})
-
+        dataset.reset_poi()
         for i, poi_file in enumerate(args.points_of_interest):
             print '> Reading points of interest from {0!r}'.format(poi_file)
             poi = Regions.from_bed(poi_file)
             poi = poi.as_bins_of(regions, resolution=configuration.resolution,
                                  ignore_non_overlaps=args.ignore_poi_non_overlaps)
 
-            for key, value in poi.iteritems():
-                combined_poi[key][i] = value
-
-        dataset.points_of_interest = combined_poi
+            dataset.add_points_of_interest(poi, name=poi_file)
+            try:
+                highlight_colours[poi_file] = standard_highlight_colours.pop()
+            except IndexError:
+                raise Exception("Sorry, only up to {0} POI regions are supported".format(len(standard_highlight_colours)))
 
     hc = configuration.create_hierarchical_clustering_object(regions=regions, dataset=dataset)
     configuration_basename = os.path.basename(args.configuration_file.name)
     hcv = dgw.cluster.visualisation.HierarchicalClusteringViewer(hc, output_directory=args.output,
-                                                                 configuration_file=configuration_basename)
+                                                                 configuration_file=configuration_basename,
+                                                                 highlight_colours=highlight_colours)
     print "> Displaying explorer"
     hcv.show()
 

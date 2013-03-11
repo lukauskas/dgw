@@ -98,6 +98,8 @@ def argument_parser():
     parser.add_argument('--ignore-no-poi-regions', default=False, action='store_const', const=True,
                         help='If set to true, DGW will silently ignore regions having no points of interest in them')
 
+    parser.add_argument('-wp', '--warping-penalty', default=0, type=float)
+
     return parser
 
 #-- Actual execution of the program
@@ -232,9 +234,7 @@ def main():
 
         if poi:
             poi = poi.as_bins_of(regions, resolution=args.resolution, ignore_non_overlaps=args.ignore_poi_non_overlaps)
-            # TODO: remove this hack and rewrite it properly
-            poi = {ix: {0: value} for ix,value in poi.iteritems()}
-            dataset.points_of_interest = poi
+            dataset.add_points_of_interest(poi, name=args.points_of_interest)
 
             if args.ignore_no_poi_regions:
                 poi_dataset = dataset.drop_no_pois()

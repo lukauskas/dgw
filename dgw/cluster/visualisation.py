@@ -12,7 +12,7 @@ class ClusterPreviewer(object):
     root_window = None
     _add_save_button = None
     _buttons = None
-    def __init__(self, cluster_roots, output_directory, configuration_filename, cut_level):
+    def __init__(self, cluster_roots, output_directory, configuration_filename, cut_level, highlight_colours=None):
         self.output_directory = output_directory
         self.cut_level = cut_level
         self.configuration_filename = configuration_filename
@@ -33,6 +33,7 @@ class ClusterPreviewer(object):
             c.ensure_points_of_interest_are_tracked_down()
 
         self._buttons = []
+        self.highlight_colours = highlight_colours
 
     def gs_prototype(self):
         return self._main_gs[1, 0]
@@ -114,13 +115,14 @@ class ClusterPreviewer(object):
         plt.figure(figsize=(11.7, 8.3))
         plt.subplots_adjust(left=0.05, bottom=0.05, top=0.95, right=0.95)
         cluster.data.plot_heatmap(horizontal_grid=True,
-                                          sort_by=None, highlighted_points=cluster.points_of_interest)
+                                          sort_by=None, highlighted_points=cluster.points_of_interest, highlight_colours=self.highlight_colours)
 
     def _plot_projected_heatmap_on_figure(self, cluster):
         plt.figure(figsize=(11.7, 8.3))
         plt.subplots_adjust(left=0.05, bottom=0.05, top=0.95, right=0.95)
         cluster.projected_data.plot_heatmap(horizontal_grid=True,
-                                                    sort_by=None, highlighted_points=cluster.tracked_points_of_interest)
+                                                    sort_by=None, highlighted_points=cluster.tracked_points_of_interest,
+                                                    highlight_colours=self.highlight_colours)
 
     def _enlarge_heatmap(self, event):
         self._plot_regular_heatmap_on_figure(self.current_cluster())
@@ -160,7 +162,8 @@ class ClusterPreviewer(object):
         plt.cla()
 
         shared_axis = current_cluster.data.plot_heatmap(horizontal_grid=True, subplot_spec=self.gs_heatmap(),
-                                                        sort_by=None, highlighted_points=current_cluster.points_of_interest)
+                                                        sort_by=None, highlighted_points=current_cluster.points_of_interest,
+                                                        highlight_colours=self.highlight_colours)
 
         # Projections
         projections = current_cluster.projected_data
@@ -173,7 +176,9 @@ class ClusterPreviewer(object):
         ax_projected_heatmap = plt.subplot(self.gs_projected_heatmap())
         plt.cla()
         current_cluster.projected_data.plot_heatmap(horizontal_grid=True, subplot_spec=self.gs_projected_heatmap(),
-                                                    share_y_axis=shared_axis, sort_by=None, highlighted_points=current_cluster.tracked_points_of_interest)
+                                                    share_y_axis=shared_axis, sort_by=None,
+                                                    highlighted_points=current_cluster.tracked_points_of_interest,
+                                                    highlight_colours=self.highlight_colours)
 
         # Finally issue a draw command for the plot
         plt.draw()
@@ -198,10 +203,11 @@ class HierarchicalClusteringViewer(object):
     _last_clusters = None
     _last_xdata = None
 
-    def __init__(self, hierarchical_clustering_object, output_directory, configuration_file):
+    def __init__(self, hierarchical_clustering_object, output_directory, configuration_file, highlight_colours=None):
         self._hierarchical_clustering_object = hierarchical_clustering_object
         self.output_directory = output_directory
         self.configuration_file = configuration_file
+        self.highlight_colours = highlight_colours
 
     @property
     def clusters(self):
@@ -268,7 +274,8 @@ class HierarchicalClusteringViewer(object):
             return
 
         # Else, if we have clusters
-        pw = ClusterPreviewer(self.clusters, self.output_directory, self.configuration_file, self._cut_xdata)
+        pw = ClusterPreviewer(self.clusters, self.output_directory, self.configuration_file, self._cut_xdata,
+                              highlight_colours=self.highlight_colours)
         pw.show()
 
     def _callback_save(self, event):
@@ -296,7 +303,8 @@ class HierarchicalClusteringViewer(object):
 
         DENDROGRAM_SCALE = 10  # scipy.cluster.hierarachy.dendrogram scales all y axis values by tenfold for some reason
         hc.data.plot_heatmap(subplot_spec=self.gs_heatmap, no_y_axis=True, sort_by=sorted_index, share_y_axis=self.ax_dendrogram,
-                             scale_y_axis=DENDROGRAM_SCALE, highlighted_points=hc.data.points_of_interest, rasterized=True)
+                             scale_y_axis=DENDROGRAM_SCALE, highlighted_points=hc.data.points_of_interest, rasterized=True,
+                             highlight_colours=self.highlight_colours)
 
     def show(self):
         # A5 Paper size

@@ -31,7 +31,7 @@ def dataset_ticks(dataset, scale=1):
 
     return FuncFormatter(f)
 
-def raw_plot_data_as_heatmap(data_frame, ax=None, highlight_masks=None, *args, **kwargs):
+def raw_plot_data_as_heatmap(data_frame, ax=None, highlight_masks=None, highlight_colours=None, *args, **kwargs):
     if ax is None:
         ax = plt.gca()
 
@@ -41,11 +41,11 @@ def raw_plot_data_as_heatmap(data_frame, ax=None, highlight_masks=None, *args, *
     # Plot the array using JET colourmap, draw NaNs as white
     cmap = matplotlib.cm.get_cmap('jet')
     cmap.set_bad('#FFFFFF', 1.0)
-    AVAILABLE_COLORS = ['w', 'k']
+    HEATMAP_COLORS = ['k', 'w']
     result = ax.imshow(masked_arr, origin='lower', cmap=cmap, aspect="auto", interpolation='nearest', *args, **kwargs)
     if highlight_masks is not None:
         for j, mask in highlight_masks.iteritems():
-            highlight_cmap = matplotlib.colors.ListedColormap([AVAILABLE_COLORS[j]])
+            highlight_cmap = matplotlib.colors.ListedColormap([highlight_colours[j]])
             highlight_cmap.set_bad('#000000', 0)
             ax.imshow(highlight_masks[j], origin='lower', cmap=highlight_cmap, aspect="auto", interpolation='nearest',
                                *args, **kwargs)
@@ -54,6 +54,7 @@ def raw_plot_data_as_heatmap(data_frame, ax=None, highlight_masks=None, *args, *
 
 def plot(alignments, clip_colors=False, titles=None, horizontal_grid=True,
          no_y_axis=False, sort_by=None, subplot_spec=None, share_y_axis=None, scale_y_axis=None, highlighted_points={},
+         highlight_colours=None,
          rasterized=True):
     """
 
@@ -197,7 +198,7 @@ def plot(alignments, clip_colors=False, titles=None, horizontal_grid=True,
         data_to_plot = data_to_plot[data_to_plot.columns[:max_len]]
 
         result = raw_plot_data_as_heatmap(data_to_plot, vmin=min_value, vmax=max_value, extent=extent,
-                                          highlight_masks=highlight_masks, rasterized=rasterized)
+                                          highlight_masks=highlight_masks, rasterized=rasterized, highlight_colours=highlight_colours)
         debug(plt.gca().get_ylim())
         debug(plt.gca().get_xlim())
 

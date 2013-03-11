@@ -52,6 +52,7 @@ class AlignmentsData(object):
     _data = None
     _poi = None
     _scale = None
+
     def __init__(self, panel, poi=None, scale='raw'):
         """
         Initialises `AlignmentsData` with a `panel` provided.
@@ -73,7 +74,12 @@ class AlignmentsData(object):
                             .format(type(panel)))
 
         self._scale = scale
+
         self.points_of_interest = poi
+
+
+    def reset_poi(self):
+        self._poi = {}
 
     @property
     def data(self):
@@ -84,12 +90,23 @@ class AlignmentsData(object):
         return self._poi
 
     @points_of_interest.setter
-    def points_of_interest(self, poi):
-        if poi is not None:
-            poi_subset = {ix: poi[ix] for ix in self.items if ix in poi}
-            self._poi = poi_subset
-        else:
+    def points_of_interest(self, value):
+        if value is None:
             self._poi = {}
+        else:
+            self._poi = {ix: value for ix, value in value.iteritems() if ix in self.items}
+
+
+    def add_points_of_interest(self, binned_points_of_interest_regions, name):
+        for ix, value in binned_points_of_interest_regions.iteritems():
+            if ix not in self.items:
+                continue
+
+            try:
+                self._poi[ix][name] = value
+            except KeyError:
+                self._poi[ix] = {name: value}
+
 
     def drop_no_pois(self):
         common_index = self.items & self.points_of_interest
