@@ -196,7 +196,7 @@ class Configuration(object):
         if args.scale:
             kw['scale_first'] = True
 
-        kw['normalise'] = args.normalise
+        kw['normalise'] = not args.no_length_normalisation
         return kw
 
     @property

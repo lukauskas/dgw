@@ -56,14 +56,15 @@ def argument_parser():
                         choices=['sqeuclidean', 'euclidean', 'cosine'], default=None)
     dtw_parameters_group.add_argument('-sb', '--slanted-band', metavar='k',
                                      help='Constrain DTW with slanted band of width k', type=int) # TODO: assert > 0
-    dtw_parameters_group.add_argument('--normalise', const=True, default=False, action='store_const',
-                        help='Normalise the DTW distances by dividing them by the length of longer sequence')
+    dtw_parameters_group.add_argument('-nln', '--no-length-normalisation', const=False, default=True, action='store_const',
+                        help='Do not normalise the DTW distances by dividing them by the length of longer sequence.')
     dtw_parameters_group.add_argument('--no-dtw', action='store_const', const=True, default=False,
                         help='If this option is provided, DGW will not use Dynamic Time Warping for region alignments. '
                              'Use it to compare it with basic methods.')
     dtw_parameters_group.add_argument('--scale', action="store_const", const="True", default=False,
                         help='Scale the sequence uniformly to the length of the longer sequence before doing DTW')
-    dtw_parameters_group.add_argument('-wp', '--warping-penalty', default=0, type=float)
+    dtw_parameters_group.add_argument('-wp', '--warping-penalty', default=0, type=float,
+                                      help='Warping penalty to incur on every non-diagonal path taken in the dtw matrix')
 
     dgw_options_group = parser.add_argument_group('DGW options')
     dgw_options_group.add_argument('-p', '--prefix', help='Prefix of the output files generated ', default='dgw')
@@ -78,11 +79,12 @@ def argument_parser():
                              ' Defaults to the maximum number available.')
 
     dgw_options_group.add_argument('--output-raw-dataset', action='store_const', const=True, default=False,
-                        help='Output raw dataset as well as normalised one')
+                        help='Output raw dataset into format readable by DGW')
 
     dgw_options_group.add_argument('-v', '--verbose', help='Turns on displaying of debug messages', action='store_const',
                         const=True, default=False)
-    dgw_options_group.add_argument('--prototyping_method', default=None, choices=['psa', 'standard', 'standard-unweighted', 'mean'])
+    dgw_options_group.add_argument('--prototyping-method', default=None, choices=['psa', 'standard', 'standard-unweighted', 'mean'],
+                                   help='Prototyping method to use')
 
 
     preprocessing_group = parser.add_argument_group('Preprocessing')
