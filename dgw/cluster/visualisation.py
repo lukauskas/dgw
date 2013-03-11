@@ -77,6 +77,9 @@ class ClusterPreviewer(object):
         if not os.path.exists(heatmaps_directory):
             os.makedirs(heatmaps_directory)
 
+        prototypes_directory = os.path.join(directory, 'prototypes')
+        if not os.path.exists(prototypes_directory):
+            os.makedirs(prototypes_directory)
 
         print '> Saving BED files to directory {0}'.format(bed_directory)
         for i, c in enumerate(self._clusters):
@@ -90,12 +93,22 @@ class ClusterPreviewer(object):
         for i, c in enumerate(self._clusters):
 
             filename_reg = os.path.join(heatmaps_directory, 'cluster-{0}.eps'.format(i + 1))
-            self._plot_regular_heatmap_on_figure(c)
+            f = self._plot_regular_heatmap_on_figure(c)
             plt.savefig(filename_reg)
+            plt.close(f)
+
 
             filename_projected = os.path.join(heatmaps_directory, 'cluster-warped-{0}.eps'.format(i + 1))
-            self._plot_projected_heatmap_on_figure(c)
+            f = self._plot_projected_heatmap_on_figure(c)
             plt.savefig(filename_projected)
+            plt.close(f)
+
+        print '> Saving prototypes to directory {0}'.format(prototypes_directory)
+        for i, c in enumerate(self._clusters):
+            filename_prototype = os.path.join(prototypes_directory, 'cluster-{0}.eps'.format(i + 1))
+            self._plot_prototype_on_figure(c)
+            plt.savefig(filename_prototype)
+            plt.close(f)
 
         print '> Saved'
 
@@ -111,18 +124,26 @@ class ClusterPreviewer(object):
         self._buttons.append(Button(ax_button, text))
         self._buttons[-1].on_clicked(callback)
 
+    def _plot_prototype_on_figure(self, cluster):
+        f = plt.figure()
+        plt.subplots_adjust(left=0.05, bottom=0.05, top=0.95, right=0.95)
+        cluster.prototype.plot()
+
     def _plot_regular_heatmap_on_figure(self, cluster):
-        plt.figure(figsize=(11.7, 8.3))
+        f = plt.figure(figsize=(11.7, 8.3))
         plt.subplots_adjust(left=0.05, bottom=0.05, top=0.95, right=0.95)
         cluster.data.plot_heatmap(horizontal_grid=True,
                                           sort_by=None, highlighted_points=cluster.points_of_interest, highlight_colours=self.highlight_colours)
 
+        return f
+
     def _plot_projected_heatmap_on_figure(self, cluster):
-        plt.figure(figsize=(11.7, 8.3))
+        f = plt.figure(figsize=(11.7, 8.3))
         plt.subplots_adjust(left=0.05, bottom=0.05, top=0.95, right=0.95)
         cluster.projected_data.plot_heatmap(horizontal_grid=True,
                                                     sort_by=None, highlighted_points=cluster.tracked_points_of_interest,
                                                     highlight_colours=self.highlight_colours)
+        return f
 
     def _enlarge_heatmap(self, event):
         self._plot_regular_heatmap_on_figure(self.current_cluster())

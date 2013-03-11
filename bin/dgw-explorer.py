@@ -62,6 +62,10 @@ def main():
                 highlight_colours[poi_file] = standard_highlight_colours.pop()
             except IndexError:
                 raise Exception("Sorry, only up to {0} POI regions are supported".format(len(standard_highlight_colours)))
+    else:
+        if dataset.points_of_interest:
+            highlight_colours[dataset.points_of_interest.values()[0].keys()[0]] = standard_highlight_colours.pop()
+
 
     hc = configuration.create_hierarchical_clustering_object(regions=regions, dataset=dataset)
     configuration_basename = os.path.basename(args.configuration_file.name)
