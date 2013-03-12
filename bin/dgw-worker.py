@@ -91,7 +91,8 @@ def argument_parser():
     dgw_options_group.add_argument('-v', '--verbose', help='Turns on displaying of debug messages', action='store_const',
                         const=True, default=False)
     dgw_options_group.add_argument('--prototyping-method', default=None, choices=['psa', 'standard', 'standard-unweighted', 'mean'],
-                                   help='Prototyping method to use')
+                                   help='Prototyping method to use. '
+                                        'Defaults to standard if DGW is used and mean if it is not.')
 
 
     preprocessing_group = parser.add_argument_group('Preprocessing')
@@ -206,7 +207,7 @@ def main():
             args.prototyping_method = 'mean'
     else:
         if args.prototyping_method is None:
-            args.prototyping_method = 'psa'
+            args.prototyping_method = 'standard'
 
     if args.verbose:
         logging.root.setLevel(logging.DEBUG)
