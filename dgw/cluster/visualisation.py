@@ -220,11 +220,11 @@ class ClusterPreviewer(object):
                     points_plotted_on[point] += 1
         plt.title('Original')
 
-        ax2 = plt.subplot(3, 1, 2)
+        ax2 = plt.subplot(3, 1, 2, sharex=ax1, sharey=ax1)
         prototype.plot(ax=ax2, legend=False)
         plt.title('Prototype')
 
-        ax3 = plt.subplot(3, 1, 3)
+        ax3 = plt.subplot(3, 1, 3, sharex=ax1, sharey=ax1)
         projected_data.plot(ax=ax3, legend=False)
 
         if tracked_poi:
