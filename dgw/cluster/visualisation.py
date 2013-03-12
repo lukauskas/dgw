@@ -135,9 +135,9 @@ class ClusterPreviewer(object):
         print '> Saved'
 
     def add_button(self, text, callback):
-        buttons_left = 0.05
+        buttons_left = 0.03
         buttons_bottom = 1 - 0.1
-        button_width = 0.15
+        button_width = 0.14
         button_height = 0.05
         button_spacing = 0.02
 
@@ -185,6 +185,14 @@ class ClusterPreviewer(object):
         self._plot_projected_heatmap_on_figure(self.current_cluster())
         plt.show()
 
+    def _view_poi_histogram(self, event):
+        current_cluster = self.current_cluster()
+        current_cluster.points_of_interest_histogram.plot(kind='bar', subplots=True)
+        plt.suptitle('Original points of interest')
+        current_cluster.tracked_points_histogram.plot(kind='bar', subplots=True)
+        plt.suptitle('Warped points of interest')
+        plt.show()
+
 
     def create_buttons(self):
         self.add_button('Previous', self._callback_previous)
@@ -195,6 +203,7 @@ class ClusterPreviewer(object):
 
         self.add_button('Enlarge heatmap', self._enlarge_heatmap)
         self.add_button('Enlarge DTW heatmap', self._enlarge_dtw_heatmap)
+        self.add_button('View POI Histogram', self._view_poi_histogram)
 
     def _plot_item_in_figure(self, index):
         data = self.current_cluster().data.ix[index]

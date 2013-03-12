@@ -108,6 +108,8 @@ class DTWClusterNode(object, hierarchy.ClusterNode):
     _projected_data = None
     _warping_paths = None
     _tracked_points = None
+    _tracked_points_histogram = None
+    _points_of_interest_histogram = None
 
     def __init__(self, hierarchical_clustering_object, id, prototype, left=None, right=None, dist=0, count=1):
         hierarchy.ClusterNode.__init__(self, id, left=left, right=right, dist=dist, count=count)
@@ -158,6 +160,30 @@ class DTWClusterNode(object, hierarchy.ClusterNode):
     def ensure_projections_are_calculated(self):
         if not self._projected_data:
             self._projected_data = self.__project_items_onto_prototype()
+
+    def _calculate_histogram(self, points_of_interest, number_of_bins):
+        histogram = defaultdict(lambda: np.zeros(number_of_bins))
+        for poi in points_of_interest.itervalues():
+            for poi_name, points in poi.iteritems():
+                current_histogram = histogram[poi_name]
+                for point in set(points):
+                    current_histogram[point] += 1
+
+        return pd.DataFrame(histogram)
+
+    @property
+    def tracked_points_histogram(self):
+        if self._tracked_points_histogram is None:
+            self.ensure_points_of_interest_are_tracked_down()
+            self._tracked_points_histogram = self._calculate_histogram(self._tracked_points, len(self.prototype))
+        return self._tracked_points_histogram
+
+    @property
+    def points_of_interest_histogram(self):
+        if self._points_of_interest_histogram is None:
+            self._points_of_interest_histogram = self._calculate_histogram(self.points_of_interest,
+                                                                           self.data.number_of_columns)
+        return self._points_of_interest_histogram
 
     def ensure_points_of_interest_are_tracked_down(self):
         if self._tracked_points is None:

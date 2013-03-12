@@ -133,6 +133,10 @@ class AlignmentsData(object):
         return len(self.items)
 
     @property
+    def number_of_columns(self):
+        return len(self.major_axis)
+
+    @property
     def dataset_axis(self):
         return self.data.minor_axis
 
