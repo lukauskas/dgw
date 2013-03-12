@@ -197,6 +197,7 @@ class Configuration(object):
             kw['scale_first'] = True
 
         kw['normalise'] = not args.no_length_normalisation
+        kw['try_reverse'] = not args.no_reverse
         return kw
 
     @property

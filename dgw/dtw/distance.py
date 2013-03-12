@@ -74,7 +74,7 @@ def dtw_std(x, y, metric='sqeuclidean', dist_only=True, constraint=None, k=None,
     regular_ans = mlpy_dtw_std(x, y, metric=metric, dist_only=dist_only, constraint=constraint, k=k, *args, **kwargs)
     if not try_reverse:
         if dist_only:
-            return _normalise(regular_ans)
+            return _normalise(regular_ans, max_len)
         else:
             dist, cost, path = regular_ans
             dist = _normalise(dist, max_len)

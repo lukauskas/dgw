@@ -67,6 +67,9 @@ def argument_parser():
     dtw_parameters_group.add_argument('-wp', '--warping-penalty', default=0, type=float,
                                       help='Warping penalty to incur on every non-diagonal path taken in the dtw matrix')
 
+    dtw_parameters_group.add_argument('--no-reverse', const="True", default=False, action="store_const",
+                                      help='Do not try to account for antisense promoters by reversing the regions')
+
     dgw_options_group = parser.add_argument_group('DGW options')
     dgw_options_group.add_argument('-p', '--prefix', help='Prefix of the output files generated ', default='dgw')
 
