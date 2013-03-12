@@ -250,6 +250,10 @@ class Regions(object):
                 return result
         return result
 
+    def has_strand_data(self):
+        return 'strand' in self.columns
+
+
     def iterrows(self):
         return self.data.iterrows()
 
@@ -313,7 +317,16 @@ class Regions(object):
         missing_indices = self.index[~self.index.isin(dataset.items)]
         return Regions(self.data.ix[missing_indices])
 
-    def as_bins_of(self, other_regions, resolution=1, ignore_non_overlaps=False):
+    def as_bins_of(self, other_regions, resolution=1, ignore_non_overlaps=False, account_for_strand_information=False):
+        """
+        Returns the current regions as bins of some other set of regions provided
+        :param other_regions: regions to match self to
+        :param resolution: resolution at which to do so
+        :param ignore_non_overlaps: if set to false, the parser will raise a ValueError if self does not overlap with other regions
+        :param account_for_strand_information: if set to true, the parser will account for the antisense regions and
+            return bins from the end, rather than front
+        :return:
+        """
         other_regions = other_regions.clip_to_resolution(resolution)
 
         bins = {}
@@ -341,7 +354,12 @@ class Regions(object):
             min_bin = max(0, (current_start - other_start) / resolution)
             max_bin = min(n_bins - 1, (current_end - 1 - other_start) / resolution)
 
-            bins[ix] = np.array(range(min_bin, max_bin+1))
+            b = np.array(range(min_bin, max_bin+1))
+
+            if not account_for_strand_information or other.strand == '+':
+                bins[ix] = b
+            else:
+                bins[ix] = sorted((n_bins - 1) - b)
 
         return bins
 
@@ -432,9 +450,10 @@ class Genes(Regions):
         starts[starts < 0] = 0
         ends = tss_locations + window_width
 
-        regions_df = pd.DataFrame({'chromosome' : self['chromosome'],
+        regions_df = pd.DataFrame({'chromosome' : self.chromosome,
                                    'start' : starts,
-                                   'end' : ends}, index=self.index)
+                                   'end' : ends,
+                                   'strand' : self.strand}, index=self.index)
 
         return Regions(regions_df)
 
@@ -456,7 +475,8 @@ class Genes(Regions):
         ends = ss + window_width
 
         regions_df = pd.DataFrame({'chromosome': exon_genes['chromosome'],
-                                  'start': starts, 'end': ends}, index=exon_genes.index)
+                                  'start': starts, 'end': ends, 'strand' : exon_genes.strand},
+                                  index=exon_genes.index)
 
         return Regions(regions_df)
 
@@ -476,8 +496,9 @@ class Genes(Regions):
             exon_starts = row['exonStarts'].strip(',').split(',')
             exon_ends = row['exonEnds'].strip(',').split(',')
             chromosome = row['chromosome']
+            strand = row['strand']
 
-            if account_for_antisense and row['strand'] == '-':
+            if account_for_antisense and strand == '-':
                 exon_i = len(exon_starts) - 1 - exon_number
             else:
                 exon_i = exon_number
@@ -489,7 +510,7 @@ class Genes(Regions):
                 start = np.nan
                 end = np.nan
 
-            new_df.append({'chromosome': chromosome, 'start': start, 'end': end})
+            new_df.append({'chromosome': chromosome, 'start': start, 'end': end, 'strand': strand})
         new_df = pd.DataFrame(new_df, index=self.index)
         return Regions(new_df)
 

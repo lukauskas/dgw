@@ -116,7 +116,7 @@ def _extend_read_to(aligned_read, extend_to):
     return alignment_start, alignment_end
 
 def read_bam(alignment_filenames, regions, resolution=50, extend_to=200, data_filters=[MinNumberOfReadsFilter(1)],
-            output_removed_indices=False):
+            output_removed_indices=False, reverse_negative_strand_regions=False):
     """
     Reads provided bam files for the data in the specified regions
     :param alignment_filenames: Filenames of the files to read
@@ -125,7 +125,9 @@ def read_bam(alignment_filenames, regions, resolution=50, extend_to=200, data_fi
     :param extend_to:       Reads will be extended to extend_to base pairs of length, if not None
     :param data_filters:    Data filters that will be run on data to determine whether to include the value to list or not
     :param output_removed_indices: function outputs both indices in regions that were not found in dataset, and regions removed by filters
+    :param reverse_negative_strand_regions: whether to reverse the regions on negative strand or not
     :return: dataset, [regions_not_in_dataset, regions_removed_by_filter] -- the latter two only if output_removed_indices is set
+
     :rtype: pd.Panel
     """
     # Allow passing either a list of filenames or a single filename
@@ -168,6 +170,11 @@ def read_bam(alignment_filenames, regions, resolution=50, extend_to=200, data_fi
         chromosome = region['chromosome']
         start = region['start']
         end = region['end']
+        if reverse_negative_strand_regions:
+            if not region.has_strand_data:
+                raise ValueError('reverse_negative_strand_regions is set to true, yet the regions provided have no strand information.')
+
+            strand = region['strand']
 
         data_arr = np.empty((max_len, len(samfiles)))
 
@@ -179,6 +186,9 @@ def read_bam(alignment_filenames, regions, resolution=50, extend_to=200, data_fi
                                                    extend_to=extend_to)
             except Exception, e:
                 raise IOError('Could not read {0}:{1}-{2} from {4}, got: {3!r}'.format(chromosome, start, end, e, alignment_filenames[i]))
+
+            if reverse_negative_strand_regions and strand == '-':
+                region_data = region_data[::-1]
 
             padding = [np.nan] * (max_len - len(region_data))
             data_arr[:, i] = np.concatenate((region_data, padding))

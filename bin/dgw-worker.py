@@ -67,7 +67,10 @@ def argument_parser():
     dtw_parameters_group.add_argument('-wp', '--warping-penalty', default=0, type=float,
                                       help='Warping penalty to incur on every non-diagonal path taken in the dtw matrix')
 
-    dtw_parameters_group.add_argument('--no-reverse', const="True", default=False, action="store_const",
+    dtw_parameters_group.add_argument('--use-strand-information', const=True, action="store_const",
+                                  help='Will use the strand information provided in the BED file, if set to true.'
+                                       ' Also sets --no-reverse.')
+    dtw_parameters_group.add_argument('--no-reverse', const=True, default=False, action="store_const",
                                       help='Do not try to account for antisense promoters by reversing the regions')
 
     dgw_options_group = parser.add_argument_group('DGW options')
@@ -144,7 +147,8 @@ def read_datasets(args, regions):
                         resolution=args.resolution,
                         extend_to=args.extend_to,
                         data_filters=data_filters,
-                        output_removed_indices=True)
+                        output_removed_indices=True,
+                        reverse_negative_strand_regions=args.use_strand_information)
     else:
         processed_dataset_file = args.processed_dataset
         logging.debug('Reading processed dataset {0!r}'.format(processed_dataset_file))
@@ -207,11 +211,17 @@ def main():
     if args.verbose:
         logging.root.setLevel(logging.DEBUG)
 
+    # Disable trying to reverse regions if strand information given
+    if args.use_strand_information:
+        args.no_reverse = True
+
     configuration = Configuration(args)
 
     # --- pre-processing ------------------------
     print '> Reading regions from {0!r} ....'.format(args.regions)
     regions, total_regions, used_regions = read_regions(args.regions, args.random_sample, args.resolution)
+    if args.use_strand_information and not regions.has_strand_data():
+        parser.error('--use-strand-information is set but the input BED file has no strand information.')
 
     too_short_regions = (regions.lengths / args.resolution) < args.min_bins  # Set the threshold to 4 bins
     too_short_regions = regions.ix[too_short_regions[too_short_regions].index]
@@ -248,7 +258,8 @@ def main():
     if args.datasets:
 
         if poi:
-            poi = poi.as_bins_of(regions, resolution=args.resolution, ignore_non_overlaps=args.ignore_poi_non_overlaps)
+            poi = poi.as_bins_of(regions, resolution=args.resolution, ignore_non_overlaps=args.ignore_poi_non_overlaps,
+                                 account_for_strand_information=args.use_strand_information)
             dataset.add_points_of_interest(poi, name=args.points_of_interest)
 
             if args.ignore_no_poi_regions:
