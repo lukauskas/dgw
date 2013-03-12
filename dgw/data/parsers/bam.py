@@ -166,14 +166,15 @@ def read_bam(alignment_filenames, regions, resolution=50, extend_to=200, data_fi
 
     dataset = {}
 
+    if reverse_negative_strand_regions:
+        if not dataset_regions.has_strand_data:
+            raise ValueError('reverse_negative_strand_regions is set to true, yet the regions provided have no strand information.')
+
     for index, region in dataset_regions.iterrows():
         chromosome = region['chromosome']
         start = region['start']
         end = region['end']
         if reverse_negative_strand_regions:
-            if not region.has_strand_data:
-                raise ValueError('reverse_negative_strand_regions is set to true, yet the regions provided have no strand information.')
-
             strand = region['strand']
 
         data_arr = np.empty((max_len, len(samfiles)))

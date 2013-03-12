@@ -221,6 +221,7 @@ def main():
     print '> Reading regions from {0!r} ....'.format(args.regions)
     regions, total_regions, used_regions = read_regions(args.regions, args.random_sample, args.resolution)
     if args.use_strand_information and not regions.has_strand_data():
+        logging.debug('Parsed columns: {0}'.format(regions.columns))
         parser.error('--use-strand-information is set but the input BED file has no strand information.')
 
     too_short_regions = (regions.lengths / args.resolution) < args.min_bins  # Set the threshold to 4 bins
@@ -334,6 +335,7 @@ def main():
         if args.no_dtw:
             print '> Not using DTW as --no-dtw option is set'
 
+        logging.debug('Running DTW with the following kwargs: {0!r}'.format(configuration.dtw_kwargs))
         start = datetime.now()
         dm = parallel_pdist(dataset, args.n_processes, **configuration.dtw_kwargs)
         end = datetime.now()

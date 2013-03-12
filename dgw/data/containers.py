@@ -356,7 +356,7 @@ class Regions(object):
 
             b = np.array(range(min_bin, max_bin+1))
 
-            if not account_for_strand_information or other.strand == '+':
+            if not account_for_strand_information or other['strand'] == '+':
                 bins[ix] = b
             else:
                 bins[ix] = sorted((n_bins - 1) - b)
@@ -388,12 +388,12 @@ class Regions(object):
         elif resolution <= 0:
             raise ValueError('Resolution should be > 0 ({0!r} given)'.format(resolution))
 
-        self_with_lens = self.data.join(self.lengths)
-
+        lengths = self.lengths
         new_regions_data = []
 
-        for ix, row in self_with_lens.iterrows():
-            remainder = row['length'] % resolution
+        for ix, row in self.iterrows():
+            length = lengths.ix[ix]
+            remainder = length % resolution
 
             if remainder == 0:
                 offset_needed = 0
@@ -412,7 +412,7 @@ class Regions(object):
 
             row['end'] += add_right
 
-            new_regions_data.append(row[['chromosome', 'start', 'end']])
+            new_regions_data.append(row)
 
         df = pd.DataFrame(new_regions_data, index=self.index)
         return Regions(df)

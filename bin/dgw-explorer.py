@@ -55,7 +55,8 @@ def main():
             print '> Reading points of interest from {0!r}'.format(poi_file)
             poi = Regions.from_bed(poi_file)
             poi = poi.as_bins_of(regions, resolution=configuration.resolution,
-                                 ignore_non_overlaps=args.ignore_poi_non_overlaps)
+                                 ignore_non_overlaps=args.ignore_poi_non_overlaps,
+                                 account_for_strand_information=configuration.use_strand_information)
 
             dataset.add_points_of_interest(poi, name=poi_file)
             try:

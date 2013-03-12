@@ -65,11 +65,13 @@ class Configuration(object):
             self._dtw_kwargs = self._dtw_kwargs_from_args(args)
             self._prototyping_method = args.prototyping_method
             self._resolution = args.resolution
+            self._use_strand_information = args.use_strand_information
         else:
             self.FILENAMES = initial_variables['FILENAMES']
             self._dtw_kwargs = initial_variables['dtw_kwargs']
             self._prototyping_method = initial_variables['prototyping_method']
             self._resolution = initial_variables['resolution']
+            self._use_strand_information = initial_variables['use_strand_information']
 
     @property
     def directory(self):
@@ -82,6 +84,10 @@ class Configuration(object):
     @property
     def resolution(self):
         return self._resolution
+
+    @property
+    def use_strand_information(self):
+        return self._use_strand_information
 
     def _generate_filenames_from_prefix_and_args(self, prefix, args):
         """
@@ -217,7 +223,8 @@ class Configuration(object):
         data = {'FILENAMES': self.FILENAMES,
                 'dtw_kwargs': self.dtw_kwargs,
                 'prototyping_method': self._prototyping_method,
-                'resolution': self._resolution}
+                'resolution': self._resolution,
+                'use_strand_information' : self._use_strand_information}
 
         return json.dump(data, file)
 
