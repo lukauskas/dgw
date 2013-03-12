@@ -185,8 +185,16 @@ dgw-worker.py -r tss_regions.bed -poi first_splicing_site_locations.bed  -d wgEn
 The regions in `first_splicing_site_locations.bed` must have the same names as the regions in `tss_regions.bed` otherwise DGW won't be able to match them. Also have a look at `--ignore-poi-non-overlaps` id some of the regions in the input file may not contain some of the regions listed as points of interest.
 Similarly, `--ignore-no-poi-regions` will make DGW ignore those regions in input file that do not contain any of the points of interest provided.
 
-## `dgw-explorer`
+### Runtime
+Please note that DGW Worker is a very computationally-demanding piece of software.
+It is designed to be used on a performant computer with as much CPU cores as possible.
 
+A good way to estimate how long will the computation take on your machine is to use `--random-sample` parameter, e.g. pass `--random-sample 1000`.
+This parameter will take only a random sample of N regions, where N is the provided number (e.g. 1000). 
+The DGW worker will work on this random sample and report you both the time it took to compute the pairwise distances
+on the random sample, and the estimated time to compute them on the full sample. 
+
+Prototype estimation and DTW projections onto prototypes will take around an extra 50% of time taken for pairwise distance calculations.
 
 
 
