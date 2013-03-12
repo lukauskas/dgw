@@ -47,7 +47,7 @@ def main():
     regions = configuration.load_regions()
     dataset = configuration.load_dataset()
 
-    standard_highlight_colours = ["k", "w"]
+    standard_highlight_colours = ["w", "k"]
     highlight_colours = {}
     if args.points_of_interest:
         dataset.reset_poi()
