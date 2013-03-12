@@ -14,7 +14,7 @@ def points_mapped_to(points_on_original_sequence, dtw_path, sequence_a=True):
     """
     Returns all indices on the sequence b that are mapped to the index on sequence_a provided.
 
-    :param point_on_original_sequence: index of a point on original sequence
+    :param points s_on_original_sequence: index of a point on original sequence
     :param dtw_path: DTW warping path between `sequence_a` and `sequence_b`
     :param sequence_a: whether the query point is on `sequence_a` or not. (Will swap sequences otherwise)
     :return:

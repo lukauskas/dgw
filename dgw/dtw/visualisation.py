@@ -100,7 +100,7 @@ def plot_dtw_path(path, ax=None, *args, **kwargs):
 
     plot = ax.plot(path[0], path[1], *args, **kwargs)
 
-def visualise_dtw(sequence_x, sequence_y, dtw_function=dtw_std):
+def visualise_dtw(sequence_x, sequence_y, dtw_function=dtw_std, *args, **kwargs):
     """
     Visualises the DTW distance calculation between sequences x and y using the dtw fucntion provided
     
@@ -110,4 +110,4 @@ def visualise_dtw(sequence_x, sequence_y, dtw_function=dtw_std):
     :return:
     """
     dist, cost, path = dtw_function(sequence_x, sequence_y, dist_only=False)
-    plot_dtw_sequences_dist_cost_and_path(sequence_x, sequence_y, dist, cost, path)
+    plot_dtw_sequences_dist_cost_and_path(sequence_x, sequence_y, dist, cost, path, *args, **kwargs)

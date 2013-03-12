@@ -5,6 +5,8 @@ from matplotlib.patches import Rectangle
 import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
 from matplotlib.widgets import Button
+from dgw.dtw.visualisation import visualise_dtw
+
 
 class ClusterPreviewer(object):
     _clusters = None
@@ -20,7 +22,8 @@ class ClusterPreviewer(object):
     _enlarged_heatmap_axis = None
     _enlarged_projected_heatmap_axis = None
 
-    def __init__(self, cluster_roots, output_directory, configuration_filename, cut_level, highlight_colours=None):
+
+    def __init__(self, cluster_roots, output_directory, configuration_filename, cut_level, dtw_function, highlight_colours=None):
         self.output_directory = output_directory
         self.cut_level = cut_level
         self.configuration_filename = configuration_filename
@@ -29,6 +32,8 @@ class ClusterPreviewer(object):
         self._initialise_grid()
 
         self._current_cluster_id = 0
+
+        self.dtw_function = dtw_function
 
         debug('Calculating projections')
         self._add_save_button = True
@@ -194,12 +199,13 @@ class ClusterPreviewer(object):
     def _plot_item_in_figure(self, index):
         data = self.current_cluster().data.ix[index]
         projected_data = self.current_cluster().projected_data.ix[index]
+        prototype = self.current_cluster().prototype
 
         poi = self.current_cluster().points_of_interest.get(index, {})
         tracked_poi = self.current_cluster().tracked_points_of_interest.get(index, {})
 
         plt.figure()
-        ax1 = plt.subplot(2, 1, 1)
+        ax1 = plt.subplot(3, 1, 1)
         data.plot(ax=ax1, legend=False)
         plt.figlegend(*ax1.get_legend_handles_labels(), loc='lower center')
         if poi:
@@ -213,23 +219,30 @@ class ClusterPreviewer(object):
                     ax1.add_patch(Rectangle((point, lim_min + (height*items_on_current_point)), width=1, height=height, facecolor=colour, edgecolor='k'))
                     points_plotted_on[point] += 1
         plt.title('Original')
-        ax2 = plt.subplot(2, 1, 2)
-        projected_data.plot(ax=ax2, legend=False)
+
+        ax2 = plt.subplot(3, 1, 2)
+        prototype.plot(ax=ax2, legend=False)
+        plt.title('Prototype')
+
+        ax3 = plt.subplot(3, 1, 3)
+        projected_data.plot(ax=ax3, legend=False)
 
         if tracked_poi:
-            lim_min, lim_max = ax2.get_ylim()
+            lim_min, lim_max = ax3.get_ylim()
             height = (lim_max - lim_min) / 20
             points_plotted_on = defaultdict(lambda: 0)
             for key, value in tracked_poi.iteritems():
                 colour = self.highlight_colours[key]
                 for point in value:
                     items_on_current_point = points_plotted_on[point]
-                    ax2.add_patch(Rectangle((point, lim_min + (height*items_on_current_point)), width=1, height=height, facecolor=colour, edgecolor='k'))
+                    ax3.add_patch(Rectangle((point, lim_min + (height*items_on_current_point)), width=1, height=height, facecolor=colour, edgecolor='k'))
                     points_plotted_on[point] += 1
 
         plt.title('Warped')
-
         plt.suptitle(index)
+
+        plt.figure()
+        visualise_dtw(data.values, prototype, dtw_function=self.dtw_function)
 
 
 
@@ -384,7 +397,7 @@ class HierarchicalClusteringViewer(object):
 
         # Else, if we have clusters
         pw = ClusterPreviewer(self.clusters, self.output_directory, self.configuration_file, self._cut_xdata,
-                              highlight_colours=self.highlight_colours)
+                              highlight_colours=self.highlight_colours, dtw_function=self.hierarchical_clustering_object.dtw_function)
         pw.show()
 
     def _callback_save(self, event):
