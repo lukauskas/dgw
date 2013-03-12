@@ -171,6 +171,14 @@ class AlignmentsData(object):
         ad.points_of_interest = self.points_of_interest
         return ad
 
+    def normalise_bin_heights(self):
+        data = {}
+        for ix, data_row in self.data.iteritems():
+            data[ix] = data_row / data_row.max()
+
+        data = pd.Panel(data)
+        return self.__class__(data)
+
     def plot_heatmap(self, *args, **kwargs):
         """
         Plots heatmap of the data stored in the panel.

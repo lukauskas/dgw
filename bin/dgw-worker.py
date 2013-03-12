@@ -91,6 +91,9 @@ def argument_parser():
     preprocessing_group = parser.add_argument_group('Preprocessing')
     preprocessing_group.add_argument('-mp', '--min-pileup', metavar='H', type=int, default=10,
                         help='Only cluster these regions that have at least one bin that contains H or more reads. ')
+    preprocessing_group.add_argument('--normalise-pileups', action='store_const', const=True, default=False,
+                                     help='Normalise the number of elements in the bins by dividing them by the number of reads '
+                                          'falling into the bin with the largest reads.')
 
 
     preprocessing_group.add_argument('--output-pairwise-distances', action='store_const', const=True, default=False,
@@ -104,6 +107,8 @@ def argument_parser():
     preprocessing_group.add_argument('--max-bins', default=1000, help='Specifies the maximum length of region in bins '
                                                           'in order for it to be processed',
                         type=int)
+
+
 
 
 
@@ -278,6 +283,10 @@ def main():
             serialise(dataset, configuration.raw_dataset_filename)
 
         dataset = dataset.to_log_scale()
+
+        if args.normalise_pileups:
+            print '> Dividing the number of reads in each bin by the maximum number of reads per region as --normalise-pileups is set'
+            dataset = dataset.normalise_bin_heights()
 
 
     else:
