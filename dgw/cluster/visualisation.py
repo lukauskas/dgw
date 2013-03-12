@@ -1,5 +1,7 @@
-from logging import debug
+from collections import defaultdict
+from logging import debug, error
 import os
+from matplotlib.patches import Rectangle
 import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
 from matplotlib.widgets import Button
@@ -12,6 +14,12 @@ class ClusterPreviewer(object):
     root_window = None
     _add_save_button = None
     _buttons = None
+
+    _ax_heatmap = None
+    _ax_projected_heatmap = None
+    _enlarged_heatmap_axis = None
+    _enlarged_projected_heatmap_axis = None
+
     def __init__(self, cluster_roots, output_directory, configuration_filename, cut_level, highlight_colours=None):
         self.output_directory = output_directory
         self.cut_level = cut_level
@@ -44,6 +52,15 @@ class ClusterPreviewer(object):
     def gs_heatmap(self):
         return self._main_gs[2, :]
 
+    def ax_heatmap(self):
+        if self._ax_heatmap is None:
+            self._ax_heatmap = plt.subplot(self.gs_heatmap())
+        return self._ax_heatmap
+
+    def ax_projected_heatmap(self):
+        if self._ax_projected_heatmap is None:
+            self._ax_projected_heatmap = plt.subplot(self.gs_projected_heatmap())
+        return self._ax_projected_heatmap
 
     def _initialise_grid(self):
         self._main_gs = gridspec.GridSpec(5, 2, height_ratios=[1, 40, 20, 20, 4], hspace=0.4)
@@ -134,17 +151,25 @@ class ClusterPreviewer(object):
     def _plot_regular_heatmap_on_figure(self, cluster):
         f = plt.figure(figsize=(11.7, 8.3))
         plt.subplots_adjust(left=0.05, bottom=0.05, top=0.95, right=0.95)
+        self._enlarged_heatmap_axis = plt.gca()
+
         cluster.data.plot_heatmap(horizontal_grid=True,
                                           sort_by=None, highlighted_points=cluster.points_of_interest, highlight_colours=self.highlight_colours)
 
+        f.canvas.mpl_connect('button_press_event', self._onclick_listener)
         return f
 
     def _plot_projected_heatmap_on_figure(self, cluster):
         f = plt.figure(figsize=(11.7, 8.3))
         plt.subplots_adjust(left=0.05, bottom=0.05, top=0.95, right=0.95)
+        self._enlarged_projected_heatmap_axis = plt.gca()
+
         cluster.projected_data.plot_heatmap(horizontal_grid=True,
                                                     sort_by=None, highlighted_points=cluster.tracked_points_of_interest,
                                                     highlight_colours=self.highlight_colours)
+
+        f.canvas.mpl_connect('button_press_event', self._onclick_listener)
+
         return f
 
     def _enlarge_heatmap(self, event):
@@ -166,6 +191,64 @@ class ClusterPreviewer(object):
         self.add_button('Enlarge heatmap', self._enlarge_heatmap)
         self.add_button('Enlarge DTW heatmap', self._enlarge_dtw_heatmap)
 
+    def _plot_item_in_figure(self, index):
+        data = self.current_cluster().data.ix[index]
+        projected_data = self.current_cluster().projected_data.ix[index]
+
+        poi = self.current_cluster().points_of_interest.get(index, {})
+        tracked_poi = self.current_cluster().tracked_points_of_interest.get(index, {})
+
+        plt.figure()
+        ax1 = plt.subplot(2, 1, 1)
+        data.plot(ax=ax1, legend=False)
+        plt.figlegend(*ax1.get_legend_handles_labels(), loc='lower center')
+        if poi:
+            lim_min, lim_max = ax1.get_ylim()
+            height = (lim_max - lim_min) / 20
+            points_plotted_on = defaultdict(lambda: 0)
+            for key, value in poi.iteritems():
+                colour = self.highlight_colours[key]
+                for point in value:
+                    items_on_current_point = points_plotted_on[point]
+                    ax1.add_patch(Rectangle((point, lim_min + (height*items_on_current_point)), width=1, height=height, facecolor=colour, edgecolor='k'))
+                    points_plotted_on[point] += 1
+        plt.title('Original')
+        ax2 = plt.subplot(2, 1, 2)
+        projected_data.plot(ax=ax2, legend=False)
+
+        if tracked_poi:
+            lim_min, lim_max = ax2.get_ylim()
+            height = (lim_max - lim_min) / 20
+            points_plotted_on = defaultdict(lambda: 0)
+            for key, value in tracked_poi.iteritems():
+                colour = self.highlight_colours[key]
+                for point in value:
+                    items_on_current_point = points_plotted_on[point]
+                    ax2.add_patch(Rectangle((point, lim_min + (height*items_on_current_point)), width=1, height=height, facecolor=colour, edgecolor='k'))
+                    points_plotted_on[point] += 1
+
+        plt.title('Warped')
+
+        plt.suptitle(index)
+
+
+
+    def _onclick_listener(self, event):
+        if not self.ax_heatmap().contains(event)[0] and not self.ax_projected_heatmap().contains(event)[0]:
+           if (self._enlarged_heatmap_axis is None or not self._enlarged_heatmap_axis.contains(event)[0]) and \
+               (self._enlarged_projected_heatmap_axis is None or not self._enlarged_projected_heatmap_axis.contains(event)[0]):
+               return
+
+        if event.ydata is None or event.button != 3:
+            return
+
+        ylabel = event.inaxes.yaxis.get_major_formatter()(event.ydata)
+        try:
+            self._plot_item_in_figure(ylabel)
+            plt.show()
+        except Exception, e:
+            error('Something went wrong when plotting {0!r}, got: {1!r}'.format(ylabel, e))
+            return
 
     def draw(self):
 
@@ -183,6 +266,7 @@ class ClusterPreviewer(object):
 
         plt.subplot(self.gs_heatmap())
         plt.cla()
+        self._ax_heatmap = plt.gca()
 
         shared_axis = current_cluster.data.plot_heatmap(horizontal_grid=True, subplot_spec=self.gs_heatmap(),
                                                         sort_by=None, highlighted_points=current_cluster.points_of_interest,
@@ -196,8 +280,9 @@ class ClusterPreviewer(object):
         plt.title('Average DTW projection onto prototype')
         projections.mean().plot(ax=ax_projections, legend=False)
 
-        ax_projected_heatmap = plt.subplot(self.gs_projected_heatmap())
+        plt.subplot(self.gs_projected_heatmap())
         plt.cla()
+        self._ax_projected_heatmap = plt.gca()
         current_cluster.projected_data.plot_heatmap(horizontal_grid=True, subplot_spec=self.gs_projected_heatmap(),
                                                     share_y_axis=shared_axis, sort_by=None,
                                                     highlighted_points=current_cluster.tracked_points_of_interest,
@@ -209,9 +294,10 @@ class ClusterPreviewer(object):
 
     def show(self):
         # A5 Paper size
-        plt.figure(num=None, figsize=(12, 10), facecolor='w', edgecolor='k')
+        self._figure = plt.figure(num=None, figsize=(12, 10), facecolor='w', edgecolor='k')
         self.title = plt.suptitle("") # Create text object for title
         self.create_buttons()
+        self._figure.canvas.mpl_connect('button_press_event', self._onclick_listener)
         self.draw()
         plt.show()
 
