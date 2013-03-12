@@ -195,9 +195,20 @@ class ClusterPreviewer(object):
 
         # Pandas tend to crash if subplots is True when only one dimension
         number_poi_collections = len(current_cluster.points_of_interest_histogram.columns)
-        current_cluster.points_of_interest_histogram.plot(kind='bar', subplots=(number_poi_collections > 1))
+        axes = current_cluster.points_of_interest_histogram.plot(kind='bar', subplots=(number_poi_collections > 1))
+        if number_poi_collections == 1:
+            axes = [axes]
+        for ax in axes:
+            ax.set_ylabel('Number of regions')
+        plt.xlabel('Bin')
         plt.suptitle('Original points of interest')
-        current_cluster.tracked_points_histogram.plot(kind='bar', subplots=(number_poi_collections > 1))
+        axes = current_cluster.tracked_points_histogram.plot(kind='bar', subplots=(number_poi_collections > 1))
+        if number_poi_collections == 1:
+            axes = [axes]
+        for ax in axes:
+            ax.set_ylabel('Number of regions')
+
+        plt.xlabel('Warped bin')
         plt.suptitle('Warped points of interest')
         plt.show()
 

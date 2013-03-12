@@ -58,9 +58,10 @@ def main():
                                  ignore_non_overlaps=args.ignore_poi_non_overlaps,
                                  account_for_strand_information=configuration.use_strand_information)
 
-            dataset.add_points_of_interest(poi, name=poi_file)
+            poi_filename = os.path.basename(poi_file)
+            dataset.add_points_of_interest(poi, name=poi_filename)
             try:
-                highlight_colours[poi_file] = standard_highlight_colours.pop()
+                highlight_colours[poi_filename] = standard_highlight_colours.pop()
             except IndexError:
                 raise Exception("Sorry, only up to {0} POI regions are supported".format(len(standard_highlight_colours)))
     else:
