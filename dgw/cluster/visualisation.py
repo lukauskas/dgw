@@ -187,9 +187,11 @@ class ClusterPreviewer(object):
 
     def _view_poi_histogram(self, event):
         current_cluster = self.current_cluster()
-        current_cluster.points_of_interest_histogram.plot(kind='bar', subplots=True)
+        # Pandas tend to crash if subplots is True when only one dimension
+        number_poi_collections = len(current_cluster.points_of_interest_histogram.columns)
+        current_cluster.points_of_interest_histogram.plot(kind='bar', subplots=(number_poi_collections > 1))
         plt.suptitle('Original points of interest')
-        current_cluster.tracked_points_histogram.plot(kind='bar', subplots=True)
+        current_cluster.tracked_points_histogram.plot(kind='bar', subplots=(number_poi_collections > 1))
         plt.suptitle('Warped points of interest')
         plt.show()
 
