@@ -306,6 +306,29 @@ class Regions(object):
         series.name = 'length'
         return series
 
+    def contained_within(self, other_region):
+        """
+        Returns all regions that are contained within other region.
+        Returns only those regions that are fully contained within the query region.
+
+        :param other_region: The region that regions will be checked to be inside
+        :type other_region: `pd.Series`
+        :return:
+        """
+        return self[(self.chromosome == other_region['chromosome'])
+                    & (self.start >= other_region['start'])
+                    & (self.end <= other_region['end'])]
+
+    def as_printable_list_of_pois(self):
+
+        printable_list = ""
+        for ix, row in self.iterrows():
+            if printable_list:
+                printable_list += ','
+            printable_list += ','.join(map(str, range(row['start'], row['end'])))
+
+        return printable_list
+
     def regions_not_in_dataset(self, dataset):
         """
         Returns all regions that are not in the dataset provided.
