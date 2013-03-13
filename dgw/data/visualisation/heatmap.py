@@ -1,6 +1,7 @@
 from __future__ import print_function
 from collections import defaultdict
 from logging import debug
+from math import ceil
 import matplotlib.pyplot as plt
 from matplotlib import cm
 from matplotlib.ticker import FuncFormatter, IndexLocator
@@ -25,7 +26,7 @@ def dataset_ticks(dataset, scale=1):
 
     def f(tick, pos):
         try:
-            return dataset.items[int(tick / scale)]
+            return dataset.items[int((tick / scale) + 0.5)]
         except IndexError:
             return ''
 
