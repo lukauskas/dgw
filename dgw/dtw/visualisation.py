@@ -39,7 +39,7 @@ def plot_dtw_sequences_dist_cost_and_path(sequence_x, sequence_y, dist, cost_mat
     """
 
     # Based on: http://matplotlib.org/examples/pylab_examples/scatter_hist.html
-
+    figure = plt.figure()
     null_fmt = NullFormatter()         # no labels
 
     # definitions for the axes
@@ -84,8 +84,7 @@ def plot_dtw_sequences_dist_cost_and_path(sequence_x, sequence_y, dist, cost_mat
     # Add test showing the value of dist
     plt.figtext(text_pos_x, text_pos_y, 'Distance:\n{0:.5f}'.format(dist), size='medium')
 
-    return ax_cost, ax_sequence_x, ax_sequence_y
-
+    return figure
 
 def plot_dtw_path(path, ax=None, *args, **kwargs):
     """
@@ -112,10 +111,10 @@ def visualise_dtw(sequence_x, sequence_y, dtw_function=dtw_std, *args, **kwargs)
     :return:
     """
     dist, cost, path = dtw_function(sequence_x, sequence_y, dist_only=False)
-    plot_dtw_sequences_dist_cost_and_path(sequence_x, sequence_y, dist, cost, path, *args, **kwargs)
+    return plot_dtw_sequences_dist_cost_and_path(sequence_x, sequence_y, dist, cost, path, *args, **kwargs)
 
-def visualise_dtw_mappings(sequence_x, sequence_y, dtw_function=dtw_std, columns=None, title=None, sequence_a_label=None,
-                           sequence_b_label=None):
+def visualise_dtw_mappings(sequence_x, sequence_y, dtw_function=dtw_std, columns=None, title=None, sequence_x_label=None,
+                           sequence_y_label=None):
 
     def major_tick_step(ax, axis):
         if axis == 'x':
@@ -169,7 +168,7 @@ def visualise_dtw_mappings(sequence_x, sequence_y, dtw_function=dtw_std, columns
     sequence_y_T = np.atleast_2d(sequence_y.T)
     sequence_x_T = np.atleast_2d(sequence_x.T)
 
-    if not columns and ndim > 1:
+    if columns is not None and ndim > 1:
         columns = ['Dimension #{0}'.format(i) for i in range(1, ndim+1)]
     elif ndim > 1:
         if len(columns) != ndim:
@@ -183,6 +182,7 @@ def visualise_dtw_mappings(sequence_x, sequence_y, dtw_function=dtw_std, columns
     for i in range(ndim):
         x = sequence_x_T[i]
         y = sequence_y_T[i]
+
 
         ax2 = plt.subplot(2, ndim, ndim + i + 1, sharey=main_y_axis, sharex=xaxes_warped[i])
         ax2.plot(y, color='g')
@@ -228,7 +228,7 @@ def visualise_dtw_mappings(sequence_x, sequence_y, dtw_function=dtw_std, columns
     lines = xaxes_regular[0].get_lines()
     lines.extend(xaxes_warped[0].get_lines())
 
-    if sequence_a_label and sequence_b_label:
-        plt.figlegend(lines, (sequence_a_label, sequence_b_label), 'lower center')
+    if sequence_x_label and sequence_y_label:
+        plt.figlegend(lines, (sequence_x_label, sequence_y_label), 'lower center')
 
     return figure
