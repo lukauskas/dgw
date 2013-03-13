@@ -511,7 +511,7 @@ class Genes(Regions):
                 end = np.nan
 
             new_df.append({'chromosome': chromosome, 'start': start, 'end': end, 'strand': strand})
-        new_df = pd.DataFrame(new_df, index=self.index)
+        new_df = pd.DataFrame(new_df, index=self.index).dropna()
         return Regions(new_df)
 
     @classmethod
