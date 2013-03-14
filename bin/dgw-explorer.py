@@ -11,8 +11,7 @@ from dgw.cluster import add_path_data
 import dgw.cluster.visualisation
 from dgw.data.containers import Regions
 import logging
-
-
+from dgw.data.parsers.pois import from_simple
 
 
 def argument_parser():
@@ -53,10 +52,14 @@ def main():
         dataset.reset_poi()
         for i, poi_file in enumerate(args.points_of_interest):
             print '> Reading points of interest from {0!r}'.format(poi_file)
-            poi = Regions.from_bed(poi_file)
-            poi = poi.as_bins_of(regions, resolution=configuration.resolution,
-                                 ignore_non_overlaps=args.ignore_poi_non_overlaps,
-                                 account_for_strand_information=configuration.use_strand_information)
+
+            try:
+                poi = from_simple(poi_file, regions)
+            except ValueError:
+                poi = Regions.from_bed(poi_file)
+                poi = poi.as_bins_of(regions, resolution=configuration.resolution,
+                                     ignore_non_overlaps=args.ignore_poi_non_overlaps,
+                                     account_for_strand_information=configuration.use_strand_information)
 
             poi_filename = os.path.basename(poi_file)
             dataset.add_points_of_interest(poi, name=poi_filename)

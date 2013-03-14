@@ -1,6 +1,8 @@
 from logging import debug
 import pandas as pd
 import numpy as np
+from dgw.data.parsers.pois import map_to_bins
+
 
 class AlignmentsDataIndexer(object):
     """
@@ -363,26 +365,17 @@ class Regions(object):
             except KeyError:
                 continue
 
-            other_start = other['start']
-            other_end = other['end']
             other_chromosome = other['chromosome']
 
-            if current_chromosome != other_chromosome or (other_end <= current_start) or (other_start > current_end):
+            if current_chromosome != other_chromosome:
                 if ignore_non_overlaps:
                     continue
                 else:
                     raise ValueError('Points of interest do not overlap with regions of interest. Failed ix:{0!r}'.format(ix))
 
-            n_bins = (other_end - other_start) / resolution
-            min_bin = max(0, (current_start - other_start) / resolution)
-            max_bin = min(n_bins - 1, (current_end - 1 - other_start) / resolution)
-
-            b = np.array(range(min_bin, max_bin+1))
-
-            if not account_for_strand_information or other['strand'] == '+':
-                bins[ix] = b
-            else:
-                bins[ix] = sorted((n_bins - 1) - b)
+            bins[ix] = map_to_bins(range(current_start, current_end), other, resolution=resolution,
+                                   ignore_non_overlaps=ignore_non_overlaps,
+                                   account_for_strand_information=account_for_strand_information)
 
         return bins
 
