@@ -56,6 +56,7 @@ def main():
             try:
                 poi = from_simple(poi_file, regions)
             except ValueError:
+                
                 poi = Regions.from_bed(poi_file)
                 poi = poi.as_bins_of(regions, resolution=configuration.resolution,
                                      ignore_non_overlaps=args.ignore_poi_non_overlaps,

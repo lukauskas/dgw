@@ -59,7 +59,7 @@ def from_simple(poi_file, main_regions, resolution=50, ignore_non_overlaps=False
             except ValueError:
                 raise ValueError('Not a valid poi file in simple format')
 
-            pois = map(int, pois.split(','))
+            pois = map(int, pois.replace(' ', '').split(','))
 
             try:
                 main_region = main_regions.ix[ix]
@@ -71,8 +71,8 @@ def from_simple(poi_file, main_regions, resolution=50, ignore_non_overlaps=False
             bins = map_to_bins(pois, main_region, resolution=resolution, ignore_non_overlaps=ignore_non_overlaps,
                                account_for_strand_information=account_for_strand_information)
 
-            if bins:
-                poi_dict[bins] = bins
+            if len(bins) > 0:
+                poi_dict[ix] = bins
         return poi_dict
     finally:
         if need_closing:
