@@ -1,7 +1,8 @@
 from mlpy.dtw import dtw_std as mlpy_dtw_std
 import numpy as np
 from dgw.dtw.scaling import uniform_scaling_to_length
-from dgw.dtw.utilities import _strip_nans, no_nans_len
+from dgw.dtw.utilities import _strip_nans, no_nans_len, reverse_sequence
+
 
 def parametrised_dtw_wrapper(*dtw_args, **dtw_kwargs):
     """
@@ -84,7 +85,7 @@ def dtw_std(x, y, metric='sqeuclidean', dist_only=True, constraint=None, k=None,
 
             return dist, cost, path
     else:
-        reverse_ans = mlpy_dtw_std(x[::-1], y, metric=metric, dist_only=dist_only, constraint=constraint, k=k, *args, **kwargs)
+        reverse_ans = mlpy_dtw_std(reverse_sequence(x), y, metric=metric, dist_only=dist_only, constraint=constraint, k=k, *args, **kwargs)
         if dist_only:
             return _normalise(min(regular_ans, reverse_ans), max_len)
         elif reverse_ans[0] >= regular_ans[0]:

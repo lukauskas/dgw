@@ -5,7 +5,7 @@ import numpy as np
 from numpy.testing import *
 
 from dgw.dtw.distance import dtw_std
-from dgw.dtw.utilities import _strip_nans
+from dgw.dtw.utilities import _strip_nans, reverse_sequence
 
 
 class TestStripNans(unittest.TestCase):
@@ -34,6 +34,24 @@ class TestStripNans(unittest.TestCase):
 
         x = np.array([[1,2,3,4,5,np.nan], [7,8,9,10,11,np.nan], [13,14,15,16,np.nan,18]], dtype=float).T
         self.assertRaises(ValueError, _strip_nans, x)
+
+class TestReverse(unittest.TestCase):
+
+    def test_single_dimension(self):
+        a = np.array([1,2,3,4,5,6])
+        assert_array_equal(np.array([6,5,4,3,2,1]), reverse_sequence(a))
+
+    def test_multi_dimension(self):
+        a = np.array([[1, 2], [3,4], [5,6]])
+        assert_array_equal(np.array([[5,6], [3,4], [1,2]]), reverse_sequence(a))
+
+    def test_single_dimension_with_nans_appended(self):
+        a = np.array([1,2,3,4,np.nan, np.nan])
+        assert_array_equal(np.array([4, 3, 2, 1, np.nan, np.nan]), reverse_sequence(a))
+
+    def test_multi_dimension_with_nans_appended(self):
+        a = np.array([[1,2],[3,4],[np.nan, np.nan]])
+        assert_array_equal(np.array([[3,4],[1,2], [np.nan, np.nan]]), reverse_sequence(a))
 
 class TestDTWStd(unittest.TestCase):
 
@@ -95,7 +113,7 @@ class TestDTWStd(unittest.TestCase):
         b = np.array([[10,12,14], [13,15,17]]).T
 
         #Reverse:
-        b = b[::-1]
+        b = reverse_sequence(b)
 
         # DTW should match the points:
         # (1,7) to (10,13) (distance: sqrt(81 + 36 = 117))

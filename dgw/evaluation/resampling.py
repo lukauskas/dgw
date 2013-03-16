@@ -1,7 +1,7 @@
 from collections import defaultdict
 import numpy as np
 from ..data.containers import AlignmentsData
-from dgw.dtw.utilities import no_nans_len
+from dgw.dtw.utilities import no_nans_len, reverse_sequence
 import random
 import pandas as pd
 
@@ -100,7 +100,7 @@ def randomly_warp_sequence(sequence, max_number_of_extensions=10, max_number_of_
     if may_reverse:
         flip = random.choice([True, False])
         if flip:
-            sequence = sequence[::-1]
+            sequence = reverse_sequence(sequence)
 
     return sequence
 

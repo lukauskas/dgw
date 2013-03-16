@@ -1,6 +1,7 @@
 # coding=utf-8
 from itertools import imap
 from dgw.data.parsers.filters import MinNumberOfReadsFilter
+from dgw.dtw import reverse_sequence
 
 __author__ = 'saulius'
 from logging import debug
@@ -189,7 +190,7 @@ def read_bam(alignment_filenames, regions, resolution=50, extend_to=200, data_fi
                 raise IOError('Could not read {0}:{1}-{2} from {4}, got: {3!r}'.format(chromosome, start, end, e, alignment_filenames[i]))
 
             if reverse_negative_strand_regions and strand == '-':
-                region_data = region_data[::-1]
+                region_data = reverse_sequence(region_data)
 
             padding = [np.nan] * (max_len - len(region_data))
             data_arr[:, i] = np.concatenate((region_data, padding))

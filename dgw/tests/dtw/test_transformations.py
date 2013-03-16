@@ -3,7 +3,7 @@ import unittest
 import numpy as np
 from numpy.testing import assert_array_equal, assert_array_almost_equal
 
-from dgw.dtw import parametrised_dtw_wrapper, uniform_scaling_to_length
+from dgw.dtw import parametrised_dtw_wrapper, uniform_scaling_to_length, reverse_sequence
 from dgw.dtw.scaling import uniform_shrinking_to_length
 from dgw.dtw.transformations import *
 
@@ -270,7 +270,7 @@ class TestProjection(unittest.TestCase):
 
         dtw_function = parametrised_dtw_wrapper(try_reverse=True)
         ans_norm = dtw_projection(a, b, dtw_function)
-        ans_reverse = dtw_projection(a[::-1], b, dtw_function)
+        ans_reverse = dtw_projection(reverse_sequence(a), b, dtw_function)
 
         assert_array_almost_equal(ans_norm, ans_reverse)
 
@@ -280,9 +280,9 @@ class TestProjection(unittest.TestCase):
 
         dtw_function = parametrised_dtw_wrapper(try_reverse=True)
         ans_norm = dtw_projection(a, b, dtw_function)
-        ans_reverse = dtw_projection(a, b[::-1], dtw_function)
+        ans_reverse = dtw_projection(a, reverse_sequence(b), dtw_function)
 
-        assert_array_equal(ans_norm[::-1], ans_reverse)
+        assert_array_equal(reverse_sequence(ans_norm), ans_reverse)
 
 class TestSdtwAveraging(unittest.TestCase):
 

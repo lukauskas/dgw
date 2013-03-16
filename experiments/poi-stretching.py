@@ -5,7 +5,7 @@ import cPickle as pickle
 import random
 import matplotlib.pyplot as plt
 from dgw.data.containers import AlignmentsData
-from dgw.dtw import uniform_scaling_to_length
+from dgw.dtw import uniform_scaling_to_length, reverse_sequence
 from dgw.evaluation.resampling import mutate_sequence
 import numpy as np
 import pandas as pd
@@ -97,8 +97,8 @@ def generate_new_dataset(dataset, desired_size, max_stretch_length=20, reverse_r
         new_ix = '{0}-{1}'.format(item, new_i)
 
         if reverse_randomly and random.choice([True, False]):
-            new_data = new_data[::-1]
-            new_poi = (len(new_data) - 1 - new_poi)[::-1]
+            new_data = reverse_sequence(new_data)
+            new_poi = reverse_sequence((len(new_data) - 1 - new_poi))
             new_ix += 'r'
 
 

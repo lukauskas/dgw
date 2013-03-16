@@ -3,6 +3,7 @@ import matplotlib.pyplot as plt
 import matplotlib.cm as cm
 from matplotlib.ticker import NullFormatter
 import numpy as np
+from dgw.dtw import reverse_sequence
 
 from distance import dtw_std
 
@@ -159,9 +160,10 @@ def visualise_dtw_mappings(sequence_x, sequence_y, dtw_function=dtw_std, columns
 
     if path[0][0] != 0:
         reversed = True
-        sequence_x = sequence_x[::-1]
+        sequence_x = reverse_sequence(sequence_x)
         path_x = np.max(path[0]) - path[0]
-        path = (path_x, path[1])
+        path_y = path[1]
+        path = (path_x, path_y)
     else:
         reversed = False
 
@@ -181,6 +183,7 @@ def visualise_dtw_mappings(sequence_x, sequence_y, dtw_function=dtw_std, columns
     figure.subplots_adjust(wspace=0.01, hspace=0.1)
     for i in range(ndim):
         x = sequence_x_T[i]
+        print x.shape
         y = sequence_y_T[i]
 
 

@@ -28,6 +28,9 @@ def map_to_bins(poi, other_region, resolution=50, ignore_non_overlaps=False, acc
     poi_offsetted = poi - other_start
     poi_bins = poi_offsetted / resolution  # This should be integer division
 
+    # Remove duplicates
+    poi_bins = np.unique(poi_bins)
+
     if not account_for_strand_information or other_region['strand'] == '+':
         return poi_bins
     else:

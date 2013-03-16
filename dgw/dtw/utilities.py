@@ -31,3 +31,19 @@ def no_nans_len(sequence):
     :return:
     """
     return len(_strip_nans(sequence))
+
+def reverse_sequence(sequence):
+    no_nans_sequence = _strip_nans(sequence)
+    rev = no_nans_sequence[::-1]
+    padding = len(sequence) - len(no_nans_sequence)
+
+    try:
+        ndim = no_nans_sequence.shape[1]
+    except IndexError:
+        return np.concatenate((rev, [np.nan] * padding))
+
+    if padding:
+        nans = [[np.nan] * ndim] * padding
+        return np.concatenate((rev, nans))
+    else:
+        return rev
