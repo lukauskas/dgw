@@ -183,7 +183,7 @@ class AlignmentsData(object):
             data[ix] = data_row / data_row.max()
 
         data = pd.Panel(data)
-        return self.__class__(data)
+        return self.__class__(data, poi=self.points_of_interest)
 
     def plot_heatmap(self, *args, **kwargs):
         """

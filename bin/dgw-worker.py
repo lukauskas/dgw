@@ -22,6 +22,7 @@ from dgw.cluster import HierarchicalClustering, compute_paths
 
 from dgw.data.containers import Regions
 from dgw.data.parsers import read_bam, HighestPileUpFilter
+from dgw.data.parsers.pois import from_simple
 from dgw.dtw.parallel import parallel_pdist
 from dgw.cli import StoreFilenameAction, StoreUniqueFilenameAction, Configuration
 
@@ -57,7 +58,7 @@ def argument_parser():
                         choices=['sqeuclidean', 'euclidean', 'cosine'], default=None)
     dtw_parameters_group.add_argument('-sb', '--slanted-band', metavar='k',
                                      help='Constrain DTW with slanted band of width k', type=int) # TODO: assert > 0
-    dtw_parameters_group.add_argument('-nln', '--no-length-normalisation', const=False, default=True, action='store_const',
+    dtw_parameters_group.add_argument('-nln', '--no-length-normalisation', const=True, default=False, action='store_const',
                         help='Do not normalise the DTW distances by dividing them by the length of longer sequence.')
     dtw_parameters_group.add_argument('--no-dtw', action='store_const', const=True, default=False,
                         help='If this option is provided, DGW will not use Dynamic Time Warping for region alignments. '
@@ -250,7 +251,16 @@ def main():
 
     if args.points_of_interest:
         print '> Reading points of interest'
-        poi = Regions.from_bed(args.points_of_interest)
+
+        poi_file = args.points_of_interest
+        try:
+            poi = from_simple(poi_file, regions)
+        except ValueError:
+            poi = Regions.from_bed(poi_file)
+            poi = poi.as_bins_of(regions, resolution=configuration.resolution,
+                                 ignore_non_overlaps=args.ignore_poi_non_overlaps,
+                                 account_for_strand_information=configuration.use_strand_information)
+
     else:
         poi = None
 
@@ -260,12 +270,11 @@ def main():
     if args.datasets:
 
         if poi:
-            poi = poi.as_bins_of(regions, resolution=args.resolution, ignore_non_overlaps=args.ignore_poi_non_overlaps,
-                                 account_for_strand_information=args.use_strand_information)
             dataset.add_points_of_interest(poi, name=args.points_of_interest)
 
             if args.ignore_no_poi_regions:
                 poi_dataset = dataset.drop_no_pois()
+
                 if len(poi_dataset) != len(dataset):
                     dropped_regions = regions.ix[dataset.items - poi_dataset.items]
                     print '> {0} regions were removed as they have no POI data with them ' \
