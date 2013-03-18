@@ -9,6 +9,7 @@ def _strip_nans(sequence):
     :param sequence:
     :return:
     '''
+    sequence = np.asarray(sequence)
 
     try:
         lookup = np.all(np.isnan(sequence), axis=1)
@@ -17,6 +18,7 @@ def _strip_nans(sequence):
         return sequence[~np.isnan(sequence)]
 
     sequence = sequence[~lookup]
+
     if np.any(np.isnan(sequence)):
         raise ValueError('Inconsistent NaNs between dimensions')
 
@@ -35,6 +37,7 @@ def no_nans_len(sequence):
 def reverse_sequence(sequence):
     no_nans_sequence = _strip_nans(sequence)
     rev = no_nans_sequence[::-1]
+
     padding = len(sequence) - len(no_nans_sequence)
 
     try:

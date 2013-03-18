@@ -261,8 +261,10 @@ class DTWClusterNode(object, hierarchy.ClusterNode):
                 projection = dtw_projection(item, prototype, path=warping_paths[ix])
                 df = pd.DataFrame(projection, index=range(len(prototype)), columns=columns)
                 projections[ix] = df
-
-            return AlignmentsData(pd.Panel(projections))
+            panel = pd.Panel(projections)
+            panel = panel.ix[self.data.items]
+            ad = AlignmentsData(panel)
+            return ad
 
     def __track_points_of_interest(self):
 

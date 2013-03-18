@@ -54,7 +54,7 @@ def main():
             print '> Reading points of interest from {0!r}'.format(poi_file)
 
             try:
-                poi = from_simple(poi_file, regions)
+                poi = from_simple(poi_file, regions, resolution=configuration.resolution)
             except ValueError:
 
                 poi = Regions.from_bed(poi_file)

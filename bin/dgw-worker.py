@@ -254,7 +254,7 @@ def main():
 
         poi_file = args.points_of_interest
         try:
-            poi = from_simple(poi_file, regions)
+            poi = from_simple(poi_file, regions, resolution=configuration.resolution)
         except ValueError:
             poi = Regions.from_bed(poi_file)
             poi = poi.as_bins_of(regions, resolution=configuration.resolution,
