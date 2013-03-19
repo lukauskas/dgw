@@ -14,7 +14,6 @@ class ClusterPreviewer(object):
     _current_cluster_id = None
 
     root_window = None
-    _add_save_button = None
     _buttons = None
 
     _ax_heatmap = None
@@ -36,11 +35,7 @@ class ClusterPreviewer(object):
         self.dtw_function = dtw_function
 
         debug('Calculating projections')
-        self._add_save_button = True
         for c in self._clusters:
-            if c.regions is None:
-                debug('Cluster {0!r} has no regions information, cannot save'.format(c))
-                self._add_save_button = False
 
             c.ensure_projections_are_calculated()
             c.ensure_points_of_interest_are_tracked_down()
@@ -91,7 +86,7 @@ class ClusterPreviewer(object):
         if not os.path.exists(directory):
             os.makedirs(directory)
 
-        bed_directory = os.path.join(directory, 'bed')
+        bed_directory = os.path.join(directory, 'items')
         if not os.path.exists(bed_directory):
             os.makedirs(bed_directory)
 
@@ -103,31 +98,38 @@ class ClusterPreviewer(object):
         if not os.path.exists(prototypes_directory):
             os.makedirs(prototypes_directory)
 
-        print '> Saving BED files to directory {0}'.format(bed_directory)
+        print '> Saving regions to directory {0}'.format(bed_directory)
         for i, c in enumerate(self._clusters):
-            filename = os.path.join(bed_directory, 'cluster_{0}.bed'.format(i + 1))
-            c.save_as_encode_track(filename, track_name='DGWCluster{0}'.format(i + 1),
-                                   track_description='DGW Cluster {0}/{1} (cut level: {2})'.format(i + 1,
-                                                                                                   len(self._clusters),
-                                                                                                   self.cut_level))
+
+            if c.regions:
+                filename = os.path.join(bed_directory, 'cluster_{0}.bed'.format(i + 1))
+                c.save_as_encode_track(filename, track_name='DGWCluster{0}'.format(i + 1),
+                                       track_description='DGW Cluster {0}/{1} (cut level: {2})'.format(i + 1,
+                                                                                                       len(self._clusters),
+                                                                                                       self.cut_level))
+            else:
+                filename = os.path.join(bed_directory, 'cluster_{0}.txt'.format(i + 1))
+                c.save_as_list_of_indices(filename)
+
+
 
         print '> Saving heatmaps to directory {0}'.format(heatmaps_directory)
         for i, c in enumerate(self._clusters):
 
-            filename_reg = os.path.join(heatmaps_directory, 'cluster-{0}.eps'.format(i + 1))
+            filename_reg = os.path.join(heatmaps_directory, 'cluster-{0}.pdf'.format(i + 1))
             f = self._plot_regular_heatmap_on_figure(c)
             f.savefig(filename_reg)
             plt.close(f)
 
 
-            filename_projected = os.path.join(heatmaps_directory, 'cluster-warped-{0}.eps'.format(i + 1))
+            filename_projected = os.path.join(heatmaps_directory, 'cluster-warped-{0}.pdf'.format(i + 1))
             f = self._plot_projected_heatmap_on_figure(c)
             f.savefig(filename_projected)
             plt.close(f)
 
         print '> Saving prototypes to directory {0}'.format(prototypes_directory)
         for i, c in enumerate(self._clusters):
-            filename_prototype = os.path.join(prototypes_directory, 'cluster-{0}.eps'.format(i + 1))
+            filename_prototype = os.path.join(prototypes_directory, 'cluster-{0}.pdf'.format(i + 1))
             f = self._plot_prototype_on_figure(c)
             f.savefig(filename_prototype)
             plt.close(f)
@@ -217,8 +219,7 @@ class ClusterPreviewer(object):
         self.add_button('Previous', self._callback_previous)
         self.add_button('Next', self._callback_next)
 
-        if self._add_save_button:
-            self.add_button('Save all clusters', self._callback_save)
+        self.add_button('Save all clusters', self._callback_save)
 
         self.add_button('Enlarge heatmap', self._enlarge_heatmap)
         self.add_button('Enlarge DTW heatmap', self._enlarge_dtw_heatmap)

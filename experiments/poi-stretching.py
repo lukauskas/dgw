@@ -1,15 +1,17 @@
 import argparse
 from collections import defaultdict
-from dgw.cli import StoreFilenameAction
+import os
+from dgw import HighestPileUpFilter, read_bam, Regions
+from dgw.cli import StoreFilenameAction, StoreUniqueFilenameAction
 import cPickle as pickle
 import random
 import matplotlib.pyplot as plt
 from dgw.data.containers import AlignmentsData
+from dgw.data.parsers.pois import from_simple
 from dgw.dtw import uniform_scaling_to_length, reverse_sequence
 from dgw.evaluation.resampling import mutate_sequence
 import numpy as np
 import pandas as pd
-
 
 def load_from_pickle(filename):
     f = open(filename)
@@ -17,11 +19,55 @@ def load_from_pickle(filename):
         return pickle.load(f)
     finally:
         f.close()
+
+def read_datasets(args, regions):
+    data_filters = []
+    if args.min_pileup:
+        data_filters.append(HighestPileUpFilter(args.min_pileup))
+
+    return read_bam(args.datasets, regions,
+                    resolution=args.resolution,
+                    extend_to=args.extend_to,
+                    data_filters=data_filters,
+                    output_removed_indices=False,
+                    reverse_negative_strand_regions=args.use_strand_information)
+
 def argument_parser():
 
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+    parser.add_argument('-d', '--datasets', metavar='dataset.bam', nargs='+', action=StoreUniqueFilenameAction,
+                             help='One or more datasets to be used in the rewarped dataset. Must be BAM files.',
+                             required=True)
+    parser.add_argument('-r', '--regions', metavar='regions.bed', action=StoreFilenameAction,
+                        help='Regions of interest to use for rewarping', required=True)
+    parser.add_argument('-poi', '--points-of-interest', metavar='poi.poi', action=StoreFilenameAction,
+                        help='Points of interest that will be stretched. Only continuous BED points of interest allowed',
+                        required=True)
+    parser.add_argument('-O', '--output', metavar='processed_dataset.pd', required=True,
+                        help='Output file to store the processed dataset at')
+    parser.add_argument('-OR', '--output-regions', metavar='regions.bed', required=True,
+                        help='File in which the original regions that were used to generate the dataset will be output')
+    parser.add_argument('-n', '--number-of-regions', type=int, help='Specified how many regions to rewarp to generate the'
+                                                                    ' new dataset.', required=True)
+    parser.add_argument('-s', '--size', type=int, help='Size of the newly created dataset', required=True)
 
-    parser.add_argument('raw_dataset', help='Raw dataset to work on', action=StoreFilenameAction)
+    parser.add_argument('-mp', '--min-pileup', metavar='H', type=int, default=10,
+                                     help='Only cluster these regions that have at least one bin that contains H or more reads. ')
+
+    parser.add_argument('-res', '--resolution', help='Read resolution', type=int, default=50)
+    parser.add_argument('-ext', '--extend_to', help='Extend reads to specified length', type=int, default=200)
+
+    parser.add_argument('--max-stretch-length', metavar='N', type=int, help='Max length to stretch the POI regions to (in bins)',
+                        default=20)
+    parser.add_argument('--no-reverse', action='store_const', default=False, const=True,
+                        help='Do not randomly reverse the regions')
+    parser.add_argument('--mutation-probability', type=float, default=0.01, help='Probability of mutation of the value '
+                                                                                 'of some bin in the region')
+    parser.add_argument('--ignore-poi-non-overlaps', default=False, action='store_const', const=True,
+                         help='If set to true, silently ignore points of interest that do not overlap with the regions')
+
+    parser.add_argument('--use-strand-information', const=True, action="store_const",
+                                      help='Will use the strand information provided in the BED file, if set to true.')
 
     return parser
 
@@ -52,16 +98,33 @@ def stretch_poi_by_length(values, poi, stretch_by):
     :param stretch_by:
     :return:
     """
-    poi_data = values[poi]
-    new_len = len(poi_data) + stretch_by
-    new_poi = uniform_scaling_to_length(poi_data, new_len)
+    for poi_name, poi_points in poi.iteritems():
+        poi_data = values[poi_points]
+        new_len = len(poi_data) + stretch_by
+        new_poi = uniform_scaling_to_length(poi_data, new_len)
 
-    before_poi = values[:poi[0]]
-    after_poi = values[poi[-1] + 1:]
+        # Assume POI regions are contiguous
+        before_poi = values[:poi_points[0]]
+        after_poi = values[poi_points[-1] + 1:]
 
-    new_data = np.concatenate((before_poi, new_poi, after_poi))
-    new_poi = np.asarray(range(poi[0], poi[0] + new_len))
-    return new_data, new_poi
+        new_data = np.concatenate((before_poi, new_poi, after_poi))
+        new_poi = np.asarray(range(poi_points[0], poi_points[0] + new_len), dtype=int)
+
+        return new_data, {poi_name: new_poi}
+
+
+def read_pois(poi_file, regions, dataset, resolution, ignore_poi_non_overlaps=False, use_strand_information=True):
+    print '> Reading points of interest'
+
+    poi = Regions.from_bed(poi_file)
+    poi = poi.as_bins_of(regions, resolution=resolution,
+                         ignore_non_overlaps=ignore_poi_non_overlaps,
+                         account_for_strand_information=use_strand_information)
+
+    dataset.add_points_of_interest(poi, name=os.path.basename(poi_file))
+    poi_dataset = dataset.drop_no_pois()
+
+    return poi_dataset
 
 def generate_new_dataset(dataset, desired_size, max_stretch_length=20, reverse_randomly=True, mutation_probability=0.01):
     """
@@ -98,7 +161,8 @@ def generate_new_dataset(dataset, desired_size, max_stretch_length=20, reverse_r
 
         if reverse_randomly and random.choice([True, False]):
             new_data = reverse_sequence(new_data)
-            new_poi = reverse_sequence((len(new_data) - 1 - new_poi))
+            new_poi[new_poi.keys()[0]] = np.asarray(reverse_sequence((len(new_data) - 1 - new_poi[new_poi.keys()[0]])),
+                                                    dtype=int)
             new_ix += 'r'
 
 
@@ -130,18 +194,42 @@ def save_dataset(dataset, output_file):
     except Exception:
         f.close()
 
-print "> Please run this file interactively: ipython -i exon-strateching.py -- [arguments]"
-print "> Look at the source code for some useful functions"
+def read_regions(regions_filename, resolution):
+    regions = Regions.from_bed(regions_filename)
+    total_len = len(regions)
+    print '> {0} regions of interest read'.format(total_len)
 
-parser = argument_parser()
-args = parser.parse_args()
+    regions = regions.clip_to_resolution(resolution)
 
-raw_dataset = load_from_pickle(args.raw_dataset)
-raw_dataset = raw_dataset.drop_no_pois()
-print 'Size of raw dataset: {0}'.format(len(raw_dataset))
+    return regions
 
-# Try something like
-# subset = get_random_sample(raw_dataset, 5)
-# new_dataset = generate_new_dataset(subset, 100)
-# plot_heatmap(new_dataset)
-# save_dataset(new_dataset, 'somefile.pickle')
+if __name__ == '__main__':
+    parser = argument_parser()
+    args = parser.parse_args()
+
+    print '> Reading regions'
+    regions = read_regions(args.regions, args.resolution)
+    print '> Reading (full) dataset'
+    dataset = read_datasets(args, regions)
+
+    print '> Reading POI regions'
+    dataset = read_pois(args.points_of_interest, regions, dataset, args.resolution,
+                        ignore_poi_non_overlaps=args.ignore_poi_non_overlaps,
+                        use_strand_information=args.use_strand_information)
+
+    print '> Picking {0} regions at random'.format(args.number_of_regions)
+    random_dataset = get_random_sample(dataset, args.number_of_regions)
+    items = random_dataset.items
+    print '> Saving regions that were picked at random to {0}'.format(args.output_regions)
+    regions.ix[items].to_bed(args.output_regions)
+
+    print '> Generating new dataset'
+    new_dataset = generate_new_dataset(random_dataset, args.size,
+                                       max_stretch_length=args.max_stretch_length,
+                                       reverse_randomly=not args.no_reverse,
+                                       mutation_probability=args.mutation_probability)
+
+    print '> Saving the newly-generated dataset to {0}'.format(args.output)
+    save_dataset(new_dataset, args.output)
+
+    print '> Use --processed-dataset parameter in dgw-worker to perform experments on this dataset'

@@ -27,6 +27,14 @@ def strict_load(filename):
                         "Make sure that you have all files output from DGW in the same directory as the config file"
         .format(filename, e))
 
+def optional_load(filename):
+    try:
+        data = load_from_pickle(filename)
+        return data
+    except Exception:
+        return None
+
+
 class Configuration(object):
     """
     Object that stores the major configuration of DGW console applications
@@ -238,7 +246,8 @@ class Configuration(object):
         return self.linkage_filename is None
 
     def load_regions(self):
-        return strict_load(self.parsed_regions_filename)
+
+        return optional_load(self.parsed_regions_filename)
 
     def load_dataset(self):
         return strict_load(self.dataset_filename)

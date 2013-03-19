@@ -1,5 +1,6 @@
 from collections import defaultdict
 from logging import debug
+from math import floor
 import scipy.cluster.hierarchy as hierarchy
 import pandas as pd
 import numpy as np
@@ -161,13 +162,22 @@ class DTWClusterNode(object, hierarchy.ClusterNode):
         if not self._projected_data:
             self._projected_data = self.__project_items_onto_prototype()
 
-    def _calculate_histogram(self, points_of_interest, number_of_bins):
+    def _calculate_histogram(self, points_of_interest, number_of_bins, lengths=None):
+
         histogram = defaultdict(lambda: np.zeros(number_of_bins))
-        for poi in points_of_interest.itervalues():
+        for ix, poi in points_of_interest.iteritems():
+            if lengths is not None:
+                scaling_ratio = float(number_of_bins) / lengths[ix]
+            else:
+                scaling_ratio = 1
+
             for poi_name, points in poi.iteritems():
                 current_histogram = histogram[poi_name]
                 for point in set(points):
-                    current_histogram[point] += 1
+                    min_rescaled = int(floor(point * scaling_ratio))
+                    max_rescaled = int(floor((point + 1) * scaling_ratio))
+                    for rescaled_point in xrange(min_rescaled, max_rescaled):
+                        current_histogram[rescaled_point] += 1
 
         return pd.DataFrame(histogram)
 
@@ -182,7 +192,8 @@ class DTWClusterNode(object, hierarchy.ClusterNode):
     def points_of_interest_histogram(self):
         if self._points_of_interest_histogram is None:
             self._points_of_interest_histogram = self._calculate_histogram(self.points_of_interest,
-                                                                           self.data.number_of_columns)
+                                                                           self.data.number_of_columns,
+                                                                           self.data.lengths)
         return self._points_of_interest_histogram
 
     def ensure_points_of_interest_are_tracked_down(self):
@@ -239,6 +250,14 @@ class DTWClusterNode(object, hierarchy.ClusterNode):
         else:
             track_kwargs = {}
         self.regions.to_bed(filename, **track_kwargs)
+
+    def save_as_list_of_indices(self, filename):
+            index = self.data.items
+            f = open(filename, 'w')
+            for ix in index:
+                f.write('{0}\n'.format(ix))
+            f.close()
+
 
 
     def __project_items_onto_prototype(self):

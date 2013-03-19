@@ -2,6 +2,7 @@ from logging import debug
 import pandas as pd
 import numpy as np
 from dgw.data.parsers.pois import map_to_bins
+from dgw.dtw import no_nans_len
 
 
 class AlignmentsDataIndexer(object):
@@ -137,6 +138,15 @@ class AlignmentsData(object):
     @property
     def number_of_columns(self):
         return len(self.major_axis)
+
+    @property
+    def lengths(self):
+        a = []
+        for _, row in self.data.iteritems():
+            a.append(no_nans_len(row.values))
+
+        return pd.Series(a, index=self.items)
+
 
     @property
     def dataset_axis(self):
