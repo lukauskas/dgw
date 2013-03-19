@@ -18,12 +18,16 @@ def argument_parser():
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument('configuration_file', metavar='dgw_config_file.dgw', type=argparse.FileType('r'))
     parser.add_argument('-O', '--output', metavar='output_directory', default="output")
-    parser.add_argument('-poi', '--points-of-interest', metavar='poi.bed', nargs='+', action=StoreUniqueFilenameAction,
+    poi_group = parser.add_mutually_exclusive_group()
+    poi_group.add_argument('-poi', '--points-of-interest', metavar='poi.bed', nargs='+', action=StoreUniqueFilenameAction,
                         help='Points of interest. Note if the dataset has points of interest associated with it, '
                              'they will be overwritten')
 
+    poi_group.add_argument('--no-poi', action='store_const', const=True, default=False,
+                        help='Do not display any POI anotations that are bundled with DGW-worker result')
     parser.add_argument('--ignore-poi-non-overlaps', default=False, action='store_const', const=True,
                         help='If set to true, DGW will silently ignore -pois that do not overlap with the regions')
+
 
     parser.add_argument('-v', '--verbose', action='store_const', const=True, default=False)
 
@@ -69,6 +73,9 @@ def main():
             except IndexError:
                 raise Exception("Sorry, only up to {0} POI regions are supported".format(len(standard_highlight_colours)))
     else:
+        if args.no_poi:
+            dataset.reset_poi()
+            
         if dataset.points_of_interest:
             highlight_colours[dataset.points_of_interest.values()[0].keys()[0]] = standard_highlight_colours.pop()
 
