@@ -1,13 +1,18 @@
 #!/usr/bin/env python
 import argparse
+import os
 import sys
 from dgw.cli.actions import StoreFilenameAction
 from dgw.data.containers import Genes, Regions
+from dgw.data.parsers.pois import from_simple
 
 
 def argument_parser():
 
-    parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+    parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+                                     description="This application is able to extract regions in poi_filename "
+                                                 "that overlap with regions in the input_filename and return them "
+                                                 "in DGW-readable format that can then be used to perform DGW matching")
 
     # Use various flags to switch between input types
     parser.add_argument('input_filename', metavar='main_regions_of_interest.bed',
@@ -17,6 +22,7 @@ def argument_parser():
 
     parser.add_argument('-O', '--output', help='Output file', type=argparse.FileType('w'), default=sys.stdout)
     return parser
+
 
 def main():
     parser = argument_parser()
