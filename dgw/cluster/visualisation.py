@@ -413,8 +413,9 @@ class HierarchicalClusteringViewer(object):
         hc = self.hierarchical_clustering_object
 
         dendrogram_dict = hc.dendrogram(orientation='right', get_leaves=True,  distance_sort=True,
-                                        color_threshold=self._cut_xdata)
+                                        color_threshold=self._cut_xdata, ax=ax_dendrogram)
         leaves = dendrogram_dict['leaves']
+
         plt.setp(plt.gca().get_xticklabels(), rotation='vertical', fontsize=7)
         plt.gca().get_yaxis().set_visible(False)
 
@@ -482,7 +483,8 @@ class HierarchicalClusteringViewer(object):
 
     def _onclick_listener(self, event):
         # Allow only in axis, only the left button and only regions with value
-        if event.inaxes != self.ax_dendrogram or event.button != 1 or event.xdata is None:
+        if event.inaxes != self.ax_dendrogram or event.button != 3 or event.xdata is None:
             return
+
         self.cut_line(event.xdata)
 
