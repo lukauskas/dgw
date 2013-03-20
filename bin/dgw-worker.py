@@ -68,7 +68,7 @@ def argument_parser():
     dtw_parameters_group.add_argument('-wp', '--warping-penalty', default=0, type=float,
                                       help='Warping penalty to incur on every non-diagonal path taken in the dtw matrix')
 
-    dtw_parameters_group.add_argument('--use-strand-information', const=True, action="store_const",
+    dtw_parameters_group.add_argument('--use-strand-information', const=True, action="store_const", default=False,
                                   help='Will use the strand information provided in the BED file, if set to true.'
                                        ' Also sets --no-reverse.')
     dtw_parameters_group.add_argument('--no-reverse', const=True, default=False, action="store_const",
