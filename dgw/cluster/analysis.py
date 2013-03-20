@@ -1,6 +1,7 @@
 from collections import defaultdict
 from logging import debug
 from math import floor
+from matplotlib.ticker import MultipleLocator
 import scipy.cluster.hierarchy as hierarchy
 import pandas as pd
 import numpy as np
@@ -402,6 +403,7 @@ class HierarchicalClustering(object):
     __tree = None
     __tree_nodes_list = None
 
+
     def __init__(self, data, regions, linkage_matrix, dtw_function=dtw_std, prototypes=None, prototyping_method='psa'):
         """
         Initialises hierarchical clustering analyser.
@@ -514,6 +516,7 @@ class HierarchicalClustering(object):
         """
         return self._linkage_matrix
 
+
     @property
     def num_obs(self):
         return self.data.number_of_items
@@ -529,16 +532,24 @@ class HierarchicalClustering(object):
     def tree_nodes_list(self):
         return self.__tree_nodes_list
 
-    def dendrogram(self, *args, **kwargs):
+    def dendrogram(self, ax=None, no_labels=True, *args, **kwargs):
         """
         Plots the dendrogram for the hieararchical clustering
         :return:
         """
+        import matplotlib.pyplot as plt
         linkage = self.linkage
-        no_labels = kwargs.pop('no_labels', True)
+        if ax is None:
+            ax = plt.gca()
 
         color_threshold = kwargs.pop('color_threshold', self._distance_threshold)
-        return hierarchy.dendrogram(linkage, no_labels=no_labels, color_threshold=color_threshold, *args, **kwargs)
+        ans = hierarchy.dendrogram(linkage, no_labels=no_labels, color_threshold=color_threshold, *args, **kwargs)
+
+        ax.set_xlabel('Distance')
+
+        return ans
+
+
 
     def _rename_nodes(self, tree):
         """
@@ -614,8 +625,8 @@ class ClusterAssignments(object):
         self._cluster_roots = cluster_roots
 
         clusters = []
-        # Store clusters in decreasing number of elements
-        for cluster_root in sorted(self._cluster_roots, key=lambda x: x.count, reverse=True):
+
+        for cluster_root in self._cluster_roots:
             clusters.append(cluster_root)
         self._clusters = clusters
         self._cut_depth = cut_depth
