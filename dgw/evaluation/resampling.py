@@ -45,7 +45,17 @@ def shrink_to_a_single_point(sequence, pos, shrink_subset_len):
 
     return np.asarray(new_seq)
 
-def mutate_sequence(sequence, prob):
+def mutate_sequence(sequence, prob, mutation_scale=0.2):
+    """
+    Randomly mutates each point in the sequence x to get a random value from the range
+    [x(1-mutation_scale),(1+mutation_scale)x]
+
+    The probability prob determines the probability of this mutation occuring.
+    :param sequence:
+    :param prob:
+    :param mutation_scale:
+    :return:
+    """
     sequence = np.asarray(sequence)
     length = no_nans_len(sequence)
 
@@ -55,7 +65,9 @@ def mutate_sequence(sequence, prob):
         mutate = np.random.choice([True, False], p=[prob_adjusted, 1 - prob_adjusted])
 
         if mutate:
-            sequence[i] = sequence[random.randint(0, length - 1)]
+            x = sequence[i]
+            mutation_ratio = np.random.uniform(1-mutation_scale, 1+mutation_scale)
+            sequence[i] = x * mutation_ratio
 
     return sequence
 
