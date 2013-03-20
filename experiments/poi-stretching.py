@@ -63,6 +63,8 @@ def argument_parser():
                         help='Do not randomly reverse the regions')
     parser.add_argument('--mutation-probability', type=float, default=0.01, help='Probability of mutation of the value '
                                                                                  'of some bin in the region')
+    parser.add_argument('--mutation-scale', type=float, default=0.2, help='Scale of the mutations. Value of 0.2 means'
+                                                                                'that the items could mutate from -20% to 20%')
     parser.add_argument('--ignore-poi-non-overlaps', default=False, action='store_const', const=True,
                          help='If set to true, silently ignore points of interest that do not overlap with the regions')
 
@@ -126,7 +128,8 @@ def read_pois(poi_file, regions, dataset, resolution, ignore_poi_non_overlaps=Fa
 
     return poi_dataset
 
-def generate_new_dataset(dataset, desired_size, max_stretch_length=20, reverse_randomly=True, mutation_probability=0.01):
+def generate_new_dataset(dataset, desired_size, max_stretch_length=20, reverse_randomly=True, mutation_probability=0.01,
+                         mutation_scale=0.2):
     """
     Generates new dataset of desired size by randomly stretching the POI regions of the dataset provided up to
     max_stretch_length
@@ -135,8 +138,9 @@ def generate_new_dataset(dataset, desired_size, max_stretch_length=20, reverse_r
     :param desired_size:
     :param max_stretch_length:
     :param reverse_randomly: will reverse some of the regions randomly if set to true
-    :param mutation_probability: rougly the percentage of items in the sequence  that will mutate and obtain the value
+    :param mutation_probability: roughly the percentage of items in the sequence  that will mutate and obtain the value
                                  of some other random index (i.e. 0.01 means that around 1% of items will mutate)
+    :param mutation_scale: the scale of mutations to occur. a value of 0.2. means that the value could change from -20% to 20%
 
     :return:
     """
@@ -167,7 +171,7 @@ def generate_new_dataset(dataset, desired_size, max_stretch_length=20, reverse_r
 
 
         if mutation_probability is not None:
-            new_data = mutate_sequence(new_data, mutation_probability)
+            new_data = mutate_sequence(new_data, mutation_probability, mutation_scale)
 
         new_data = pd.DataFrame(new_data, columns=data.columns)
         new_dataset[new_ix] = new_data
@@ -187,7 +191,6 @@ def save_dataset(dataset, output_file):
     :param output_file
     :return:
     """
-    dataset = dataset.to_log_scale()
     f = open(output_file, 'w')
     try:
         pickle.dump(dataset, f)
@@ -212,6 +215,9 @@ if __name__ == '__main__':
     print '> Reading (full) dataset'
     dataset = read_datasets(args, regions)
 
+    # Convert to log early
+    dataset = dataset.to_log_scale()
+
     print '> Reading POI regions'
     dataset = read_pois(args.points_of_interest, regions, dataset, args.resolution,
                         ignore_poi_non_overlaps=args.ignore_poi_non_overlaps,
@@ -227,7 +233,8 @@ if __name__ == '__main__':
     new_dataset = generate_new_dataset(random_dataset, args.size,
                                        max_stretch_length=args.max_stretch_length,
                                        reverse_randomly=not args.no_reverse,
-                                       mutation_probability=args.mutation_probability)
+                                       mutation_probability=args.mutation_probability,
+                                       mutation_scale=args.mutation_scale)
 
     print '> Saving the newly-generated dataset to {0}'.format(args.output)
     save_dataset(new_dataset, args.output)
