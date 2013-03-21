@@ -39,6 +39,9 @@ def plot_dtw_sequences_dist_cost_and_path(sequence_x, sequence_y, dist, cost_mat
     :return:
     """
 
+    sequence_x = np.asarray(sequence_x)
+    sequence_y = np.asarray(sequence_y)
+
     # Based on: http://matplotlib.org/examples/pylab_examples/scatter_hist.html
     figure = plt.figure()
     null_fmt = NullFormatter()         # no labels
@@ -170,7 +173,7 @@ def visualise_dtw_mappings(sequence_x, sequence_y, dtw_function=dtw_std, columns
     sequence_y_T = np.atleast_2d(sequence_y.T)
     sequence_x_T = np.atleast_2d(sequence_x.T)
 
-    if columns is not None and ndim > 1:
+    if columns is None and ndim > 1:
         columns = ['Dimension #{0}'.format(i) for i in range(1, ndim+1)]
     elif ndim > 1:
         if len(columns) != ndim:

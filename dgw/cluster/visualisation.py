@@ -249,11 +249,11 @@ class ClusterPreviewer(object):
                     points_plotted_on[point] += 1
         plt.title('Original')
 
-        ax2 = plt.subplot(3, 1, 2, sharex=ax1, sharey=ax1)
+        ax2 = plt.subplot(3, 1, 2, sharey=ax1)
         prototype.plot(ax=ax2, legend=False)
         plt.title('Cluster Prototype')
 
-        ax3 = plt.subplot(3, 1, 3, sharex=ax1, sharey=ax1)
+        ax3 = plt.subplot(3, 1, 3, sharey=ax1)
         projected_data.plot(ax=ax3, legend=False)
 
         if tracked_poi:
@@ -273,7 +273,7 @@ class ClusterPreviewer(object):
 
         figure_dtw_visualisation = visualise_dtw(data.values, prototype, dtw_function=self.dtw_function)
         figure_dtw_mappings = visualise_dtw_mappings(data, prototype, dtw_function=self.dtw_function,
-                                                     columns=data.index, sequence_x_label=index,
+                                                     columns=data.columns, sequence_x_label=index,
                                                      sequence_y_label='Cluster Prototype')
 
 
