@@ -1,11 +1,8 @@
 #!/usr/bin/env python
 import argparse
-import os
 import sys
 from dgw.cli.actions import StoreFilenameAction
-from dgw.data.containers import Genes, Regions
-from dgw.data.parsers.pois import from_simple
-
+from dgw.data.containers import Regions
 
 def argument_parser():
 

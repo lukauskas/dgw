@@ -1,4 +1,4 @@
-from mlpy.dtw import dtw_std as mlpy_dtw_std
+from dgw._mlpy.dtw import dtw_std as mlpy_dtw_std
 import numpy as np
 from dgw.dtw.scaling import uniform_scaling_to_length
 from dgw.dtw.utilities import _strip_nans, no_nans_len, reverse_sequence
