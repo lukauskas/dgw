@@ -1,9 +1,9 @@
 from distutils.core import setup, Extension
 import os
-from Cython.Build import cythonize
+
 
 try:
-    from Cython.Distutils import build_ext as cython_build_ext
+    from Cython.Build import cythonize
 except ImportError:
     cython_supported = False
 else:
@@ -16,7 +16,6 @@ np_inc = [os.path.join(np_lib, 'core/include')]
 cmdclass = {}
 # Compile packages from mlpy distribution
 if cython_supported:
-    cmdclass['build_ext'] = cython_build_ext
     ext_modules = [Extension("dgw._mlpy.dtw",
                            ["mlpy_src/dtw/cdtw.c",
                             "mlpy_src/dtw/dtw.pyx"],
