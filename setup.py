@@ -30,7 +30,7 @@ else:
 
 setup(
     name='dgw',
-    version='0.1.0',
+    version='0.1.0-r1',
     packages=['dgw', 'dgw.cli', 'dgw.cluster', 'dgw.data', 'dgw.data.parsers', 'dgw.data.visualisation', 'dgw._mlpy',
               'dgw.dtw', 'dgw.tests.data.parsers', 'dgw.tests.data', 'dgw.tests.dtw', 'dgw.tests', 'dgw'],
     requires=['numpy (>=1.6.1)', 'scipy (>=0.10.1)', 'pandas (>= 0.10.1)',

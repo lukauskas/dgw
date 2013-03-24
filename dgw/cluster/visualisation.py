@@ -271,7 +271,6 @@ class ClusterPreviewer(object):
         plt.title('Warped')
         plt.suptitle(index)
 
-        figure_dtw_visualisation = visualise_dtw(data.values, prototype, dtw_function=self.dtw_function)
         figure_dtw_mappings = visualise_dtw_mappings(data, prototype, dtw_function=self.dtw_function,
                                                      columns=data.columns, sequence_x_label=index,
                                                      sequence_y_label='Cluster Prototype')
