@@ -12,3 +12,4 @@ dm_*
 *.pyo
 *.pickle
 build
+dist
