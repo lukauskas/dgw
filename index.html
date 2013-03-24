@@ -30,244 +30,17 @@
       <section>
         <h1>Dynamic Genome Warping (DGW)</h1>
 
-<h1>Installation</h1>
+<p>This is the homepage for the open source DGW library developped by Saulius Lukauskas.</p>
 
-<h2>Prerequisites</h2>
+<p>Stable binaries of DGW are distributed over PyPi and you should be able to install it using <code>setuptools</code>:</p>
 
-<p>DGW depends on <code>numpy</code>, <code>scipy</code>, <code>pandas==0.10.1</code>, <code>mlpy</code>, <code>pysam</code>, <code>fastcluster</code>, <code>matplotlib</code> and modified <code>mlpy</code> packages (see below).</p>
-
-<h3>MLPY</h3>
-
-<p>DGW depends on modified version of MLPY, available from <a href="https://github.com/sauliusl/mlpy">https://github.com/sauliusl/mlpy</a>
-You can install it by</p>
-
-<pre><code>pip install cython
-pip install -e git://github.com/sauliusl/mlpy.git#egg=mlpy
+<pre><code>easy_install dgw
 </code></pre>
 
-<p>Cython is required for compilation of mlpy from source.
-Note that mlpy depends on GSL (with header-files). 
-Please look for instructions on how to install it on your platform if the installation fails.</p>
+<p>If this fails, consult the <a href="https://dgw.readthedocs.org/en/latest/#installation">Installation section in the documentation</a> for a quick guide on how to install it.</p>
 
-<p>On ubuntu this can be installed by </p>
-
-<pre><code>apt-get install libgsl0-dev
-</code></pre>
-
-<h2>Platform-specific instructions</h2>
-
-<h3>Linux</h3>
-
-<p>You should be able to directly install DGW dependencies by using <code>pip</code> on linux:</p>
-
-<pre><code>pip install numpy 
-pip install scipy 
-pip install pandas
-pip install pysam 
-pip install fastcluster 
-pip install matplotlib
-</code></pre>
-
-<p>Note that some packages, e.g. <code>scipy</code> depend on dev versions of some of the GNU libraries, 
-you will likely to have to install them before proceeding, for instance, on ubuntu you will need to:</p>
-
-<pre><code>apt-get install libblas-dev liblapack-dev gfortran
-</code></pre>
-
-<p>Similarly, you can install <code>numpy</code> and <code>scipy</code> using apt-get (or other package manager) if you like.</p>
-
-<p>Finally install modified MLPY:</p>
-
-<pre><code>pip install -e git://github.com/sauliusl/mlpy.git#egg=mlpy
-</code></pre>
-
-<h3>Mac OS X</h3>
-
-<p>Probably the most reliable way of installing <code>numpy</code>, <code>scipy</code>, <code>pandas</code>, <code>matplotlib</code> and <code>pysam</code> is via MacPorts (<a href="https://www.macports.org/">https://www.macports.org/</a>)
-This can be achieved by</p>
-
-<pre><code>port install python27 py27-numpy py27-scipy py27-pandas py27-matplotlib py27-pysam 
-</code></pre>
-
-<p>Then the remaining dependancies, <code>fastcluster</code> and <code>mlpy</code> can be installed from pip</p>
-
-<pre><code>pip install fastcluster
-pip install mlpy
-</code></pre>
-
-<p>Alternatively, Enthought Python Distribution can be used to install these packages (see instructions for Windows).
-However <code>matplotlib</code> may not work correctly as EPD does not install python as a framework</p>
-
-<h3>Windows</h3>
-
-<p>It is probably easiest to install <code>numpy</code>, <code>scipy</code>, <code>pandas</code> and <code>matplotlib</code> on Windows via Enthought python distribution. This distribution is free for academic use. See 
-<a href="http://www.enthought.com/products/epd.php">http://www.enthought.com/products/epd.php</a> for instructions how to download and install it.</p>
-
-<p>Unfortunately EPD 7.3 ships with an outdated version of <code>pandas</code> package that is not compatible with DGW, therefore you would have to upgrade it using pip in order to run it.</p>
-
-<pre><code>pip install --upgrade pandas
-</code></pre>
-
-<p>Packages that are not in EPD also need to be installed using pip</p>
-
-<pre><code>pip install pysam fastcluster
-</code></pre>
-
-<p>if <code>fastcluster</code> install fails install it from source from <a href="http://github.com/sauliusl/fastcluster">http://github.com/sauliusl/fastcluster</a></p>
-
-<p>Don't forget MLPY:</p>
-
-<pre><code>pip install -e git://github.com/sauliusl/mlpy.git#egg=mlpy
-</code></pre>
-
-<h2>Installing Python 2.7 to a non-root environment</h2>
-
-<p>The above steps need python to be installed on the system.
-If you do not have Python2.7, you need to install it.
-The following steps show how to install python to an environment on linux you do not have root access to.</p>
-
-<ol>
-<li>Download and extract Python sources:
-<code>
-$ wget http://www.python.org/ftp/python/2.7.3/Python-2.7.3.tgz
-$ tar xvf Python-2.7.3
-</code>
-</li>
-<li>Install python to local location
-<code>
-$ cd Python-2.7.3
-$ ./configure
-$ make altinstall prefix=~/python_dev/python/ exec-prefix=~/python_dev/python
-</code>
-where <code>~/python_dev/python</code> is the desired location to install python to (change as appropriate).
-Note the tilde (<code>~</code>) indicating this is under <code>$HOME</code> directory -- directory my user has access to.</li>
-</ol><p>At this point you should have a <code>python2.7</code> executable at <code>~/python_dev/python/bin/</code>.</p>
-
-<ol>
-<li>
-<p>Set up PATH variables</p>
-
-<pre><code>$ export PATH=~/python_dev/python/bin:$PATH
-$ export PYTHONPATH=~/python_dev/python/lib/python2.7/site-packages/
-</code></pre>
-</li>
-<li>
-<p>Download and install setuptools. Make sure that your <code>PYTHONPATH</code> variable is set correctly before doing this.</p>
-
-<pre><code>wget https://pypi.python.org/packages/2.7/s/setuptools/setuptools-0.6c11-py2.7.egg#md5=fe1f997bc722265116870bc7919059ea
-sh setuptools-0.6c11-py2.7.egg
-</code></pre>
-</li>
-<li>
-<p>You now should be able to install pip by:</p>
-
-<pre><code>easy_install-2.7 pip
-</code></pre>
-</li>
-<li><p>Once pip is installed, you can install dependencies for DGW as per linux installations step.
-Make sure you use the newly installed <code>pip-2.7</code>, which will be in your local directory and not the one that comes with system</p></li>
-</ol><h1>Installation of DGW</h1>
-
-<p>DGW has to be installed directly from the source. You can obtain source by cloning the DGW repository.</p>
-
-<pre><code>git clone
-</code></pre>
-
-<p>In order to be able to use DGW from any location in your system
-set up your PATH and PYTHONPATH variables to point to the location of the new repository, on unix this is done:</p>
-
-<pre><code>export PYTHONPATH=$PYTHONPATH:/directory/where/dgw/is/checked/out
-export PATH=$PATH:/directory/where/dgw/is/checked/out/bin
-</code></pre>
-
-<p>Note the "bin" in the end of PATH directory -- this is where the main executables of package lie in. 
-You may want to add these two lines to your <code>~/.bashrc</code> so they are executed every time you open your shell.</p>
-
-<h1>Usage</h1>
-
-<p>DGW is split into two parts - computationally demanding part, <code>dgw-worker</code> and an exploratory part - <code>dgw-explorer</code>.</p>
-
-<h2><code>dgw-worker</code></h2>
-
-<p>The worker part of the module is responsible for the actual hard work done in clustering the data. It preprocesses the data, computes intermediate representations, calculates DTW distances between the data, performs hierarchical clustering and calculates prototypes of the clusters.</p>
-
-<h3>Sample usage</h3>
-
-<p>Typically, <code>dgw-worker</code> would be run as follows:</p>
-
-<pre><code>dgw-worker.py -r tss_regions.bed  -d wgEncodeBroadHistoneK562H3k4me3StdAlnRep1.bam wgEncodeBroadHistoneK562Pol2bStdAlnRep1.bam --prefix dgw_example
-</code></pre>
-
-<p>In this case we are providing a bed file of regions of interest we want to cluster (<code>-r tss_regions.bed</code>), two datasets to work on (<code>-d wgEncodeBroadHistoneK562H3k4me3StdAlnRep1.bam wgEncodeBroadHistoneK562Pol2bStdAlnRep1.bam</code>) and setting the prefix of files that will be output to <code>dgw_example</code>.</p>
-
-<p>The DGW-worker will take all alignments from both datasets at regions in the <code>tss_regions.bed</code>. These alignments will then be extended and put into bins of 50 base pairs wide (use <code>-res</code> parameter to change this width).
-Then the unexpressed regions that have no bin with more than 10 reads in them (<code>-min-pileup</code> constraint to change) will be ignored. Note that these ignored regions are then saved to <code>{prefix}_filtered_regions.bed</code> file.
-The remaining data will be normalised by adding two artificial reads for each bin and then taking the log of the number of reads in the bins.
-The remaining regions will then be clustered hierarchically using DTW distance with default parameters.</p>
-
-<h3>Output</h3>
-
-<p>The worker will output 8 files to the working directory where <code>{prefix}</code> is the prefix specified by <code>--prefix</code> argument.</p>
-
-<ul>
-<li>
-<code>{prefix}_config.dgw</code> -- The main file storing the configuration of DGW that was used to produce the other files.</li>
-<li>
-<code>{prefix}_dataset.pd</code> -- Processed dataset after the normalisation. This can then be passed in a subsequent DGW session as <code>--processed-dataset</code> parameter.</li>
-<li>
-<code>{prefix}_filtered_regions.bed</code> -- Regions that were filtered out of the original regions set due to preprocessing constraints.</li>
-<li>
-<code>{prefix}_linkage.npy</code> -- Precomputed linkage matrix that is used in hierarchical clustering </li>
-<li>
-<code>{prefix}_missing_regions.bed</code> -- regions that were in the BED file provided as an input, but were not in one of the BAM files.</li>
-<li>
-<code>{prefix}_prototypes.pickle</code> -- computed prototypes of the clusters</li>
-<li>
-<code>{prefix}_regions.pd</code> -- regions that were processed, saved in DGW-readable format</li>
-<li>
-<code>{prefix}_warping_paths.pickle</code> -- computed warping paths of the original data projected onto prototypes</li>
-</ul><h3>Points of interest</h3>
-
-<p>In some cases one would want to track some points of interest and their locations after warping. <code>dgw-worker</code> can also be run with a <code>-poi</code> parameter specified, for instance:</p>
-
-<pre><code>dgw-worker.py -r tss_regions.bed -poi first_splicing_site_locations.bed  -d wgEncodeBroadHistoneK562H3k4me3StdAlnRep1.bam wgEncodeBroadHistoneK562Pol2bStdAlnRep1.bam --prefix dgw_example
-</code></pre>
-
-<p>The regions in <code>first_splicing_site_locations.bed</code> must have the same names as the regions in <code>tss_regions.bed</code> otherwise DGW won't be able to match them. Also have a look at <code>--ignore-poi-non-overlaps</code> id some of the regions in the input file may not contain some of the regions listed as points of interest.
-Similarly, <code>--ignore-no-poi-regions</code> will make DGW ignore those regions in input file that do not contain any of the points of interest provided.</p>
-
-<h3>Runtime</h3>
-
-<p>Please note that DGW Worker is a very computationally-demanding piece of software.
-It is designed to be used on a performant computer with as much CPU cores as possible.</p>
-
-<p>A good way to estimate how long will the computation take on your machine is to use <code>--random-sample</code> parameter, e.g. pass <code>--random-sample 1000</code>.
-This parameter will take only a random sample of N regions, where N is the provided number (e.g. 1000). 
-The DGW worker will work on this random sample and report you both the time it took to compute the pairwise distances
-on the random sample, and the estimated time to compute them on the full sample. </p>
-
-<p>Prototype estimation and DTW projections onto prototypes will take around an extra 50% of time taken for pairwise distance calculations.</p>
-
-<h2><code>dgw-explorer.py</code></h2>
-
-<p>A second major part of DGW is the DGW explorer. 
-This software is much less computationally demanding than DGW Worker and is designed to allow you to explore the results.</p>
-
-<p>In order to use it start it by passing a <code>{prefix}_config.dgw</code> file computed by 
-DGW worker:
-<code>dgw-explorer.py dgw_config.dgw</code></p>
-
-<p>The remaining files output by DGW explorer must be in the same directory as the <code>dgw_config.dgw</code> file, otherwise the explorer will not be able to locate them.</p>
-
-<p>Upon successful start, a window showing the dendrogram and heatmap will pop up. Left click on the dendrogram to cut it at the desired place, wait for the plot to refresh and click preview to bring up a cluster explorer.</p>
-
-<p>The cluster explorer allows you to cycle through clusters generated by the dendrogram cut and save both the data of the clusters and the generated heatmaps.</p>
-
-<p>Note that you can also provide <code>-poi</code> parameter to <code>dgw-explorer.py</code>. 
-This will override the points of interest specified by worker.
-DGW Explorer allows you to specify up to two sets of points of interest (just add the -poi parameter twice). </p>
-
-<p>The resulting points of interest will be plotted on top of the heatmap in cluster viewer.</p>
+<p>Specifically, have a read through the <a href="https://dgw.readthedocs.org/en/latest/#quickstart">Quick Start Guide</a> for a guide on how to get started with DGW,
+or consult the full documentation at <a href="https://dgw.readthedocs.org">https://dgw.readthedocs.org</a>.</p>
       </section>
       <footer>
         <p>This project is maintained by <a href="https://github.com/sauliusl">sauliusl</a></p>
@@ -275,19 +48,16 @@ DGW Explorer allows you to specify up to two sets of points of interest (just ad
       </footer>
     </div>
     <script src="javascripts/scale.fix.js"></script>
-    
-    <script type="text/javascript">
+              <script type="text/javascript">
+            var gaJsHost = (("https:" == document.location.protocol) ? "https://ssl." : "http://www.");
+            document.write(unescape("%3Cscript src='" + gaJsHost + "google-analytics.com/ga.js' type='text/javascript'%3E%3C/script%3E"));
+          </script>
+          <script type="text/javascript">
+            try {
+              var pageTracker = _gat._getTracker("UA-39513078-1");
+            pageTracker._trackPageview();
+            } catch(err) {}
+          </script>
 
-  var _gaq = _gaq || [];
-  _gaq.push(['_setAccount', 'UA-39513078-1']);
-  _gaq.push(['_trackPageview']);
-
-  (function() {
-    var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
-    ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
-    var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
-  })();
-
-  </script>
   </body>
 </html>
