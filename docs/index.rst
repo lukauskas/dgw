@@ -407,7 +407,7 @@ feel free to try it out without this parameter later on to look for interesting 
 
 We are going to run the following command::
 
-   dgw-worker -r macs_peaks.bed -d wgEncodeBroadHistoneK562H3k4me3StdAlnRep1.bam wgEncodeBroadHistoneK562H3k9acStdAlnRep1.bam -poi fss.poi --ignore-no-poi-regions --metric sqeuclidean --random-sample 1000 --prefix dgw_quickstart -sb 12
+   dgw-worker -r macs_peaks.bed -d wgEncodeBroadHistoneK562H3k4me3StdAlnRep1.bam wgEncodeBroadHistoneK562H3k9acStdAlnRep1.bam -poi fss.poi --ignore-no-poi-regions --metric sqeuclidean --random-sample 1000 --prefix dgw_quickstart -sb 12 --normalise-pileups
 Let's dissect this:
 
 - `-r macs_peaks.bed` -- Cluster the regions in `macs_peaks.bed`
@@ -418,6 +418,7 @@ Let's dissect this:
 - `--random-sample 1000` -- take only 1000 regions at random rather than full dataset (so it's faster).
 - `--prefix dgw_quickstart` -- prefix the output files with `dgw_quickstart`.
 - `-sb 12` -- use slanted band of size 12 to constrain the DTW distance.
+- `-normalise-pileups` -- divide all the regions in the dataset from the maximum value within that region in order to make the value of the largest pipleup in the data consistently equal to 1.
 
 Once you know what each parameter does, run the command. Due to randomness of `--random-sample` parameter,
 each run of DGW will produce different results. The sample output that I got is shown here with some commentary::
@@ -433,27 +434,27 @@ Out of those regions, a random sample of 1000 was selected.
 
     > Reading points of interest
     > Reading dataset ...
-    > 557 regions were removed as they have no POI data with them and --ignore-no-poi-regions was set
+    > 575 regions were removed as they have no POI data with them and --ignore-no-poi-regions was set
     > Saving them to 'dgw_quickstart_no_poi_regions.bed'
 
-Then POI regions were read, and 557 regions out of the previously selected regions were removed as they
+Then POI regions were read, and 575 regions out of the previously selected regions were removed as they
 had no POI data associated with them (no first splicing sites contained them) and --ignore-no-poi-regions was set. These
 regions are saved to :file:`dgw_quickstart_no_poi_regions.bed`.
 ::
 
-  > 63 regions were filtered out from dataset due to --min-pileup constraint, they were saved to dgw_quickstart_filtered_regions.bed
+    > 61 regions were filtered out from dataset due to --min-pileup constraint, they were saved to dgw_quickstart_filtered_regions.bed
 
-Then 63 regions were filtered out from dataset due to `--min-pileup` constraint. This constraint pre-filters regions
+Then 61 regions were filtered out from dataset due to `--min-pileup` constraint. This constraint pre-filters regions
 to leave only regions that have a bin with more than 10 reads falling into it by default, in order to not waste
 the computational resources for areas that are not so interesting.
 
 ::
 
-    > 380 regions remaining and will be processed
+    > 364 regions remaining and will be processed
     > Serialising regions to dgw_quickstart_regions.pd
     > Saving dataset to dgw_quickstart_dataset.pd
 
-After the preprocessing 380 regions remained and will be processed.
+After the preprocessing 364 regions remained to be processed.
 Regions were serialised to :file:`dgw_quickstart_regions.pd` for quick reading by dgw-explorer.
 Dataset was serialised to :file:`dgw_quickstart_dataset.pd`. You can run subsequent tests on the same dataset
 by providing it as a `--pd dgw_quickstart.pd`.
@@ -462,7 +463,7 @@ by providing it as a `--pd dgw_quickstart.pd`.
 
     > Calculating pairwise distances (this might take a while) ...
     > Using all available cpu cores (8)
-    > Pairwise distances calculation took 3.279148 s
+    > Pairwise distances calculation took 3.077042 s
     > Expected calculation duration if random-sample was not used: 3119.20534722 s
     > Computing linkage matrix
     > Saving linkage matrix to 'dgw_quickstart_linkage.npy'
@@ -472,8 +473,8 @@ by providing it as a `--pd dgw_quickstart.pd`.
     > Saving warping paths to 'dgw_quickstart_warping_paths.pickle'
 
 8 processes cores were used for calculation of the DTW pairwise distances.
-This calculation took a bit more than 3s for these 380 regions.
-It would take around an hour to do this for all regions without the `--random-sample`
+This calculation took a bit more than 3s for these 364 regions.
+It would take a bit under an hour to do this for all regions without the `--random-sample`
 The linkage was computed and saved to :file:`dgw_quickstart_linkage.npy`
 Prototypes were generated and saved to :file:`dgw_quickstart_prototypes.pickle`.
 Data was warped to the prototypes, and the warping paths saved to :file:`dgw_quickstart_warping_paths.pickle`.
@@ -487,8 +488,7 @@ The configuration was saved to `dgw_quickstart_config.dgw`. This is the file the
 
 Exploring the results using `dgw-explorer`
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-We are finally reaching the culmination of this quickstart guide.
-
+We are finally reaching the culmination of this quick start guide. We will run dgw-explorer on the results of dgw-worker run.
 
 
 
