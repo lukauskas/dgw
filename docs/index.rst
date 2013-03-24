@@ -230,27 +230,7 @@ Note that you can also provide `-poi` parameter to `dgw-explorer.py`.
 This will override the points of interest specified by worker.
 DGW Explorer allows you to specify up to two sets of points of interest (just add the -poi parameter twice).
 
-The resulting points of interest will be plotted on top of the heatmap in cluster viewer.
-
-Using the GUI: Main Window
-~~~~~~~~~~~~~~~~~~~~~~
-When `dgw-explorer` will first start, you would see a dendrogram generated from hierarchical clustering and the
-heatmap of data besides it.
-
-*Right click* anywhere on the dendrogram to cut it. You should see the colours of the dendrogram nodes change
-corresponding to different cluster assignments. Please be patient if you are working with large dataset, as it
-might take a while to redraw the dendrogram.
-
-Once the dendrogram is drawn, clicking on the Preview button, will bring the cluster explorer window up.
-Again, on large datasets this could take a wee while to appear.
-
-Using the GUI: Cluster Explorer
-~~~~~~~~~~~~~~~~~~~~~~~
-When the Preview button is clicked, on the main window, the cluster explorer window appears.
-
-
-
-
+Please see the quickstart guide below in order for visual walkthrough on how to use DGW-explorer.
 
 Utility modules
 ---------------
