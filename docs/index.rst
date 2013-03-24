@@ -138,3 +138,95 @@ Navigate to the newly created `dgw` directory and run the installation script::
 
     python setup.py install
 
+
+Usage
+=======================
+
+DGW is split into two parts - computationally demanding part, `dgw-worker` and an exploratory part - `dgw-explorer`.
+
+`dgw-worker`
+-----------------------
+
+The worker part of the module is responsible for the actual hard work done in clustering the data.
+It preprocesses the data, computes intermediate representations, calculates DTW distances between the data,
+ performs hierarchical clustering and calculates prototypes of the clusters.
+
+Sample usage
+~~~~~~~~~~~~~~~~
+
+Typically, `dgw-worker` would be run as follows:
+```
+dgw-worker.py -r regions.bed  -d dataset1.bam dataset2.bam --prefix dgw_example
+```
+
+In this case we are providing a bed file of regions of interest we want to cluster (`-r regions.bed`),
+two datasets to work on (`-d dataset1.bam dataset2.bam`) and setting the prefix of files that will be output to `dgw_example`.
+
+The DGW-worker will take all alignments from both datasets at regions in the `regions.bed`.
+These alignments will then be extended and put into bins of 50 base pairs wide (use `-res` parameter to change this).
+Then the unexpressed regions that have no bin with more than 10 reads in it (`-min-pileup` constraint to change) will be ignored.
+Note that these ignored regions are then saved to `{prefix}_filtered_regions.bed` file.
+The remaining data will be normalised by adding two artificial reads for each bin and then taking the log of the number of reads in the bins.
+The remaining regions will then be clustered hierarchically using DTW distance with default parameters.
+
+Output
+~~~~~~~~~~~~~~~~~~~~~~
+The worker will output 8 files to the working directory where `{prefix}` is the prefix specified by `--prefix` argument.
+
+* `{prefix}_config.dgw` -- The main file storing the configuration of DGW that was used to produce the other files.
+* `{prefix}_dataset.pd` -- Processed dataset after the normalisation. This can then be passed in a subsequent DGW session as `--processed-dataset` parameter.
+* `{prefix}_filtered_regions.bed` -- Regions that were filtered out of the original regions set due to preprocessing constraints.
+* `{prefix}_linkage.npy` -- Precomputed linkage matrix that is used in hierarchical clustering
+* `{prefix}_missing_regions.bed` -- regions that were in the BED file provided as an input, but were not in one of the BAM files.
+* `{prefix}_prototypes.pickle` -- computed prototypes of the clusters
+* `{prefix}_regions.pd` -- regions that were processed, saved in DGW-readable format
+* `{prefix}_warping_paths.pickle` -- computed warping paths of the original data projected onto prototypes
+
+Points of interest
+~~~~~~~~~~~~~~~~~~~~~
+In some cases one would want to track some points of interest and their locations after warping,
+for instance, we might want to see where transcription start sites are mapped to after the warping.
+To do this, `dgw-worker` need to be run with a `-poi` parameter specified, for instance:
+
+```
+dgw-worker.py -r regions.bed -poi poi.bed  -d dataset1.bam dataset2.bam --prefix dgw_example
+```
+
+The regions in `poi.bed` must have the same names as the regions in `tss_regions.bed` otherwise DGW won't be able to match them.
+Also have a look at `--ignore-poi-non-overlaps` id some of the regions in the input file may not contain some of the regions listed as points of interest.
+Similarly, `--ignore-no-poi-regions` will make DGW ignore those regions in input file that do not contain any of the points of interest provided.
+
+Runtime
+-----------------
+Please note that DGW Worker is a very computationally-demanding piece of software.
+It is designed to be used on a performant computer with as much CPU cores as possible.
+
+A good way to estimate how long will the computation take on your machine is to use `--random-sample` parameter, e.g. pass `--random-sample 1000`.
+This parameter will take only a random sample of N regions, where N is the provided number (in this case 1000).
+The DGW worker will work on this random sample and report you both the time it took to compute the pairwise distances
+on the random sample, and the estimated time to compute them on the full sample.
+
+Prototype estimation and DTW projections onto prototypes will take around an extra 50% of time taken for pairwise distance calculations.
+
+`dgw-explorer.py`
+----------------------
+
+A second major part of DGW is the DGW explorer.
+This software is much less computationally demanding than DGW Worker and is designed to allow you to explore the results.
+
+In order to use it start it by passing a `{prefix}_config.dgw` file computed by
+DGW worker:
+``dgw-explorer.py dgw_config.dgw``
+
+The remaining files output by DGW explorer must be in the same directory as the `dgw_config.dgw` file, otherwise the explorer will not be able to locate them.
+
+Upon successful start, a window showing the dendrogram and heatmap will pop up. Left click on the dendrogram to cut it at the desired place, wait for the plot to refresh and click preview to bring up a cluster explorer.
+
+The cluster explorer allows you to cycle through clusters generated by the dendrogram cut and save both the data of the clusters and the generated heatmaps.
+
+Note that you can also provide `-poi` parameter to `dgw-explorer.py`.
+This will override the points of interest specified by worker.
+DGW Explorer allows you to specify up to two sets of points of interest (just add the -poi parameter twice).
+
+The resulting points of interest will be plotted on top of the heatmap in cluster viewer.
+
