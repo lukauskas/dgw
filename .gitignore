@@ -13,3 +13,4 @@ dm_*
 *.pickle
 build
 dist
+MANIFEST

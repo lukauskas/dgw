@@ -1,0 +1,5 @@
+recursive-include mlpy_src/dtw *.c
+recursive-include mlpy_src/dtw *.h
+recursive-include mlpy_src/dtw *.cpp
+recursive-include mlpy_src/dtw *.pxd
+recursive-include mlpy_src/dtw *.pyx
