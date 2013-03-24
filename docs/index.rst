@@ -490,10 +490,92 @@ Exploring the results using `dgw-explorer`
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 We are finally reaching the culmination of this quick start guide. We will run dgw-explorer on the results of dgw-worker run.
 
+Go ahead and type::
 
+   dgw-explorer dgw_quickstart_config.dgw
+
+You should see a window similar to the one below appear:
+
+.. image:: images/main_window.png
+   :height: 300px
+
+In this window, the dendrogram is shown alongside the heatmap of the clusters.
+
+*Right click* anywhere on the dendrogram to cut it:
+
+.. image:: images/main_window_cut.png
+   :height: 300p
+
+You can see how the line moves and the cluster colours change as you cut at different levels.
+
+If you click on the preview button in top left, a cluster explorer window simmilar to the one below will show up.
+Navigate the clusters using `Previous` and `Next` buttons:
+
+.. image:: images/explorer_window.png
+   :height: 300px
+
+This window consists of four panels.
+In the top-left one, you can see the cluster prototype that was generated.
+The top-right one shows the average DTW projection of the items in the cluster onto this prototype.
+
+The two panels in the bottom show the heatmaps of both the original data (the top panel) and the projected data.
+Each heatmap is split per dataset and labelled apropriately.
+
+The black dots you see in the heatmaps are locations of POI points. In this example, they are first splicing sites
+as ``dgw-worker`` was run using them as POI.
+
+We can change that by closing all the ``dgw-explorer`` windows and running it with the POI parameter::
+
+   dgw-explorer -poi tss.poi dgw_quickstart_config.dgw
+
+This would make all the transcription start sites appear as black dots.
+
+You can specify up to two kinds of Points of interest at the same time, e.g.::
+
+   dgw-explorer -poi fss.poi tss.poi dgw_quickstart_config.dgw
+
+Now POI in fss.poi will be marked in *black* (since they were listed first) and POI in tss.poi will be marked in *white*.
+The remainder of the images will be constructed from DGW-explorer run with both sets of points highlighted.
+
+In the cluster explorer window there are six buttons lined up.
+You should have already used the first two, `Previous` and `Next`.
+
+The third button, `Save all clusters` outputs the cluster data into the :file:`output/` directory of the main working directory
+when clicked. It would output the prototypes, heatmaps and .bed files of the data in each cluster. Please look at your
+console window to track the progress of this saving process, as it takes a short while to finish.
+
+Buttons `Enlarge heatmap` and `Enlarge DTW heatmap` will open the heatmaps of original data or the warped data
+in a new window.
+
+The final button, `View POI histogram`, shows the histograms of the POI distribution over bins in the original
+and in the warped data. The data points in original dataset are normalised to be of the length of the maximum data set
+before the histogram is calculated.
+
+The final feature of the DGW-explorer you need to know about is the warping previewer.
+If you right-click any of the heatmaps of the cluster explorer window, two new windows showing the warping will pop up.
+The two windows are pictured below:
+
+.. image:: images/warping_preview.png
+   :height: 300px
+
+.. image:: images/warping_preview_alignments.png
+   :height: 300px
+
+The first one shows the original data item (top row), the cluster prototype (middle) and the DTW projection
+of this item onto the cluster prototype. The points of interest are pictured as tiny rectangles in their original color.
+
+The second window visualises the DTW warping that is being done while projecting the item on the prototype.
+Each line corresponds to a DTW mapping between the points.
+
+This is the end of this quickstart guide. At this point you should know enough to be able to use DGW at its best.
+Please do not hesitate to contact the author if you have any enquiries, or issue a pull request on github_, if you think
+you can improve this guide.
 
 .. _MACS peak caller: http://liulab.dfci.harvard.edu/MACS/
 .. _bedtools: http://bedtools.readthedocs.org/en/latest/
 .. _wgEncodeBroadHistone accession: http://hgdownload.cse.ucsc.edu/goldenPath/hg19/encodeDCC/wgEncodeBroadHistone/
 .. _ENCODE table browser: http://encodeproject.org/cgi-bin/hgTables?hgsid=330609261&clade=mammal&org=Human&db=hg19&hgta_group=genes&hgta_track=wgEncodeRegTxn&hgta_table=0&hgta_regionType=genome&position=chrX%3A151073054-151383976&hgta_outputType=wigData&hgta_outFileName=
+.. _github: https://github.com/sauliusl/dgw
 
+Authors & Contact Information
+==================================
