@@ -577,5 +577,3 @@ you can improve this guide.
 .. _ENCODE table browser: http://encodeproject.org/cgi-bin/hgTables?hgsid=330609261&clade=mammal&org=Human&db=hg19&hgta_group=genes&hgta_track=wgEncodeRegTxn&hgta_table=0&hgta_regionType=genome&position=chrX%3A151073054-151383976&hgta_outputType=wigData&hgta_outFileName=
 .. _github: https://github.com/sauliusl/dgw
 
-Authors & Contact Information
-==================================
