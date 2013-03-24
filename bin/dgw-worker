@@ -281,7 +281,7 @@ def main():
                 if len(poi_dataset) != len(dataset):
                     dropped_regions = regions.ix[dataset.items - poi_dataset.items]
                     print '> {0} regions were removed as they have no POI data with them ' \
-                          'and --no-poi-regions was set'.format(len(dropped_regions))
+                          'and --ignore-no-poi-regions was set'.format(len(dropped_regions))
                     print '> Saving them to {0!r}'.format(configuration.no_poi_regions_filename)
                     dropped_regions.to_bed(configuration.no_poi_regions_filename)
                     dataset = poi_dataset
