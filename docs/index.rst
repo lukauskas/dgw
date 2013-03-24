@@ -162,6 +162,10 @@ dgw-worker.py -r regions.bed  -d dataset1.bam dataset2.bam --prefix dgw_example
 In this case we are providing a bed file of regions of interest we want to cluster (`-r regions.bed`),
 two datasets to work on (`-d dataset1.bam dataset2.bam`) and setting the prefix of files that will be output to `dgw_example`.
 
+.. attention::
+  Even though you need to provide only `.bam` files, the code silently assumes that index files are present under
+  the extension `.bam.bai` and will fail to work if you do not have them in the same directory.
+
 The DGW-worker will take all alignments from both datasets at regions in the `regions.bed`.
 These alignments will then be extended and put into bins of 50 base pairs wide (use `-res` parameter to change this).
 Then the unexpressed regions that have no bin with more than 10 reads in it (`-min-pileup` constraint to change) will be ignored.
@@ -238,9 +242,12 @@ corresponding to different cluster assignments. Please be patient if you are wor
 might take a while to redraw the dendrogram.
 
 Once the dendrogram is drawn, clicking on the Preview button, will bring the cluster explorer window up.
+Again, on large datasets this could take a wee while to appear.
 
 Using the GUI: Cluster Explorer
 ~~~~~~~~~~~~~~~~~~~~~~~
+When the Preview button is clicked, on the main window, the cluster explorer window appears.
+
 
 
 
@@ -324,5 +331,151 @@ for more information.
 
 Quickstart
 =======================
-This section will walk you though some example usage of DGW in full so you can have running start with the software
-It is going to use MACS peak caller and the dataset
+This section will walk you though some example usage of DGW in full so you can have running start with the software.
+
+In this section we are going to use `MACS peak caller`_ to get all peaks in the K562 H3k4me3 dataset from ENCODE `wgEncodeBroadHistone accession`_,
+cluster them and visualise all transcription start sites and first splicing sites.
+
+
+Preparation
+-----------------------
+Assuming you already have DGW installed, download the required datasets from ENCODE using i.e. wget::
+
+    wget http://hgdownload.cse.ucsc.edu/goldenPath/hg19/encodeDCC/wgEncodeBroadHistone/wgEncodeBroadHistoneK562H3k4me3StdAlnRep1.bam http://hgdownload.cse.ucsc.edu/goldenPath/hg19/encodeDCC/wgEncodeBroadHistone/wgEncodeBroadHistoneK562H3k4me3StdAlnRep1.bam.bai
+    wget http://hgdownload.cse.ucsc.edu/goldenPath/hg19/encodeDCC/wgEncodeBroadHistone/wgEncodeBroadHistoneK562H3k9acStdAlnRep1.bam http://hgdownload.cse.ucsc.edu/goldenPath/hg19/encodeDCC/wgEncodeBroadHistone/wgEncodeBroadHistoneK562H3k9acStdAlnRep1.bam.bai
+
+You will also need control dataset to run MACS:
+
+    wget http://hgdownload.cse.ucsc.edu/goldenPath/hg19/encodeDCC/wgEncodeBroadHistone/wgEncodeBroadHistoneK562ControlStdAlnRep1.bam http://hgdownload.cse.ucsc.edu/goldenPath/hg19/encodeDCC/wgEncodeBroadHistone/wgEncodeBroadHistoneK562ControlStdAlnRep1.bam.bai
+
+Make sure to download the `bam.bai` files as they are also required and highly important.
+
+Depending on your internet connection, this will take a short while. Let's set up other dependencies while we wait.
+Install `MACS peak caller`_, if you haven't done so yet using the instructions on their site http://liulab.dfci.harvard.edu/MACS/.
+
+Download `knownGenes` file from `ENCODE table browser`_.
+Make sure group `Genes and Gene Prediction Tracks` is selected, track is set to `UCSC Genes` and the table set to `knownGenes`.
+Save that file to the same directory the bam files are downloaded at, name it knownGenes.
+
+Extracting transcription start sites and first splicing sites
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Use `dgw-extract-gene-regions` to extract transcription start sites from this dataset::
+
+    dgw-extract-gene-regions --tss knownGenes tss.bed
+
+To extract first-splicing sites, do::
+
+    dgw-extract-gene-regions --splicing-site 0 knownGenes fss.bed
+
+Note that we are providing 0 as splicing site number, as these sites are numbered from 0.
+
+Running MACS
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+At this point I assume that all datasets have been downloaded. If not, feel free to go have a cup of coffee until they do.
+
+Run MACS peak caller on the dataset::
+
+   macs14 -t wgEncodeBroadHistoneK562H3k4me3StdAlnRep1.bam -c wgEncodeBroadHistoneK562ControlStdAlnRep1.bam
+
+Optional: Merge the peaks that are within 50 base pairs from each other, using bedtools_::
+
+   bedtools merge -i NA_peaks.bed -d 50 -nms > macs_peaks.bed
+
+If you do not want to do this, just rename `NA_peaks.bed` to `macs_peaks.bed`.
+
+Getting POI mapped to the regions on maps
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+At this point we want to create the POI datasets for visualising transcription start sites and first splicing sites
+on MACS. In order to do this, we are going to use `dgw-overlaps2poi` utility::
+
+   dgw-overlaps2poi macs_peaks.bed tss.bed > tss.poi
+
+The previous command would take all the regions in `macs_peaks.bed`, find all the regions in previously created `tss.bed`
+that are *fully contained* within the `macs_peaks.bed` and output them to stdout (which we are redirecting to `tss.poi`).
+This might take a short while to run.
+
+Similarly, we need to do this for first splicing sites::
+
+   dgw-overlaps2poi macs_peaks.bed fss.bed > fss.poi
+
+Running DGW-Worker
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Congratulations, we have finally arrived to the interesting part of this quick start guide. Thanks for staying with me.
+We are going to run DGW-Worker on our dataset. In order to make this quick-start efficient we are going to
+provide `--random-sample 5000` parameter to DGW (and thus just work with a random sample of 1000 regions), but
+feel free to try it out without this parameter later on to look for interesting patterns in the complete dataset.
+
+We are going to run the following command::
+
+   dgw-worker -r macs_peaks.bed -d wgEncodeBroadHistoneK562H3k4me3StdAlnRep1.bam wgEncodeBroadHistoneK562H3k9acStdAlnRep1.bam -poi fss.poi --ignore-no-poi-regions --metric sqeuclidean --random-sample 1000 --prefix dgw_quickstart
+
+Let's dissect this:
+
+- `-r macs_peaks.bed` -- Cluster the regions in `macs_peaks.bed`
+- `-d wgEncodeBroadHistoneK562H3k4me3StdAlnRep1.bam wgEncodeBroadHistoneK562H3k9acStdAlnRep1.bam` -- Use only the data in these two datasets to cluster them
+- `-poi fss.poi` -- Use regions in `fss.poi` as regions of interest
+- `--ignore-no-poi-regions` -- Ignore all regions that do not have any entry in `fss.poi` (in this case, regions that do not contain a first splicing site).
+- `--metric sqeuclidean` -- use Squared Euclidean as distance metric (can also be `euclidean`, or `cosine` if you feel like it).
+- `--random-sample 1000` -- take only 1000 regions at random rather than full dataset (so it's faster).
+- `--prefix dgw_quickstart` -- prefix the output files with `dgw_quickstart`.
+
+Once you know what each parameter does, run the command. Due to randomness of `--random-sample` parameter,
+each run of DGW will produce different results. The sample output that I got is shown here::
+
+    > Reading regions from 'macs_peaks.bed' ....
+    > 30827 regions of interest read
+    > Using only a random sample of 1000 regions from 'macs_peaks.bed'
+    > 1000 regions remain
+    > Reading points of interest
+    > Reading dataset ...
+    > 574 regions were removed as they have no POI data with them and --ignore-no-poi-regions was set
+    > Saving them to 'dgw_quickstart_no_poi_regions.bed'
+    > 60 regions were filtered out from dataset due to --min-pileup constraint, they were saved to dgw_quickstart_filtered_regions.bed
+    > 366 regions remaining and will be processed
+    > Serialising regions to dgw_quickstart_regions.pd
+    > Saving dataset to dgw_quickstart_dataset.pd
+    > Calculating pairwise distances (this might take a while) ...
+    > Using all available cpu cores (8)
+    > Pairwise distances calculation took 3.616643 s
+    > Expected calculation duration if random-sample was not used: 3440.23880124 s
+    > Computing linkage matrix
+    > Saving linkage matrix to 'dgw_quickstart_linkage.npy'
+    > Computing prototypes
+    > Saving prototypes to 'dgw_quickstart_prototypes.pickle'
+    > Computing warping paths
+    > Saving warping paths to 'dgw_quickstart_warping_paths.pickle'
+    > Saving configuration to 'dgw_quickstart_config.dgw'
+    > Done
+
+Your result might be sligtly different due to randomness in the `--random-sample` parameter.
+Reading the output line by line:
+
+- 30827 regions of interest were provided using `-r` parameter.
+- Out of those regions, a random sample of 1000 was selected.
+- Then POI regions were read, and 574 regions out of the previously selected regions were removed as they
+had no POI data associated with them (no first splicing sites contained them) and --ignore-no-poi-regions was set. These
+regions are saved to :file:`dgw_quickstart_no_poi_regions.bed`.
+- Then 60 regions were filtered out from dataset due to `--min-pileup` constraint. This constraint prefilters regions
+to leave only regions that have a bin with more than 10 reads falling into it by default, in order to not waste
+the computational resources for areas that are not so interesting.
+- After the preprocessing 366 regions remained and will be processed.
+- Regions were serialised to :file:`dgw_quickstart_regions.pd` for quick reading by dgw-explorer.
+- Dataset was serialised to :file:`dgw_quickstart_dataset.pd`. You can run subsequent tests on the same dataset
+by providing it as a `--pd dgw_quickstart.pd`.
+- 8 processes cores were used for calculation of the DTW pairwise distances.
+- This calculation took a bit less than 4s for these 366 regions.
+- It would take around an hour to do this for all regions without `--random-sample`
+- The linkage was computed and saved to :file:`dgw_quickstart_linkage.npy`
+- Prototypes were generated and saved to :file:`dgw_quickstart_prototypes.pickle`.
+- Data was warped to the prototypes, and the warping paths saved to :file:`dgw_quickstart_warping_paths.pickle`.
+- The configuration was saved to `dgw_quickstart_config.dgw`. This is the file the DGW explorer will have to be called upon.
+
+
+
+
+
+.. _MACS peak caller: http://liulab.dfci.harvard.edu/MACS/
+.. _bedtools: http://bedtools.readthedocs.org/en/latest/
+.. _wgEncodeBroadHistone accession: http://hgdownload.cse.ucsc.edu/goldenPath/hg19/encodeDCC/wgEncodeBroadHistone/
+.. _ENCODE table browser: http://encodeproject.org/cgi-bin/hgTables?hgsid=330609261&clade=mammal&org=Human&db=hg19&hgta_group=genes&hgta_track=wgEncodeRegTxn&hgta_table=0&hgta_regionType=genome&position=chrX%3A151073054-151383976&hgta_outputType=wigData&hgta_outFileName=
+
