@@ -6,8 +6,8 @@ import scipy.cluster.hierarchy as hierarchy
 import pandas as pd
 import numpy as np
 from ..data.containers import AlignmentsData
-from ..dtw.distance import dtw_std
-from ..dtw import transformations, dtw_projection
+from ..dtw.distance import dtw_std, warping_conservation_vector
+from ..dtw import transformations, dtw_projection, no_nans_len
 from ..dtw.parallel import parallel_dtw_paths
 
 def compute_paths(data, dtw_nodes_list, n, n_processes=None, *dtw_args, **dtw_kwargs):
@@ -159,6 +159,9 @@ class DTWClusterNode(object, hierarchy.ClusterNode):
         self.ensure_projections_are_calculated()
         return self._projected_data
 
+
+
+
     def ensure_projections_are_calculated(self):
         if not self._projected_data:
             self._projected_data = self.__project_items_onto_prototype()
@@ -285,6 +288,24 @@ class DTWClusterNode(object, hierarchy.ClusterNode):
             panel = panel.ix[self.data.items]
             ad = AlignmentsData(panel)
             return ad
+
+    def warping_conservation_vector(self):
+        # TODO: compute this only once
+        data = self.data
+        if self.is_leaf():
+            return np.ones(no_nans_len(self.prototype)-1)
+        else:
+            warping_paths = self.warping_paths
+
+            vector = np.zeros(no_nans_len(self.prototype)-1)
+            count = 0
+            for ix in data.items:
+                path = warping_paths[ix]
+                vector += warping_conservation_vector(path)
+                count += 1
+            vector /= count
+
+            return vector
 
     def __track_points_of_interest(self):
 

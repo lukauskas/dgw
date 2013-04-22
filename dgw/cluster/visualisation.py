@@ -6,6 +6,7 @@ import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
 from matplotlib.widgets import Button
 from dgw.dtw.visualisation import visualise_dtw, visualise_dtw_mappings
+import numpy as np
 
 
 class ClusterPreviewer(object):
@@ -46,11 +47,15 @@ class ClusterPreviewer(object):
     def gs_prototype(self):
         return self._main_gs[1, 0]
     def gs_projected_mean(self):
-        return self._main_gs[1, 1]
+        return self._main_gs[1:3, 1]
     def gs_projected_heatmap(self):
-        return self._main_gs[3, :]
+        return self._main_gs[4, :]
     def gs_heatmap(self):
-        return self._main_gs[2, :]
+        return self._main_gs[3, :]
+
+    def gs_warping_preservation(self):
+        return self._main_gs[2, 0]
+
 
     def ax_heatmap(self):
         if self._ax_heatmap is None:
@@ -63,10 +68,15 @@ class ClusterPreviewer(object):
         return self._ax_projected_heatmap
 
     def _initialise_grid(self):
-        self._main_gs = gridspec.GridSpec(5, 2, height_ratios=[1, 40, 20, 20, 4], hspace=0.4)
+        self._main_gs = gridspec.GridSpec(6, 2, height_ratios=[1, 30, 10, 20, 20, 4], hspace=0.4)
 
 
     def current_cluster(self):
+        """
+
+        :return:
+        :rtype: DTWClusterNode
+        """
         return self._clusters[self._current_cluster_id]
 
     def _callback_next(self, event):
@@ -304,6 +314,12 @@ class ClusterPreviewer(object):
 
         plt.figlegend(*ax_prototype.get_legend_handles_labels(), loc='lower center')
 
+        plt.subplot(self.gs_warping_preservation(), sharex=ax_prototype)
+        plt.cla()
+        wpc_vector = current_cluster.warping_conservation_vector()
+        plt.plot(np.arange(0.5, len(wpc_vector), 1), wpc_vector)
+
+
         self.title.set_text('Cluster #{0}/{2} ({1} elements)'.format(self._current_cluster_id + 1,
                                                                      current_cluster.n_items,
                                                                      len(self._clusters)))
@@ -327,10 +343,11 @@ class ClusterPreviewer(object):
         plt.subplot(self.gs_projected_heatmap())
         plt.cla()
         self._ax_projected_heatmap = plt.gca()
-        current_cluster.projected_data.plot_heatmap(horizontal_grid=True, subplot_spec=self.gs_projected_heatmap(),
+        projected_axis = current_cluster.projected_data.plot_heatmap(horizontal_grid=True, subplot_spec=self.gs_projected_heatmap(),
                                                     share_y_axis=shared_axis, sort_by=None,
                                                     highlighted_points=current_cluster.tracked_points_of_interest,
                                                     highlight_colours=self.highlight_colours)
+
 
         # Finally issue a draw command for the plot
         plt.draw()
