@@ -102,3 +102,13 @@ def dtw_std(x, y, metric='sqeuclidean', dist_only=True, constraint=None, k=None,
 
             cost = np.fliplr(cost)
             return _normalise(dist, max_len), cost, path_rev
+
+def dtw_path_is_reversed(path):
+    """
+    Returns true if DTW path is reversed
+
+    :param path:
+    :return:
+    """
+    # Just need to check whether first point in the first sequence path is zero.
+    return path[0][0] != 0

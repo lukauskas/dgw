@@ -265,6 +265,30 @@ class Regions(object):
     def has_strand_data(self):
         return 'strand' in self.columns
 
+    def infer_strand_from_whether_the_region_was_reversed_or_not(self, reversion_status_dictionary):
+        """
+        Infers the strand of a region by checking whether the region was reversed or not.
+
+        :param reversion_status_dictionary: Dictionary of boolean true/false values, true indicated the region
+                                            was reversed by DTW
+        :return:
+        """
+        data = self.data.copy()
+
+        strand_dict = {}
+        for key, reversed in reversion_status_dictionary.iteritems():
+            if key not in data.index:
+                continue
+            if reversed is None:
+                strand_dict[key] = None
+            elif reversed:
+                strand_dict[key] = '-'
+            else:
+                strand_dict[key] = '+'
+
+        strand_series = pd.Series(strand_dict)
+        data['strand'] = strand_series
+        return self.__class__(data)
 
     def iterrows(self):
         return self.data.iterrows()

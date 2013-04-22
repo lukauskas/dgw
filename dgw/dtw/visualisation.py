@@ -5,7 +5,8 @@ from matplotlib.ticker import NullFormatter
 import numpy as np
 from dgw.dtw import reverse_sequence
 
-from distance import dtw_std
+from distance import dtw_std, dtw_path_is_reversed
+
 
 def plot_dtw_cost_and_path(cost_matrix, path, ax=None):
     """
@@ -161,14 +162,12 @@ def visualise_dtw_mappings(sequence_x, sequence_y, dtw_function=dtw_std, columns
     except IndexError:
         ndim = 1
 
-    if path[0][0] != 0:
-        reversed = True
+    reversed = dtw_path_is_reversed(path)
+    if reversed:
         sequence_x = reverse_sequence(sequence_x)
         path_x = np.max(path[0]) - path[0]
         path_y = path[1]
         path = (path_x, path_y)
-    else:
-        reversed = False
 
     sequence_y_T = np.atleast_2d(sequence_y.T)
     sequence_x_T = np.atleast_2d(sequence_x.T)

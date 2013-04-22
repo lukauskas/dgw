@@ -6,7 +6,7 @@ import scipy.cluster.hierarchy as hierarchy
 import pandas as pd
 import numpy as np
 from ..data.containers import AlignmentsData
-from ..dtw.distance import dtw_std
+from ..dtw.distance import dtw_std, dtw_path_is_reversed
 from ..dtw import transformations, dtw_projection
 from ..dtw.parallel import parallel_dtw_paths
 
@@ -250,7 +250,11 @@ class DTWClusterNode(object, hierarchy.ClusterNode):
                 track_kwargs['description'] = track_description
         else:
             track_kwargs = {}
-        self.regions.to_bed(filename, **track_kwargs)
+
+        regions = self.regions
+
+        regions = regions.infer_strand_from_whether_the_region_was_reversed_or_not(self.reversal_dictionary)
+        regions.to_bed(filename, **track_kwargs)
 
     def save_as_list_of_indices(self, filename):
             index = self.data.items
@@ -306,6 +310,15 @@ class DTWClusterNode(object, hierarchy.ClusterNode):
     def points_of_interest(self):
         poi = self.data.points_of_interest
         return poi
+
+    @property
+    def reversal_dictionary(self):
+        warping_paths = self.warping_paths
+        reversal_dict = {}
+        for item in self.index:
+            reversal_dict[item] = dtw_path_is_reversed(warping_paths[item])
+
+        return reversal_dict
 
     @property
     def tracked_points_of_interest(self):
