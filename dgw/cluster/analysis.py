@@ -112,6 +112,7 @@ class DTWClusterNode(object, hierarchy.ClusterNode):
     _tracked_points = None
     _tracked_points_histogram = None
     _points_of_interest_histogram = None
+    _warping_conservation_data = None
 
     def __init__(self, hierarchical_clustering_object, id, prototype, left=None, right=None, dist=0, count=1):
         hierarchy.ClusterNode.__init__(self, id, left=left, right=right, dist=dist, count=count)
@@ -289,23 +290,28 @@ class DTWClusterNode(object, hierarchy.ClusterNode):
             ad = AlignmentsData(panel)
             return ad
 
-    def warping_conservation_vector(self):
-        # TODO: compute this only once
+    def _compute_warping_conservation_data(self):
         data = self.data
         if self.is_leaf():
-            return np.ones(no_nans_len(self.prototype)-1)
+            conservation_data = [np.ones(no_nans_len(self.prototype)-1)]
         else:
             warping_paths = self.warping_paths
-
-            vector = np.zeros(no_nans_len(self.prototype)-1)
-            count = 0
+            conservation_data = []
             for ix in data.items:
                 path = warping_paths[ix]
-                vector += warping_conservation_vector(path)
-                count += 1
-            vector /= count
+                conservation_data.append(warping_conservation_vector(path))
 
-            return vector
+        return pd.DataFrame(conservation_data)
+
+    @property
+    def warping_conservation_data(self):
+        if self._warping_conservation_data is None:
+            self._warping_conservation_data = self._compute_warping_conservation_data()
+        return self._warping_conservation_data
+
+    def warping_conservation_vector(self):
+        conservation_vector = self.warping_conservation_data.mean()
+        return conservation_vector
 
     def __track_points_of_interest(self):
 

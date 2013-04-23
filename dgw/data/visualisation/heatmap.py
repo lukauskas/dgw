@@ -52,15 +52,13 @@ def raw_plot_data_as_heatmap(data_frame, ax=None, highlight_masks=None, highligh
 
     return result
 
-def plot(alignments, clip_colors=False, titles=None, horizontal_grid=True,
+def plot(alignments, titles=None, horizontal_grid=True,
          no_y_axis=False, sort_by=None, subplot_spec=None, share_y_axis=None, scale_y_axis=None, highlighted_points={},
          highlight_colours=None,
-         rasterized=True):
+         rasterized=True, replace_with_dataframe=None):
     """
 
     :param alignments: `AlignmentsData` object
-    :param clip_colors: will remove some of the highest colours from heatmap for better visualisation if set to true.
-                        Equivalent of setting the top 0.1% values in the dataset to the last one below top 0.1%
     :param titles: Titles of the heatmaps. If set to none `alignments.dataset_axis` will be used
     :param horizontal_grid: Whether to plot heatmap on a horizontal grid
     :param no_y_axis: Will not plot the major (items) axis.
@@ -71,6 +69,7 @@ def plot(alignments, clip_colors=False, titles=None, horizontal_grid=True,
     :type scale_y_axis: int
     :param highlighted_points: a (index, array) dictionary of points that should be highlighted in the heatmap
     :param: rasterized: whether to rasterize the plot or not (faster rending for rasterized)
+    :param replace_with_dataframe: replace the data with the dataframe provided. Use for toggleable overlays
     :return: returns the shared y axis
     """
     import matplotlib.pyplot as plt
@@ -101,32 +100,6 @@ def plot(alignments, clip_colors=False, titles=None, horizontal_grid=True,
     alignments = alignments.ix[sorted_index]
     # Create the instance of axis formatter
     tick_formatter = dataset_ticks(alignments, scale_y_axis)
-
-    # Clipping of colors
-    values = np.empty(0)
-    for ix in alignments.dataset_axis:
-        values = np.concatenate((values, alignments.dataset_xs(ix).unstack().dropna()))
-
-    if clip_colors:
-        # Calculate the max_value threshold so heatmap looks good
-        histogram, bin_edges = np.histogram(values, bins=1000)
-
-        last_good_bin = None
-        TRIM_MAX_VALUE_THRESHOLD = 0.001  # Trim max value threshold to be the value that hides 0.1% of peaks
-        allowed_slack = round(TRIM_MAX_VALUE_THRESHOLD * len(values))
-
-        current_slack = 0
-        for i, hist in reversed(list(enumerate(histogram))):
-            current_slack += hist
-            if current_slack >= allowed_slack:
-                last_good_bin = i
-                break
-
-        max_value = bin_edges[last_good_bin+1]
-    else:
-        max_value = values.max()
-
-    min_value = 0
 
     # Subplot creation
 
@@ -197,7 +170,11 @@ def plot(alignments, clip_colors=False, titles=None, horizontal_grid=True,
         # Cut most of the columns that are NaNs out of the plot
         data_to_plot = data_to_plot[data_to_plot.columns[:max_len]]
 
-        result = raw_plot_data_as_heatmap(data_to_plot, vmin=min_value, vmax=max_value, extent=extent,
+        if replace_with_dataframe is not None:
+            result = raw_plot_data_as_heatmap(replace_with_dataframe, extent=extent,
+                                              rasterized=rasterized)
+        else:
+            result = raw_plot_data_as_heatmap(data_to_plot, extent=extent,
                                           highlight_masks=highlight_masks, rasterized=rasterized, highlight_colours=highlight_colours)
         debug(plt.gca().get_ylim())
         debug(plt.gca().get_xlim())

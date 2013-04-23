@@ -140,20 +140,20 @@ def warping_conservation_vector(warping_path):
             prev_j = j
             prev_i = i
 
-    # first_one_in_set = -1
-    # number_of_ones_in_set = 0
-    # for i in range(n-1):
-    #     if conservation_vector[i] == 0 and first_one_in_set > -1:
-    #         conservation_vector[first_one_in_set:i] = number_of_ones_in_set
-    #         number_of_ones_in_set = 0
-    #         first_one_in_set = -1
-    #     elif conservation_vector[i] == 1:
-    #         if number_of_ones_in_set == 0:
-    #             first_one_in_set = i
-    #         number_of_ones_in_set += 1
-    #
-    # if number_of_ones_in_set > 0 and first_one_in_set > -1:
-    #     conservation_vector[first_one_in_set:] = number_of_ones_in_set
+    first_one_in_set = -1
+    number_of_ones_in_set = 0
+    for i in range(n-1):
+        if conservation_vector[i] == 0 and first_one_in_set > -1:
+            conservation_vector[first_one_in_set:i] = number_of_ones_in_set
+            number_of_ones_in_set = 0
+            first_one_in_set = -1
+        elif conservation_vector[i] == 1:
+            if number_of_ones_in_set == 0:
+                first_one_in_set = i
+            number_of_ones_in_set += 1
+
+    if number_of_ones_in_set > 0 and first_one_in_set > -1:
+        conservation_vector[first_one_in_set:] = number_of_ones_in_set
 
     return conservation_vector
 
