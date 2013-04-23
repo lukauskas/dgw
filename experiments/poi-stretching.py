@@ -179,7 +179,7 @@ def generate_new_dataset(dataset, desired_size, max_stretch_length=20, reverse_r
 
 
     new_dataset = pd.Panel(new_dataset)
-    ad = AlignmentsData(new_dataset)
+    ad = AlignmentsData(new_dataset, resolution=dataset.resolution)
     ad.points_of_interest = new_points_of_interest
 
     return ad

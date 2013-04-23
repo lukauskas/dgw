@@ -19,7 +19,7 @@ class AlignmentsDataIndexer(object):
     def __getitem__(self, key):
         result = self._ndframe_indexer.__getitem__(key)
         if isinstance(result, pd.Panel):
-            data = AlignmentsData(result)
+            data = AlignmentsData(result, self._alignments_data.resolution)
             data.points_of_interest = self._alignments_data.points_of_interest
             return data
         else:
@@ -55,8 +55,9 @@ class AlignmentsData(object):
     _data = None
     _poi = None
     _scale = None
+    _resolution = None
 
-    def __init__(self, panel, poi=None, scale='raw'):
+    def __init__(self, panel, resolution, poi=None, scale='raw'):
         """
         Initialises `AlignmentsData` with a `panel` provided.
         The panel is assumed to have data sets on the minor axis
@@ -64,7 +65,10 @@ class AlignmentsData(object):
 
         :param panel: `pd.Panel` object `AlignmentsData` will be initialised on, or `pd.DataFrame` that will be converted
                      to Panel
+        :param resolution: resolution of data
+        :param poi: points of interest
         :param scale: the scale of data
+
         :return:
         """
         if isinstance(panel, pd.DataFrame):
@@ -79,6 +83,7 @@ class AlignmentsData(object):
         self._scale = scale
 
         self.points_of_interest = poi
+        self._resolution = resolution
 
 
     def reset_poi(self):
@@ -91,6 +96,10 @@ class AlignmentsData(object):
     @property
     def points_of_interest(self):
         return self._poi
+
+    @property
+    def resolution(self):
+        return self._resolution
 
     @points_of_interest.setter
     def points_of_interest(self, value):
@@ -183,7 +192,7 @@ class AlignmentsData(object):
             return self
 
         new_data = (self.data + 2).apply(np.log)  # Adding +2 so we have no zeros in log output
-        ad = AlignmentsData(new_data, scale='log')
+        ad = AlignmentsData(new_data, self.resolution, scale='log')
         ad.points_of_interest = self.points_of_interest
         return ad
 
@@ -193,7 +202,7 @@ class AlignmentsData(object):
             data[ix] = data_row / data_row.max()
 
         data = pd.Panel(data)
-        return self.__class__(data, poi=self.points_of_interest)
+        return self.__class__(data, self.resolution, poi=self.points_of_interest)
 
     def plot_heatmap(self, *args, **kwargs):
         """
@@ -466,6 +475,26 @@ class Regions(object):
 
         df = pd.DataFrame(new_regions_data, index=self.index)
         return Regions(df)
+
+    def bins_to_intervals(self, resolution):
+        """
+        Returns genomic location intervals in the form of (start, end) for each bin of the region at resolution
+        provided, for each region
+        :param resolution:
+        :return:
+        """
+        regions = self.clip_to_resolution(resolution)
+
+        intervals = {}
+        for ix, row in regions.iterrows():
+            start = row['start']
+            end = row['end']
+
+            intervals[ix] = [(i, i+resolution) for i in np.arange(start, end, resolution, dtype=int)]
+
+        return intervals
+
+
 
 class Genes(Regions):
 

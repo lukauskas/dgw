@@ -203,7 +203,7 @@ def read_bam(alignment_filenames, regions, resolution=50, extend_to=200, data_fi
         dataset[index] = df
 
     panel = pd.Panel(dataset)
-    data = AlignmentsData(panel)
+    data = AlignmentsData(panel, resolution=resolution)
 
     filtered_out_indices = dataset_regions.index - data.items
 

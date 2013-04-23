@@ -94,7 +94,7 @@ def dtw_projection_multi(alignments, base, *args, **kwargs):
         projection = dtw_projection(item, base, *args, **kwargs)
         new_data[index] = pd.DataFrame(projection, index=range(len(base)), columns=item.columns)
 
-    return AlignmentsData(pd.Panel(new_data))
+    return AlignmentsData(pd.Panel(new_data), resolution=alignments.resolution)
 
 def dtw_path_averaging(sequence_a, sequence_b, weight_a=1, weight_b=1, path=None, shrink=True, dtw_function=dtw_std):
     """
