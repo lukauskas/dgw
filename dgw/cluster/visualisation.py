@@ -98,6 +98,10 @@ class ClusterPreviewer(object):
         if not os.path.exists(prototypes_directory):
             os.makedirs(prototypes_directory)
 
+        warpings_directory = os.path.join(directory, 'warpings')
+        if not os.path.exists(warpings_directory):
+            os.makedirs(warpings_directory)
+
         print '> Saving regions to directory {0}'.format(bed_directory)
         for i, c in enumerate(self._clusters):
 
@@ -134,6 +138,11 @@ class ClusterPreviewer(object):
             f.savefig(filename_prototype)
             plt.close(f)
 
+        print '> Saving warpings to directory {0}'.format(warpings_directory)
+        for i, c in enumerate(self._clusters):
+            filename_prototype = os.path.join(warpings_directory, 'cluster-{0}-warpings.tsv.gz'.format(i + 1))
+            c.save_warpings_to_file(filename_prototype)
+
         print '> Saved'
 
     def add_button(self, text, callback):
@@ -144,7 +153,7 @@ class ClusterPreviewer(object):
         button_spacing = 0.02
 
         ax_button = plt.axes([buttons_left + (button_width + button_spacing) * len(self._buttons),
-                              buttons_bottom, button_width, button_height])
+                              buttons_bottom, button_width, button_heiwght])
         self._buttons.append(Button(ax_button, text))
         self._buttons[-1].on_clicked(callback)
 

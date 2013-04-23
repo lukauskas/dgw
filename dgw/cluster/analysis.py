@@ -9,6 +9,7 @@ from ..data.containers import AlignmentsData
 from ..dtw.distance import dtw_std, dtw_path_is_reversed
 from ..dtw import transformations, dtw_projection
 from ..dtw.parallel import parallel_dtw_paths
+import gzip
 
 def compute_paths(data, dtw_nodes_list, n, n_processes=None, *dtw_args, **dtw_kwargs):
 
@@ -259,10 +260,36 @@ class DTWClusterNode(object, hierarchy.ClusterNode):
     def save_as_list_of_indices(self, filename):
             index = self.data.items
             f = open(filename, 'w')
-            for ix in index:
-                f.write('{0}\n'.format(ix))
-            f.close()
+            try:
+                for ix in index:
+                    f.write('{0}\n'.format(ix))
+            finally:
+                f.close()
 
+    def save_warpings_to_file(self, filename):
+        data = self.data
+        index = data.items
+        regions = self.regions
+        bin_intervals = regions.ix[index].bins_to_intervals(data.resolution)
+        chromosomes = regions.chromosome
+        warping_paths = self.warping_paths
+
+        f = gzip.open(filename, 'w')
+        f.write('#{0}\t{1}\t{2}\t{3}\t{4}\n'.format('index', 'chromosome', 'start', 'end', 'prototype_bin'))
+        try:
+            for ix, chromosome in chromosomes.iteritems():
+                path = warping_paths[ix]
+                bi = bin_intervals[ix]
+
+                for i in xrange(len(path[0])):
+                    p_a = path[0][i]
+                    p_b = path[1][i]
+
+                    current_bin = bi[p_a]
+
+                    f.write('{0}\t{1}\t{2}\t{3}\t{4}\n'.format(ix, chromosome, current_bin[0], current_bin[1], p_b))
+        finally:
+            f.close()
 
 
     def __project_items_onto_prototype(self):
@@ -287,7 +314,7 @@ class DTWClusterNode(object, hierarchy.ClusterNode):
                 projections[ix] = df
             panel = pd.Panel(projections)
             panel = panel.ix[self.data.items]
-            ad = AlignmentsData(panel)
+            ad = AlignmentsData(panel, self.data.resolution)
             return ad
 
     def __track_points_of_interest(self):

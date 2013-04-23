@@ -132,7 +132,7 @@ def generate_new_dataset(starting_dataset, desired_size, *args, **kwargs):
         new_dataset['{0}-{1}'.format(random_ix, item_id)] = transformed_item
 
     new_dataset = pd.Panel(new_dataset)
-    return AlignmentsData(new_dataset)
+    return AlignmentsData(new_dataset, resolution=starting_dataset.resolution)
 
 
 
