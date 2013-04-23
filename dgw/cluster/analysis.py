@@ -312,7 +312,7 @@ class DTWClusterNode(object, hierarchy.ClusterNode):
         warping_paths = self.warping_paths
 
         f = gzip.open(filename, 'w')
-        f.write('#{0}\t{1}\t{2}\t{3}\t{4}\n'.format('index', 'chromosome', 'start', 'end', 'prototype_bin'))
+        f.write('#{0}\t{1}\t{2}\t{3}\t{4}\t{5}\n'.format('index', 'bin', 'chromosome', 'start', 'end', 'prototype_bin'))
         try:
             for ix, chromosome in chromosomes.iteritems():
                 path = warping_paths[ix]
@@ -324,7 +324,22 @@ class DTWClusterNode(object, hierarchy.ClusterNode):
 
                     current_bin = bi[p_a]
 
-                    f.write('{0}\t{1}\t{2}\t{3}\t{4}\n'.format(ix, chromosome, current_bin[0], current_bin[1], p_b))
+                    f.write('{0}\t{1}\t{2}\t{3}\t{4}\t{5}\n'.format(ix, current_bin, chromosome, current_bin[0], current_bin[1], p_b))
+        finally:
+            f.close()
+
+    def save_warping_conservation_data_to_file(self, filename):
+        data = self.data
+        index = data.items
+        conservation_data = self.warping_conservation_data
+
+        f = gzip.open(filename, 'w')
+        f.write('#{0}\t{1}\t{2}\t{3}\n'.format('index', 'start_bin', 'end_bin', 'conservation_coefficient'))
+        try:
+            for ix in index:
+                conservation_vector = conservation_data.ix[ix]
+                for i in xrange(len(conservation_vector)):
+                    f.write('{0}\t{1}\t{2}\t{3}\n'.format(ix, i, i+1, conservation_vector[i]))
         finally:
             f.close()
 
@@ -365,7 +380,7 @@ class DTWClusterNode(object, hierarchy.ClusterNode):
                 path = warping_paths[ix]
                 conservation_data.append(warping_conservation_vector(path))
 
-        return pd.DataFrame(conservation_data)
+        return pd.DataFrame(conservation_data, index=self.index)
 
     @property
     def warping_conservation_data(self):

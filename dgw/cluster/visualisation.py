@@ -155,16 +155,20 @@ class ClusterPreviewer(object):
             f.savefig(filename_prototype)
             plt.close(f)
 
-        print '> Saving warpings to directory {0}'.format(warpings_directory)
-        for i, c in enumerate(self._clusters):
-            filename_prototype = os.path.join(warpings_directory, 'cluster-{0}-warpings.tsv.gz'.format(i + 1))
-            c.save_warpings_to_file(filename_prototype)
-
             filename_text_prototype = os.path.join(prototypes_directory, 'cluster-{0}-prototype.tsv'.format(i+1))
             c.save_prototype_to_text(filename_text_prototype)
 
             filename_conservation = os.path.join(prototypes_directory, 'cluster-{0}-conservation.tsv'.format(i+1))
             c.save_conservation_coefficient_as_text(filename_conservation)
+
+        print '> Saving warpings to directory {0}'.format(warpings_directory)
+        for i, c in enumerate(self._clusters):
+            filename_data = os.path.join(warpings_directory, 'cluster-{0}-warpings.tsv.gz'.format(i + 1))
+            c.save_warpings_to_file(filename_data)
+
+            filename_data_conservation = os.path.join(warpings_directory, 'cluster-{0}-warping-conservation.tsv.gz'.format(i+1))
+            c.save_warping_conservation_data_to_file(filename_data_conservation)
+
 
         print '> Saved'
 
