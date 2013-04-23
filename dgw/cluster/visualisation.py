@@ -146,10 +146,16 @@ class ClusterPreviewer(object):
 
         print '> Saving prototypes to directory {0}'.format(prototypes_directory)
         for i, c in enumerate(self._clusters):
-            filename_prototype = os.path.join(prototypes_directory, 'cluster-{0}.pdf'.format(i + 1))
+            filename_prototype = os.path.join(prototypes_directory, 'cluster-{0}-prototype.pdf'.format(i + 1))
             f = self._plot_prototype_on_figure(c)
             f.savefig(filename_prototype)
             plt.close(f)
+
+            filename_text_prototype = os.path.join(prototypes_directory, 'cluster-{0}-prototype.tsv'.format(i+1))
+            c.save_prototype_to_text(filename_text_prototype)
+
+            filename_conservation = os.path.join(prototypes_directory, 'cluster-{0}-conservation.tsv'.format(i+1))
+            c.save_conservation_coefficient_as_text(filename_conservation)
 
         print '> Saved'
 

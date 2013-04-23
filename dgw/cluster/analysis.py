@@ -256,6 +256,39 @@ class DTWClusterNode(object, hierarchy.ClusterNode):
             track_kwargs = {}
         self.regions.to_bed(filename, **track_kwargs)
 
+    def save_prototype_to_text(self, filename):
+
+        prototype = self.prototype
+        f = open(filename, 'w')
+        try:
+
+            f.write('#{0}'.format('bin'))
+            for col in prototype.columns:
+                f.write('\t{0}'.format(col))
+            f.write('\n')
+
+            for bin, row in prototype.iterrows():
+                f.write('{0}'.format(bin))
+                for col in prototype.columns:
+                    f.write('\t{0}'.format(row[col]))
+                f.write('\n')
+        finally:
+            f.close()
+
+    def save_conservation_coefficient_as_text(self, filename):
+
+        conservation_vector = self.warping_conservation_vector()
+
+        f = open(filename, 'w')
+        try:
+            f.write('#{0}\t{1}\t{2}\n'.format('start_bin', 'end_bin', 'avg_conservation'))
+
+            for i in xrange(len(conservation_vector)):
+                f.write('{0}\t{1}\t{2}\n'.format(i, i+1, conservation_vector[i]))
+        finally:
+            f.close()
+
+
     def save_as_list_of_indices(self, filename):
             index = self.data.items
             f = open(filename, 'w')
