@@ -4,7 +4,7 @@ from scipy.spatial.distance import cosine
 import numpy as np
 from numpy.testing import *
 
-from dgw.dtw.distance import dtw_std
+from dgw.dtw.distance import dtw_std, warping_conservation_vector
 from dgw.dtw.utilities import _strip_nans, reverse_sequence
 
 
@@ -124,6 +124,38 @@ class TestDTWStd(unittest.TestCase):
         # for a.T and b.T as well.
         euclid_distance = sqrt(117) + sqrt(149) + (sqrt(185))
         self.assertAlmostEqual(euclid_distance, dtw_std(a, b, metric='euclidean', try_reverse=True))
+
+
+class TestWarpingConservationComputation(unittest.TestCase):
+
+    def test_warping_conservation_vector_computed_correctly(self):
+        """
+        Given the following warping path:
+        .......__
+        .......|.
+        ..____/..
+        ..|......
+        ./.......
+        /........
+
+        the only regions without warping are between
+        points  0-2 and 6-7 on the Y axis, therefore the warping conservation vector should be
+        0|1|2|3|4|5
+         2 2 0 0 0
+        """
+        path = ([0, 1, 2, 2, 3, 4, 5, 6, 7, 7, 8, 9],
+                [0, 1, 2, 3, 3, 3, 3, 3, 4, 5, 5, 5])
+
+        assert_array_equal([2, 2, 0, 0, 0], warping_conservation_vector(path))
+
+    def test_warping_conservation_vector_computed_correctly(self):
+        # Same as above, but second sequence is reversed
+
+        path = ([0, 1, 2, 2, 3, 4, 5, 6, 7, 7, 8, 9],
+                5 - np.array([0, 1, 2, 3, 3, 3, 3, 3, 4, 5, 5, 5]))
+
+        assert_array_equal([0, 0, 0, 2, 2], warping_conservation_vector(path))
+
 
 
 

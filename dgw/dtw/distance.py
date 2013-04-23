@@ -112,3 +112,57 @@ def dtw_path_is_reversed(path):
     """
     # Just need to check whether first point in the first sequence path is zero.
     return path[0][0] != 0
+
+def warping_conservation_vector(warping_path):
+    """
+    Computes warping conservation vector for the warping path given.
+    This vector is always of the length n-1 where n is the length of the second sequence (usually the base sequence).
+    This new vector contains 1 for whenever the base sequence is conserved (the path moves diagonally),
+    and contains 0 otherwise.
+
+    :param warping_path:
+    :return:
+    """
+    path_a, path_b = warping_path
+
+    n = max(path_b[0], path_b[-1]) + 1  # Number of points on the second sequence is, either the last point
+                                           # .. or the first point (if reversed), plus one
+
+    conservation_vector = np.zeros(n-1)
+
+    prev_i = None
+    prev_j = None
+    diag_path_taken_until_current_point = True
+    for i, j in zip(path_a, path_b):
+        if prev_j is None:
+            prev_j = j
+            prev_i = i
+            diag_path_taken_until_current_point = True
+            continue
+        elif j == prev_j:
+            diag_path_taken_until_current_point = False
+            prev_i = i
+        else:
+            if diag_path_taken_until_current_point and prev_i != i:
+                conservation_vector[min(prev_j, j)] = 1
+
+            diag_path_taken_until_current_point = True
+            prev_j = j
+            prev_i = i
+
+    first_one_in_set = -1
+    number_of_ones_in_set = 0
+    for i in range(n-1):
+        if conservation_vector[i] == 0 and first_one_in_set > -1:
+            conservation_vector[first_one_in_set:i] = number_of_ones_in_set
+            number_of_ones_in_set = 0
+            first_one_in_set = -1
+        elif conservation_vector[i] == 1:
+            if number_of_ones_in_set == 0:
+                first_one_in_set = i
+            number_of_ones_in_set += 1
+
+    if number_of_ones_in_set > 0 and first_one_in_set > -1:
+        conservation_vector[first_one_in_set:] = number_of_ones_in_set
+
+    return conservation_vector

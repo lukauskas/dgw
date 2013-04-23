@@ -6,6 +6,7 @@ import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
 from matplotlib.widgets import Button
 from dgw.dtw.visualisation import visualise_dtw, visualise_dtw_mappings
+import numpy as np
 
 
 class ClusterPreviewer(object):
@@ -43,14 +44,20 @@ class ClusterPreviewer(object):
         self._buttons = []
         self.highlight_colours = highlight_colours
 
+        self._warping_conservation_view = False
+
     def gs_prototype(self):
         return self._main_gs[1, 0]
     def gs_projected_mean(self):
-        return self._main_gs[1, 1]
+        return self._main_gs[1:3, 1]
     def gs_projected_heatmap(self):
-        return self._main_gs[3, :]
+        return self._main_gs[4, :]
     def gs_heatmap(self):
-        return self._main_gs[2, :]
+        return self._main_gs[3, :]
+
+    def gs_warping_preservation(self):
+        return self._main_gs[2, 0]
+
 
     def ax_heatmap(self):
         if self._ax_heatmap is None:
@@ -63,20 +70,30 @@ class ClusterPreviewer(object):
         return self._ax_projected_heatmap
 
     def _initialise_grid(self):
-        self._main_gs = gridspec.GridSpec(5, 2, height_ratios=[1, 40, 20, 20, 4], hspace=0.4)
+        self._main_gs = gridspec.GridSpec(6, 2, height_ratios=[1, 30, 10, 20, 20, 4], hspace=0.4)
 
 
     def current_cluster(self):
+        """
+
+        :return:
+        :rtype: DTWClusterNode
+        """
         return self._clusters[self._current_cluster_id]
+
+    def change_cluster(self, new_cluster_id):
+        self._current_cluster_id = new_cluster_id
+        self._warping_conservation_view = False
+
 
     def _callback_next(self, event):
         debug('next clicked')
-        self._current_cluster_id = (self._current_cluster_id + 1) % len(self._clusters)
+        self.change_cluster((self._current_cluster_id + 1) % len(self._clusters))
         self.draw()
 
     def _callback_previous(self, event):
         debug('previous clicked')
-        self._current_cluster_id = (self._current_cluster_id - 1) % len(self._clusters)
+        self.change_cluster((self._current_cluster_id - 1) % len(self._clusters))
         self.draw()
 
     def _callback_save(self, event):
@@ -129,10 +146,16 @@ class ClusterPreviewer(object):
 
         print '> Saving prototypes to directory {0}'.format(prototypes_directory)
         for i, c in enumerate(self._clusters):
-            filename_prototype = os.path.join(prototypes_directory, 'cluster-{0}.pdf'.format(i + 1))
+            filename_prototype = os.path.join(prototypes_directory, 'cluster-{0}-prototype.pdf'.format(i + 1))
             f = self._plot_prototype_on_figure(c)
             f.savefig(filename_prototype)
             plt.close(f)
+
+            filename_text_prototype = os.path.join(prototypes_directory, 'cluster-{0}-prototype.tsv'.format(i+1))
+            c.save_prototype_to_text(filename_text_prototype)
+
+            filename_conservation = os.path.join(prototypes_directory, 'cluster-{0}-conservation.tsv'.format(i+1))
+            c.save_conservation_coefficient_as_text(filename_conservation)
 
         print '> Saved'
 
@@ -179,20 +202,19 @@ class ClusterPreviewer(object):
 
         return f
 
-    def _enlarge_heatmap(self, event):
+    def _enlarge_heatmaps(self, event):
         self._plot_regular_heatmap_on_figure(self.current_cluster())
         plt.show()
 
-    def _enlarge_dtw_heatmap(self, event):
         self._plot_projected_heatmap_on_figure(self.current_cluster())
         plt.show()
 
     def _view_poi_histogram(self, event):
         current_cluster = self.current_cluster()
         if not current_cluster.points_of_interest:
-            plt.figure();
+            plt.figure()
             plt.figtext(0.1, 0.1, 'Sorry, no points of interest for this cluster. Try running explorer again with -poi poi_dataset.bed')
-            plt.show();
+            plt.show()
             return
 
         # Pandas tend to crash if subplots is True when only one dimension
@@ -214,16 +236,20 @@ class ClusterPreviewer(object):
         plt.suptitle('Warped points of interest')
         plt.show()
 
+    def _toggle_warping_conservation_view(self, event):
+        self._warping_conservation_view = not self._warping_conservation_view
+        self.draw()
+
 
     def create_buttons(self):
         self.add_button('Previous', self._callback_previous)
         self.add_button('Next', self._callback_next)
 
-        self.add_button('Save all clusters', self._callback_save)
+        self.add_button('Save clusters', self._callback_save)
 
-        self.add_button('Enlarge heatmap', self._enlarge_heatmap)
-        self.add_button('Enlarge DTW heatmap', self._enlarge_dtw_heatmap)
+        self.add_button('Enlarge heatmaps', self._enlarge_heatmaps)
         self.add_button('View POI Histogram', self._view_poi_histogram)
+        self.add_button('Toggle conservation view', self._toggle_warping_conservation_view)
 
     def _plot_item_in_figure(self, index):
         data = self.current_cluster().data.ix[index]
@@ -304,6 +330,12 @@ class ClusterPreviewer(object):
 
         plt.figlegend(*ax_prototype.get_legend_handles_labels(), loc='lower center')
 
+        plt.subplot(self.gs_warping_preservation(), sharex=ax_prototype)
+        plt.cla()
+        wpc_vector = current_cluster.warping_conservation_vector()
+        plt.plot(np.arange(0.5, len(wpc_vector), 1), wpc_vector)
+
+
         self.title.set_text('Cluster #{0}/{2} ({1} elements)'.format(self._current_cluster_id + 1,
                                                                      current_cluster.n_items,
                                                                      len(self._clusters)))
@@ -327,10 +359,19 @@ class ClusterPreviewer(object):
         plt.subplot(self.gs_projected_heatmap())
         plt.cla()
         self._ax_projected_heatmap = plt.gca()
-        current_cluster.projected_data.plot_heatmap(horizontal_grid=True, subplot_spec=self.gs_projected_heatmap(),
+
+        if self._warping_conservation_view:
+            current_cluster.projected_data.plot_heatmap(horizontal_grid=True, subplot_spec=self.gs_projected_heatmap(),
                                                     share_y_axis=shared_axis, sort_by=None,
                                                     highlighted_points=current_cluster.tracked_points_of_interest,
-                                                    highlight_colours=self.highlight_colours)
+                                                    highlight_colours=self.highlight_colours,
+                                                    replace_with_dataframe=current_cluster.warping_conservation_data)
+        else:
+            current_cluster.projected_data.plot_heatmap(horizontal_grid=True, subplot_spec=self.gs_projected_heatmap(),
+                                                                share_y_axis=shared_axis, sort_by=None,
+                                                                highlighted_points=current_cluster.tracked_points_of_interest,
+                                                                highlight_colours=self.highlight_colours)
+
 
         # Finally issue a draw command for the plot
         plt.draw()

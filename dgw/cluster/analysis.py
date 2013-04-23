@@ -6,8 +6,8 @@ import scipy.cluster.hierarchy as hierarchy
 import pandas as pd
 import numpy as np
 from ..data.containers import AlignmentsData
-from ..dtw.distance import dtw_std, dtw_path_is_reversed
-from ..dtw import transformations, dtw_projection
+from ..dtw.distance import dtw_std, dtw_path_is_reversed, warping_conservation_vector
+from ..dtw import transformations, dtw_projection, no_nans_len
 from ..dtw.parallel import parallel_dtw_paths
 
 def compute_paths(data, dtw_nodes_list, n, n_processes=None, *dtw_args, **dtw_kwargs):
@@ -112,6 +112,7 @@ class DTWClusterNode(object, hierarchy.ClusterNode):
     _tracked_points = None
     _tracked_points_histogram = None
     _points_of_interest_histogram = None
+    _warping_conservation_data = None
 
     def __init__(self, hierarchical_clustering_object, id, prototype, left=None, right=None, dist=0, count=1):
         hierarchy.ClusterNode.__init__(self, id, left=left, right=right, dist=dist, count=count)
@@ -158,6 +159,9 @@ class DTWClusterNode(object, hierarchy.ClusterNode):
         # It is infeasible to calculate projected data for all the nodes beforehand
         self.ensure_projections_are_calculated()
         return self._projected_data
+
+
+
 
     def ensure_projections_are_calculated(self):
         if not self._projected_data:
@@ -256,6 +260,39 @@ class DTWClusterNode(object, hierarchy.ClusterNode):
         regions = regions.infer_strand_from_whether_the_region_was_reversed_or_not(self.reversal_dictionary)
         regions.to_bed(filename, **track_kwargs)
 
+    def save_prototype_to_text(self, filename):
+
+        prototype = self.prototype
+        f = open(filename, 'w')
+        try:
+
+            f.write('#{0}'.format('bin'))
+            for col in prototype.columns:
+                f.write('\t{0}'.format(col))
+            f.write('\n')
+
+            for bin, row in prototype.iterrows():
+                f.write('{0}'.format(bin))
+                for col in prototype.columns:
+                    f.write('\t{0}'.format(row[col]))
+                f.write('\n')
+        finally:
+            f.close()
+
+    def save_conservation_coefficient_as_text(self, filename):
+
+        conservation_vector = self.warping_conservation_vector()
+
+        f = open(filename, 'w')
+        try:
+            f.write('#{0}\t{1}\t{2}\n'.format('start_bin', 'end_bin', 'avg_conservation'))
+
+            for i in xrange(len(conservation_vector)):
+                f.write('{0}\t{1}\t{2}\n'.format(i, i+1, conservation_vector[i]))
+        finally:
+            f.close()
+
+
     def save_as_list_of_indices(self, filename):
             index = self.data.items
             f = open(filename, 'w')
@@ -289,6 +326,29 @@ class DTWClusterNode(object, hierarchy.ClusterNode):
             panel = panel.ix[self.data.items]
             ad = AlignmentsData(panel)
             return ad
+
+    def _compute_warping_conservation_data(self):
+        data = self.data
+        if self.is_leaf():
+            conservation_data = [np.ones(no_nans_len(self.prototype)-1)]
+        else:
+            warping_paths = self.warping_paths
+            conservation_data = []
+            for ix in data.items:
+                path = warping_paths[ix]
+                conservation_data.append(warping_conservation_vector(path))
+
+        return pd.DataFrame(conservation_data)
+
+    @property
+    def warping_conservation_data(self):
+        if self._warping_conservation_data is None:
+            self._warping_conservation_data = self._compute_warping_conservation_data()
+        return self._warping_conservation_data
+
+    def warping_conservation_vector(self):
+        conservation_vector = self.warping_conservation_data.mean()
+        return conservation_vector
 
     def __track_points_of_interest(self):
 
