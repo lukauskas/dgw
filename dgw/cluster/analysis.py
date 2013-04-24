@@ -324,7 +324,7 @@ class DTWClusterNode(object, hierarchy.ClusterNode):
 
                     current_bin = bi[p_a]
 
-                    f.write('{0}\t{1}\t{2}\t{3}\t{4}\t{5}\n'.format(ix, current_bin, chromosome, current_bin[0], current_bin[1], p_b))
+                    f.write('{0}\t{1}\t{2}\t{3}\t{4}\t{5}\n'.format(ix, p_a, chromosome, current_bin[0], current_bin[1], p_b))
         finally:
             f.close()
 
