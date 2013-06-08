@@ -99,19 +99,19 @@ The following steps show how to install python to an environment on linux you do
 1. Download and extract Python sources::
 
     wget http://www.python.org/ftp/python/2.7.3/Python-2.7.3.tgz
-    tar xvf Python-2.7.3
+    tar xvf Python-2.7.3.tgz
 
 2. Install python to a local directory::
 
-   cd Python-2.7.3
-   ./configure
-   make altinstall prefix=~/python_dev/python/ exec-prefix=~/python_dev/python
+    cd Python-2.7.3
+    ./configure
+    make altinstall prefix=~/python_dev/python/ exec-prefix=~/python_dev/python
 
 where `~/python_dev/python` is the desired location to install python to (change as appropriate).
 Note the tilde (`~`) indicating this is under `$HOME` directory -- directory my user has access to.
 At this point you should have a `python2.7` executable at `~/python_dev/python/bin/`.
 
-3. Set up PATH variables::
+3. Set up PATH variables (also add this to your .bashrc)::
 
     export PATH=~/python_dev/python/bin:$PATH
     export PYTHONPATH=~/python_dev/python/lib/python2.7/site-packages/
@@ -122,9 +122,18 @@ At this point you should have a `python2.7` executable at `~/python_dev/python/b
     sh setuptools-0.6c11-py2.7.egg
 
 5. You now should be able to install pip by::
+
     easy_install-2.7 pip
 
-6. Once pip is installed, you can install DGW as usual.
+6. Once pip is installed, install ``virtualenv`` and ``virtualenvwrapper``::
+
+    pip install virtualenv virtualenvwrapper
+
+7. Source the newly-installed ``virtualenvwrapper``::
+
+    source ~/python_dev/python/bin/virtualenvwrapper.sh
+
+Also add this line to your .bashrc
 Make sure you use the newly installed `pip-2.7`, which will be in your local directory and not the one that comes with system.
 
 
