@@ -1,4 +1,4 @@
-from distutils.core import setup, Extension
+from setuptools import setup, Extension
 import os
 
 
@@ -33,7 +33,7 @@ setup(
     version='0.1.0',
     packages=['dgw', 'dgw.cli', 'dgw.cluster', 'dgw.data', 'dgw.data.parsers', 'dgw.data.visualisation', 'dgw._mlpy',
               'dgw.dtw', 'dgw.tests.data.parsers', 'dgw.tests.data', 'dgw.tests.dtw', 'dgw.tests', 'dgw'],
-    requires=['numpy>=1.6.1', 'scipy>=0.10.1', 'pandas>= 0.10.1',
+    install_requires=['numpy>=1.6.1', 'scipy>=0.10.1', 'pandas>= 0.10.1',
               'pysam>=0.7.4', 'fastcluster>=1.1.7', 'matplotlib>= 1.2.0'
              ],
     scripts=['bin/dgw-explorer', 'bin/dgw-extract-gene-regions', 'bin/dgw-overlaps2poi',
