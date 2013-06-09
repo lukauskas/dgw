@@ -34,12 +34,12 @@ setup(
     packages=['dgw', 'dgw.bin', 'dgw.cli', 'dgw.cluster', 'dgw.data', 'dgw.data.parsers', 'dgw.data.visualisation', 'dgw._mlpy',
               'dgw.dtw', 'dgw.tests.data.parsers', 'dgw.tests.data', 'dgw.tests.dtw', 'dgw.tests', 'dgw'],
     install_requires=['numpy>=1.6.1', 'scipy>=0.10.1', 'pandas>=0.10.1', 'pysam>=0.7.4', 'fastcluster>=1.1.7'],
-    extras_requires={
+    extras_require ={
         'visualisation': ['matplotlib>= 1.2.0']
     },
     entry_points={
         'console_scripts': [
-            'dgw-extract-gene-regions = dgw.bin.extract-gene-regions:main',
+            'dgw-extract-gene-regions = dgw.bin.extract_gene_regions:main',
             'dgw-overlaps2poi = dgw.bin.overlaps2poi:main',
             'dgw-prototypes2dot = dgw.bin.prototypes2dot:main [visualisation]',
             'dgw-worker = dgw.bin.worker:main'
@@ -48,8 +48,6 @@ setup(
             'dgw-explorer = dgw.bin.explorer:main [visualisation]',
         ]
     },
-    scripts=['bin/dgw-explorer', 'bin/dgw-extract-gene-regions', 'bin/dgw-overlaps2poi',
-             'bin/dgw-prototypes2dot', 'bin/dgw-worker'],
     ext_modules=ext_modules,
 
     url='http://sauliusl.github.com/dgw/',
