@@ -143,7 +143,14 @@ If you want to get the latest version of DGW, obtain the latest source by clonin
 
     git clone git://github.com/sauliusl/dgw.git
 
+Install numpy to your python location, either by doing
+
+    pip install numpy
+
+or by other means.
+
 Navigate to the newly created `dgw` directory and run the installation script::
+
 
     python setup.py install
 
