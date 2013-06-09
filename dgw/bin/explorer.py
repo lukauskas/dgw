@@ -1,16 +1,11 @@
 #!/usr/bin/env python
 import argparse
-from collections import defaultdict
 import os
-import numpy as np
-import cPickle as pickle
 import dgw
-from dgw.cli import Configuration, StoreFilenameAction, StoreUniqueFilenameAction
+from dgw.cli import StoreUniqueFilenameAction
 from dgw.cli.configuration import load_configuration_from_file
-from dgw.cluster import add_path_data
 import dgw.cluster.visualisation
 from dgw.data.containers import Regions
-import logging
 from dgw.data.parsers.pois import from_simple
 
 

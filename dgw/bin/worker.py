@@ -9,17 +9,16 @@ Designed to be run on a multi-core machine with a lot of memory, e.g. a supercom
 import argparse
 import logging
 from math import factorial
-import os
 import random
-import fastcluster
-import numpy as np
-import pandas as pd
 import cPickle as pickle
 from datetime import datetime
 from multiprocessing import cpu_count
 
-from dgw.cluster import HierarchicalClustering, compute_paths
+import fastcluster
+import numpy as np
+import pandas as pd
 
+from dgw.cluster import HierarchicalClustering, compute_paths
 from dgw.data.containers import Regions
 from dgw.data.parsers import read_bam, HighestPileUpFilter
 from dgw.data.parsers.pois import from_simple

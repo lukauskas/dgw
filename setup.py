@@ -30,15 +30,28 @@ else:
 
 setup(
     name='dgw',
-    version='0.1.0',
-    packages=['dgw', 'dgw.cli', 'dgw.cluster', 'dgw.data', 'dgw.data.parsers', 'dgw.data.visualisation', 'dgw._mlpy',
+    version='0.1.1',
+    packages=['dgw', 'dgw.bin', 'dgw.cli', 'dgw.cluster', 'dgw.data', 'dgw.data.parsers', 'dgw.data.visualisation', 'dgw._mlpy',
               'dgw.dtw', 'dgw.tests.data.parsers', 'dgw.tests.data', 'dgw.tests.dtw', 'dgw.tests', 'dgw'],
-    install_requires=['numpy>=1.6.1', 'scipy>=0.10.1', 'pandas>= 0.10.1',
-              'pysam>=0.7.4', 'fastcluster>=1.1.7', 'matplotlib>= 1.2.0'
-             ],
+    install_requires=['numpy>=1.6.1', 'scipy>=0.10.1', 'pandas>=0.10.1', 'pysam>=0.7.4', 'fastcluster>=1.1.7'],
+    extras_requires={
+        'visualisation': ['matplotlib>= 1.2.0']
+    },
+    entry_points={
+        'console_scripts': [
+            'dgw-extract-gene-regions = dgw.bin.extract-gene-regions:main',
+            'dgw-overlaps2poi = dgw.bin.overlaps2poi:main',
+            'dgw-prototypes2dot = dgw.bin.prototypes2dot:main [visualisation]',
+            'dgw-worker = dgw.bin.worker:main'
+        ],
+        'gui_scripts': [
+            'dgw-explorer = dgw.bin.explorer:main [visualisation]',
+        ]
+    },
     scripts=['bin/dgw-explorer', 'bin/dgw-extract-gene-regions', 'bin/dgw-overlaps2poi',
              'bin/dgw-prototypes2dot', 'bin/dgw-worker'],
     ext_modules=ext_modules,
+
     url='http://sauliusl.github.com/dgw/',
     license='GPLv3',
     author='Saulius Lukauskas',
