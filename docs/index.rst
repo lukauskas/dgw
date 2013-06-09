@@ -18,7 +18,7 @@ DGW depends on a fair share of popular open source packages:
 - `scipy` - used for for its cluster.hierarchy module
 - `fastcluster` - used for for an efficient implementation of some of the functions of that very same module.
 - `pandas` - used for for efficient data storage and processing containers
-- `matplotlib` - used for for visualisation
+- `matplotlib` - used for for visualisation, optional dependancy
 - `pysam` - used for for SAM file processing
 
 The package also uses a modified version of `mlpy`s DTW package (distributed together with the package).
@@ -26,28 +26,31 @@ The package also uses a modified version of `mlpy`s DTW package (distributed tog
 Installation
 ===============================
 Stable installers of DGW are distributed over PyPi: https://pypi.python.org/pypi/dgw
+In most cases, python package installers such as ``easy_install`` or ``pip`` should be able to install all dependancies,
+however, since some of DGW's sources depend on the ``numpy`` headers, this dependancy must be satisfied before the installation.
+This can be achieved by installing it either using PyPi distribution::
 
+    pip install numpy
 
-In most cases `easy_install` should be able to install DGW and its dependancies directly by typing::
+or by using the system's package manager such as ``MacPorts`` (Mac OS X).
+After this initial step, the DGW installation can proceed as usual::
 
-    easy_install dgw
+    pip install dgw
 
-If this fails, continue reading the following instructions on how to install DGW from source or in an environment without root access.
+Note that some distributions have  problems installing ``scipy`` package through pip. If the installation fails at the ``scipy`` installation step
+please install scipy through your system's package manager and proceed to run the installation again.
+
+If you intend to run the DGW explorer application please also install ``matplotlib``, this package is included
+as an optional requirement as the ``dgw-worker`` code (that is intended to run on a supercomputer) does not need it.
+Matplotlib can also be installed using ``pip``::
+
+    pip install matplotlib
+
+If any of these fail because your user cannot write to the system's python site-packages directory, please consult
+`Installing Python 2.7 without root access`_ guide below
 
 Platform-specific instructions
 -------------------------------
-If the easy installation fails, due to dependancies that were not satisfied try installing them manually using
-`easy_install` or `pip`, e.g.::
-
-    pip install numpy
-    pip install scipy
-    pip install pandas
-    pip install pysam
-    pip install fastcluster
-    pip install matplotlib
-
-and then restart the installation.
-
 Ubuntu
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 Note that some packages, e.g. `scipy` depend on dev versions of some of the GNU libraries.
@@ -90,52 +93,54 @@ Don't forget MLPY:
 pip install -e git://github.com/sauliusl/mlpy.git#egg=mlpy
 ```
 
-Installing Python 2.7 to a non-root environment
+Installing Python 2.7 without root access
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 The above steps assume you have Python 2.7 installed in your system.
-If you do not have Python2.7, you need to install it.
-The following steps show how to install python to an environment on linux you do not have root access to.
+Python 2.7 is a strict dependancy for DGW and is needed to be run any code.
+We understand, however, that in some setups you may not have root access to the system and therefore will not be able
+to install Python 2.7 to the system the usual way. Luckily, python can be installed to a local directory and easily be used
+via the help of `virtualenv <http://www.virtualenv.org/en/latest/>`_. This section provides a guide on how this can be done.
 
-1. Download and extract Python sources::
+In order to make a rather convoluted process easier, the author's have created a script that would handle everything for you.
+This script is available as a Gist at https://gist.github.com/sauliusl/5735144 .
+In order to use it, first download it by::
 
-    wget http://www.python.org/ftp/python/2.7.3/Python-2.7.3.tgz
-    tar xvf Python-2.7.3.tgz
+    wget https://gist.github.com/sauliusl/5735144/raw/install_python.sh
 
-2. Install python to a local directory::
+Make sure the script is executable::
 
-    cd Python-2.7.3
-    ./configure
-    make altinstall prefix=~/python_dev/python/ exec-prefix=~/python_dev/python
+   chmod +x install_python.sh
 
-where `~/python_dev/python` is the desired location to install python to (change as appropriate).
-Note the tilde (`~`) indicating this is under `$HOME` directory -- directory my user has access to.
-At this point you should have a `python2.7` executable at `~/python_dev/python/bin/`.
+Now the script can be ran, the usage is either without any parameters::
 
-3. Set up PATH variables (also add this to your .bashrc)::
+   ./install_python.sh
 
-    export PATH=~/python_dev/python/bin:$PATH
-    export PYTHONPATH=~/python_dev/python/lib/python2.7/site-packages/
+What would install the python under your home directory, namely into directories ``~/lib/``, ``~/bin/``, and ``~/Include/``,
+representing the ``/lib``, ``/bin`` and ``/Include`` directories under the main filesystem.
+Alternatively, a positional argument can be provided to the script, e.g.::
 
-4. Download and install setuptools. Make sure that your `PYTHONPATH` variable is set correctly before doing this::
+   ./install_python.sh /some/installation/directory/
 
-    wget https://pypi.python.org/packages/2.7/s/setuptools/setuptools-0.6c11-py2.7.egg#md5=fe1f997bc722265116870bc7919059ea
-    sh setuptools-0.6c11-py2.7.egg
+Which would install python 2.7 inside the ``/some/installation/directory/` directory.
+It is entirely up to you where it is installed as long as your user has a read and write access to it.
 
-5. You now should be able to install pip by::
+Once the python was installed, you will find an ``activate.sh`` script under either the home or the specified directories.
+Source this script in order to use the newly-installed python2.7::
 
-    easy_install-2.7 pip
+   source activate.sh
 
-6. Once pip is installed, install ``virtualenv`` and ``virtualenvwrapper``::
+At this point you should see ``which python`` point to the new python.
 
-    pip install virtualenv virtualenvwrapper
+We also recommend creating a new virtual environment for python before installing DGW.
+This can be done by first creating it, using::
 
-7. Source the newly-installed ``virtualenvwrapper``::
+   mkvirtualenv dgw
 
-    source ~/python_dev/python/bin/virtualenvwrapper.sh
+After the setup stages are finished you will see ``dgw`` prepended to your bash shell.
+Type ``deactivate`` to leave your virtual environment at any point or ``workon dgw`` to go back to it.
+See http://virtualenvwrapper.readthedocs.org/en/latest/ for the documentation on how to use virtualenv with Doug Hellmann's wrapper.
 
-Also add this line to your .bashrc
-Make sure you use the newly installed `pip-2.7`, which will be in your local directory and not the one that comes with system.
-
+Once you are in correct virtualenv, please follow the `Installation`_ guide as normal.
 
 Installation from source
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -143,17 +148,21 @@ If you want to get the latest version of DGW, obtain the latest source by clonin
 
     git clone git://github.com/sauliusl/dgw.git
 
-Install numpy to your python location, either by doing
+Install numpy to your python location, either by doing::
 
     pip install numpy
 
 or by other means.
 
-Navigate to the newly created `dgw` directory and run the installation script::
+Navigate to the newly created `dgw` directory and run the following::
 
+    pip install -e .
+
+Alternatively, you can just run::
 
     python setup.py install
 
+As in the `Installing Python 2.7 without root access`_ we strongly recommend installing the DGW into a virtual environment.
 
 Usage
 =======================
