@@ -1,12 +1,14 @@
 from collections import defaultdict
 from logging import debug, error
 import os
+
 from matplotlib.patches import Rectangle
 import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
 from matplotlib.widgets import Button
-from dgw.dtw.visualisation import visualise_dtw, visualise_dtw_mappings
 import numpy as np
+
+from dgw.dtw.visualisation import visualise_dtw_mappings
 
 
 class ClusterPreviewer(object):

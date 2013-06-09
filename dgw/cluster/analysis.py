@@ -1,7 +1,6 @@
 from collections import defaultdict
 from logging import debug
 from math import floor
-from matplotlib.ticker import MultipleLocator
 import scipy.cluster.hierarchy as hierarchy
 import pandas as pd
 import numpy as np
