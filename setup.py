@@ -33,7 +33,8 @@ setup(
     version='0.1.1',
     packages=['dgw', 'dgw.bin', 'dgw.cli', 'dgw.cluster', 'dgw.data', 'dgw.data.parsers', 'dgw.data.visualisation', 'dgw._mlpy',
               'dgw.dtw', 'dgw.tests.data.parsers', 'dgw.tests.data', 'dgw.tests.dtw', 'dgw.tests', 'dgw'],
-    install_requires=['numpy>=1.6.1', 'scipy>=0.10.1', 'pandas>=0.10.1', 'pysam>=0.7.4', 'fastcluster>=1.1.7'],
+    install_requires=['argparse',
+                      'numpy>=1.6.1', 'scipy>=0.10.1', 'pandas>=0.10.1', 'pysam>=0.7.4', 'fastcluster>=1.1.7'],
     extras_require ={
         'visualisation': ['matplotlib>= 1.2.0']
     },

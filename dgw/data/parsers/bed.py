@@ -47,7 +47,7 @@ def write_bed(regions, writable_file, **track_kwargs):
         need_closing = True
 
     if track_kwargs:
-        kwarg_strings = {"{0}=\"{1}\"".format(key, value) for key,value in track_kwargs.iteritems()}
+        kwarg_strings = set(["{0}=\"{1}\"".format(key, value) for key,value in track_kwargs.iteritems()])
         track_header = "track {0}\n".format(' '.join(kwarg_strings))
         writable_file.write(track_header)
 

@@ -73,7 +73,7 @@ class AlignmentsData(object):
         """
         if isinstance(panel, pd.DataFrame):
             # Create a panel from the DataFrame by giving it a generic name and making sure it is on the minor axis
-            self._data = pd.Panel({'Dataset 1'}).transpose(1, 2, 0)
+            self._data = pd.Panel(set(['Dataset 1'])).transpose(1, 2, 0)
         elif isinstance(panel, pd.Panel):
             self._data = panel
         else:
@@ -106,7 +106,7 @@ class AlignmentsData(object):
         if value is None:
             self._poi = {}
         else:
-            self._poi = {ix: value for ix, value in value.iteritems() if ix in self.items}
+            self._poi = dict([(ix, value) for ix, value in value.iteritems() if ix in self.items])
 
 
     def add_points_of_interest(self, binned_points_of_interest_regions, name):
