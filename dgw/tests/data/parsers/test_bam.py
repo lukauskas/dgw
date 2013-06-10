@@ -81,8 +81,7 @@ class TestReadExtendFunctions(unittest.TestCase):
     def test_invalid_extend_raises_exception(self):
         aligned_read = StubAlignedRead(100, 36, True)
 
-        with self.assertRaises(ValueError):
-            bam_parser._extend_read_to(aligned_read, 10) # 0 < 36
+        self.assertRaises(ValueError, bam_parser._extend_read_to, aligned_read, 10) # 0 < 36
 
 class TestReadCountForRegionReading(unittest.TestCase):
 
