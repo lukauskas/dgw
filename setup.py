@@ -36,7 +36,7 @@ setup(
     install_requires=['argparse',
                       'numpy>=1.6.1', 'scipy>=0.9.0', 'pandas>=0.10.1', 'pysam>=0.7.4', 'fastcluster>=1.1.7'],
     extras_require ={
-        'visualisation': ['matplotlib>= 1.2.0']
+        'visualisation': ['matplotlib>= 1.1.0']
     },
     entry_points={
         'console_scripts': [
