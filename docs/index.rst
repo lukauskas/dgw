@@ -582,3 +582,18 @@ you can improve this guide.
 .. _ENCODE table browser: http://encodeproject.org/cgi-bin/hgTables?hgsid=330609261&clade=mammal&org=Human&db=hg19&hgta_group=genes&hgta_track=wgEncodeRegTxn&hgta_table=0&hgta_regionType=genome&position=chrX%3A151073054-151383976&hgta_outputType=wigData&hgta_outFileName=
 .. _github: https://github.com/sauliusl/dgw
 
+Misc
+-------------------------------
+
+Dealing with broadPeak files
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+DGW requires the BED files to contain unique identifiers in the name column (column four).
+Most broadPeak files available in ENCODE have an empty name column, (indicated by a dot).
+In this case, these files will not work with DGW.
+
+This issue can be resolved easily with the help of Unix ``awk`` command::
+
+    awk -F '\t' '{$4 = $1 ":" $2 "-" $3} {print}' data.broadPeak > data.bed
+
+would create a unique identifier for each of the rows in the ``data.broadPeak`` file and write them into ``data.bed``.
+The new ``data.bed`` can then be passed to DGW as input file.
