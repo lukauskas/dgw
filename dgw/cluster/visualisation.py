@@ -105,6 +105,15 @@ class ClusterPreviewer(object):
         if not os.path.exists(directory):
             os.makedirs(directory)
 
+        repro_filename = os.path.join(directory, 'repro.txt')
+        repro_file = open(repro_filename, 'w')
+
+        try:
+            repro_file.write('To reproduce the cut, '
+                             'pass the following parameter to dgw-explorer:\n-c {0}\n'.format(self.cut_level))
+        finally:
+            repro_file.close()
+
         bed_directory = os.path.join(directory, 'items')
         if not os.path.exists(bed_directory):
             os.makedirs(bed_directory)
@@ -412,11 +421,13 @@ class HierarchicalClusteringViewer(object):
     _last_clusters = None
     _last_xdata = None
 
-    def __init__(self, hierarchical_clustering_object, output_directory, configuration_file, highlight_colours=None):
+    def __init__(self, hierarchical_clustering_object, output_directory, configuration_file, highlight_colours=None,
+                 cut_xdata=0):
         self._hierarchical_clustering_object = hierarchical_clustering_object
         self.output_directory = output_directory
         self.configuration_file = configuration_file
         self.highlight_colours = highlight_colours
+        self._cut_xdata = cut_xdata
 
     @property
     def clusters(self):
@@ -507,6 +518,7 @@ class HierarchicalClusteringViewer(object):
 
     def draw(self):
         self.draw_dendrogram()
+        self._draw_cut_line()
         hc = self.hierarchical_clustering_object
         sorted_index = self.sorted_index
         assert(sorted_index is not None)
@@ -523,16 +535,20 @@ class HierarchicalClusteringViewer(object):
         self.draw()
         plt.show()
 
+    def _draw_cut_line(self):
+        xdata = self._cut_xdata
+        if xdata > 0:
+            if self._line is not None:
+                self._line.set_xdata(xdata)
+            else:
+                self._line = self._ax_dendrogram.axvline(linestyle='--', x=xdata, color='k')
+
+
     def cut_line(self, xdata):
 
         self._cut_xdata = xdata
-        self._colors_list = None
         self.draw_dendrogram()
-        if self._line is not None:
-            self._line.set_xdata(xdata)
-        else:
-            self._line = self._ax_dendrogram.axvline(linestyle='--', x=xdata, color='k')
-
+        self._draw_cut_line()
         self._figure.canvas.draw()
 
 
