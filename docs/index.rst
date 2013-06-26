@@ -49,6 +49,18 @@ Matplotlib can also be installed using ``pip``::
 If any of these fail because your user cannot write to the system's python site-packages directory, please consult
 `Installing Python 2.7 without root access`_ guide below
 
+Troubleshooting
+-------------------------------
+
+``dgw-explorer`` fails to run with the following ``pkg_resources.DistributionNotFound: matplotlib>=1.1.0``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+The DistributionNotFound error occurs when the system cannot find ``matplotlib`` package in the current installation.
+``matplotlib`` is a dependency to DGW that is required for visualisation, since DGW-worker can be run without any visualisation modules,
+it is not installed during the initial install step as other dependencies, therefore it needs to be installed manually::
+
+   pip install matplotlib
+
+
 Platform-specific instructions
 -------------------------------
 Ubuntu
