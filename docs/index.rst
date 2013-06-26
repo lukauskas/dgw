@@ -60,6 +60,15 @@ it is not installed during the initial install step as other dependencies, there
 
    pip install matplotlib
 
+Matplotlib installation fails with ``src/ft2font.h:16:22: fatal error: ft2build.h: No such file or directory``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+If you are receiving the above error when installing matplotlib, your system most likely lacks appropriate development packages
+that are required to compile matplotlib package. Please consult http://matplotlib.org/users/installing.html#build-requirements
+on how to install them and restart matplotlib afterwards.
+
+On ubuntu, this could be achieved by::
+
+    sudo apt-get build-dep python-matplotlib
 
 Platform-specific instructions
 -------------------------------
