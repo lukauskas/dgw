@@ -671,13 +671,18 @@ class HierarchicalClustering(object):
         :return:
         """
         from dgw.util.plotting import pyplot as plt
+        import itertools
 
         linkage = self.linkage
         if ax is None:
             ax = plt.gca()
 
         color_threshold = kwargs.pop('color_threshold', self._distance_threshold)
-        ans = hierarchy.dendrogram(linkage, no_labels=no_labels, color_threshold=color_threshold, *args, **kwargs)
+
+        ans = hierarchy.dendrogram(linkage, no_labels=no_labels,
+                                   above_threshold_color='k',
+                                   color_threshold=color_threshold,
+                                   *args, **kwargs)
 
         ax.set_xlabel('Distance')
 

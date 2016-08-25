@@ -183,6 +183,7 @@ def plot(alignments, titles=None, horizontal_grid=True,
 
         plt.title(title)
         plt.gca().title.set_fontsize(7)
+        plt.gca().grid(False)
         plt.setp(plt.gca().get_xticklabels(), rotation='vertical', fontsize=7)
 
     # Colorbar
