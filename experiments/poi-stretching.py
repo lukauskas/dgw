@@ -5,7 +5,7 @@ from dgw import HighestPileUpFilter, read_bam, Regions
 from dgw.cli import StoreFilenameAction, StoreUniqueFilenameAction
 import cPickle as pickle
 import random
-import matplotlib.pyplot as plt
+from dgw.util.plotting import pyplot as plt
 from dgw.data.containers import AlignmentsData
 from dgw.data.parsers.pois import from_simple
 from dgw.dtw import uniform_scaling_to_length, reverse_sequence

@@ -1,5 +1,5 @@
 from matplotlib.patches import ConnectionPatch
-import matplotlib.pyplot as plt
+from dgw.util.plotting import pyplot as plt
 import matplotlib.cm as cm
 from matplotlib.ticker import NullFormatter
 import numpy as np

@@ -3,7 +3,7 @@ from logging import debug, error
 import os
 
 from matplotlib.patches import Rectangle
-import matplotlib.pyplot as plt
+from dgw.util.plotting import pyplot as plt
 import matplotlib.gridspec as gridspec
 from matplotlib.widgets import Button
 import numpy as np

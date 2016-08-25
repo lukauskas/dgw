@@ -2,7 +2,7 @@ import argparse
 import os
 from dgw import read_bam, Regions
 from dgw.cli import StoreFilenameAction, StoreUniqueFilenameAction
-import matplotlib.pyplot as plt
+from dgw.util.plotting import pyplot as plt
 
 __author__ = 'saulius'
 

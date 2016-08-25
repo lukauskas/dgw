@@ -4,7 +4,7 @@ import os
 from dgw.cli import StoreFilenameAction
 from dgw.cli.configuration import load_configuration_from_file
 
-import matplotlib.pyplot as plt
+from dgw.util.plotting import pyplot as plt
 
 def argument_parser():
 

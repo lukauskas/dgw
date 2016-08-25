@@ -38,7 +38,8 @@ setup(
                       'fastcluster>=1.1.7'],
     extras_require ={
         'visualisation': ['matplotlib>= 1.1.0',
-                          'palettable>=2.1.1']
+                          'palettable>=2.1.1',
+                          'seaborn>=0.7.1']
     },
     entry_points={
         'console_scripts': [

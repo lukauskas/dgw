@@ -670,7 +670,8 @@ class HierarchicalClustering(object):
         Plots the dendrogram for the hieararchical clustering
         :return:
         """
-        import matplotlib.pyplot as plt
+        from dgw.util.plotting import pyplot as plt
+
         linkage = self.linkage
         if ax is None:
             ax = plt.gca()

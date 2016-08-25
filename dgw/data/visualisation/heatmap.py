@@ -1,12 +1,12 @@
 from collections import defaultdict
 from logging import debug
 from math import ceil
-import matplotlib.pyplot as plt
+from dgw.util.plotting import pyplot as plt
 from matplotlib import cm
 from matplotlib.ticker import FuncFormatter, IndexLocator
 import palettable
 import numpy as np
-import matplotlib
+from dgw.util.plotting import matplotlib
 import pandas as pd
 from dgw.dtw.utilities import no_nans_len
 
@@ -74,7 +74,7 @@ def plot(alignments, titles=None, horizontal_grid=True,
     :param replace_with_dataframe: replace the data with the dataframe provided. Use for toggleable overlays
     :return: returns the shared y axis
     """
-    import matplotlib.pyplot as plt
+    from dgw.util.plotting import pyplot as plt
     from matplotlib import gridspec
 
     number_of_datasets = alignments.number_of_datasets
