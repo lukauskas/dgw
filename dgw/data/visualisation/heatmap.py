@@ -4,6 +4,7 @@ from math import ceil
 import matplotlib.pyplot as plt
 from matplotlib import cm
 from matplotlib.ticker import FuncFormatter, IndexLocator
+import palettable
 import numpy as np
 import matplotlib
 import pandas as pd
@@ -38,8 +39,9 @@ def raw_plot_data_as_heatmap(data_frame, ax=None, highlight_masks=None, highligh
     # Create a masked array from data_frame
     masked_arr = np.ma.array(data_frame, mask=np.isnan(data_frame))
 
-    # Plot the array using JET colourmap, draw NaNs as white
-    cmap = matplotlib.cm.get_cmap('jet')
+    # Use colormap from colorbrewer, draw NaNs as white
+    cmap = palettable.colorbrewer.sequential.YlGnBu_9.mpl_colormap
+
     cmap.set_bad('#FFFFFF', 1.0)
     HEATMAP_COLORS = ['k', 'w']
     result = ax.imshow(masked_arr, origin='lower', cmap=cmap, aspect="auto", interpolation='nearest', *args, **kwargs)
