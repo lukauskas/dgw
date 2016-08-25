@@ -554,7 +554,7 @@ class HierarchicalClusteringViewer(object):
 
     def _onclick_listener(self, event):
         # Allow only in axis, only the left button and only regions with value
-        if event.inaxes != self.ax_dendrogram or event.button != 3 or event.xdata is None:
+        if event.inaxes != self.ax_dendrogram or event.button not in [2, 3] or event.xdata is None:
             return
 
         self.cut_line(event.xdata)
