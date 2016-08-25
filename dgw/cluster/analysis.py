@@ -10,6 +10,8 @@ from ..dtw import transformations, dtw_projection, no_nans_len
 from ..dtw.parallel import parallel_dtw_paths
 import gzip
 
+from scipy.cluster._hierarchy import get_max_dist_for_each_cluster
+
 def compute_paths(data, dtw_nodes_list, n, n_processes=None, *dtw_args, **dtw_kwargs):
 
     non_leaf_nodes = dtw_nodes_list[n:]
@@ -649,6 +651,24 @@ class HierarchicalClustering(object):
         """
         return self._linkage_matrix
 
+    def distance_threshold_for_n_clusters(self, n_clusters):
+        """
+        Returns distance threshold that can be used to forn `n_clusters`.
+        :param n_clusters: number of clusters to form
+        :return:
+        """
+        linkage = self.linkage
+
+        n = self.num_obs
+        assert n >= n_clusters, 'Specified number of clusters ' \
+                                '{} is larger than number of data points {}'.format(n_clusters, n)
+
+        max_distances = np.empty(self.num_obs, dtype=np.double)
+        get_max_dist_for_each_cluster(linkage, max_distances, n)
+
+        threshold = max_distances[-n_clusters]
+
+        return threshold
 
     @property
     def num_obs(self):
@@ -671,9 +691,9 @@ class HierarchicalClustering(object):
         :return:
         """
         from dgw.util.plotting import pyplot as plt
-        import itertools
 
         linkage = self.linkage
+
         if ax is None:
             ax = plt.gca()
 
@@ -722,7 +742,7 @@ class HierarchicalClustering(object):
         clusters = set()
         while queue:
             current_node = queue.pop()
-            if current_node.dist > t:
+            if current_node.dist >= t:
                 queue.add(current_node.get_right())
                 queue.add(current_node.get_left())
             else:

@@ -23,7 +23,12 @@ def argument_parser():
     parser.add_argument('--ignore-poi-non-overlaps', default=False, action='store_const', const=True,
                         help='If set to true, DGW will silently ignore -pois that do not overlap with the regions')
 
-    parser.add_argument('--cut', '-c', type=float, default=None, help='Cut threshold to initialise DGW to.')
+    cut_group = parser.add_mutually_exclusive_group()
+    cut_group.add_argument('--cut', '-c', type=float, default=None, help='Cut threshold to initialise DGW to.')
+    cut_group.add_argument('--n-clusters', '-nc', type=int,
+                           default=None,
+                           help='Number of clusters to initialise the dendrogram cut to.')
+
 
     parser.add_argument('-v', '--verbose', action='store_const', const=True, default=False)
 
@@ -79,10 +84,18 @@ def main():
 
     hc = configuration.create_hierarchical_clustering_object(regions=regions, dataset=dataset)
     configuration_basename = os.path.basename(args.configuration_file.name)
+
+    cut_xdata = 0
+    if args.cut:
+        cut_xdata = args.cut
+    elif args.n_clusters:
+        assert args.n_clusters > 0
+        cut_xdata = hc.distance_threshold_for_n_clusters(args.n_clusters)
+
     hcv = dgw.cluster.visualisation.HierarchicalClusteringViewer(hc, output_directory=args.output,
                                                                  configuration_file=configuration_basename,
                                                                  highlight_colours=highlight_colours,
-                                                                 cut_xdata=args.cut if args.cut is not None else 0)
+                                                                 cut_xdata=cut_xdata)
     print "> Displaying explorer"
     hcv.show()
 
