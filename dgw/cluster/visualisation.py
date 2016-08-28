@@ -400,14 +400,20 @@ class ClusterPreviewer(object):
         # Finally issue a draw command for the plot
         plt.draw()
 
+    def draw_figure(self, figsize=(12, 10), interactive=True):
+        self._figure = plt.figure(num=None,
+                                  figsize=figsize,
+                                  facecolor='w', edgecolor='k')
+        self.title = plt.suptitle("") # Create text object for title
+
+        if interactive:
+            self.create_buttons()
+            self._figure.canvas.mpl_connect('button_press_event', self._onclick_listener)
+
+        self.draw()
 
     def show(self):
-        # A5 Paper size
-        self._figure = plt.figure(num=None, figsize=(12, 10), facecolor='w', edgecolor='k')
-        self.title = plt.suptitle("") # Create text object for title
-        self.create_buttons()
-        self._figure.canvas.mpl_connect('button_press_event', self._onclick_listener)
-        self.draw()
+        self.draw_figure(interactive=True)
         plt.show()
 
 class HierarchicalClusteringViewer(object):
