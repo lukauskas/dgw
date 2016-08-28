@@ -95,6 +95,7 @@ def main():
                                                                  configuration_file=configuration_basename,
                                                                  highlight_colours=highlight_colours,
                                                                  cut_xdata=cut_xdata)
+
     print "> Displaying explorer"
     hcv.show()
 

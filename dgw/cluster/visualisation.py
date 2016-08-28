@@ -467,13 +467,15 @@ class HierarchicalClusteringViewer(object):
     def hierarchical_clustering_object(self):
         return self._hierarchical_clustering_object
 
-    def set_up(self):
+    def create_figure(self, figsize=(12, 10), interactive=True):
+        plt.figure(num=None, figsize=figsize, facecolor='w', edgecolor='k')
         self._gs_main = gridspec.GridSpec(2, 2, wspace=0, height_ratios=[1, 15])
         self._figure = plt.gcf()
         self._ax_dendrogram = plt.subplot(self.gs_dendrogram, rasterized=True)
-        self._figure.canvas.mpl_connect('button_press_event', self._onclick_listener)
 
-        self.draw_buttons()
+        if interactive:
+            self._figure.canvas.mpl_connect('button_press_event', self._onclick_listener)
+            self.draw_buttons()
 
     @property
     def sorted_index(self):
@@ -534,10 +536,14 @@ class HierarchicalClusteringViewer(object):
                              scale_y_axis=DENDROGRAM_SCALE, highlighted_points=hc.data.points_of_interest, rasterized=True,
                              highlight_colours=self.highlight_colours)
 
+    def savefig(self, filename):
+        self.create_figure(interactive=False)
+        self.draw()
+        plt.tight_layout()
+        plt.savefig(filename)
+
     def show(self):
-        # A5 Paper size
-        plt.figure(num=None, figsize=(12, 10), facecolor='w', edgecolor='k')
-        self.set_up()
+        self.create_figure(interactive=True)
         self.draw()
         plt.show()
 
