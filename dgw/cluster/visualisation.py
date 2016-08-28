@@ -101,7 +101,7 @@ class ClusterPreviewer(object):
     def _callback_save(self, event):
         debug('Save clicked')
 
-        directory = os.path.join(self.output_directory, '{0}_{1}'.format(self.configuration_filename, self.cut_level))
+        directory = self.output_directory
         if not os.path.exists(directory):
             os.makedirs(directory)
 

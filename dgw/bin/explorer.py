@@ -29,7 +29,6 @@ def argument_parser():
                            default=None,
                            help='Number of clusters to initialise the dendrogram cut to.')
 
-
     parser.add_argument('-v', '--verbose', action='store_const', const=True, default=False)
 
     return parser
