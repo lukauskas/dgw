@@ -657,18 +657,25 @@ class HierarchicalClustering(object):
         :param n_clusters: number of clusters to form
         :return:
         """
+        n_clusters = int(n_clusters)
+
+        assert n_clusters > 0, 'Minimum number of clusters is 1, got {}'.format(n_clusters)
         linkage = self.linkage
 
         n = self.num_obs
         assert n >= n_clusters, 'Specified number of clusters ' \
                                 '{} is larger than number of data points {}'.format(n_clusters, n)
 
-        max_distances = np.empty(self.num_obs, dtype=np.double)
-        get_max_dist_for_each_cluster(linkage, max_distances, n)
+        # Special case, otherwise it doesn't work
+        if n_clusters == 1:
+            return np.inf
+        else:
+            max_distances = np.empty(self.num_obs, dtype=np.double)
+            get_max_dist_for_each_cluster(linkage, max_distances, n)
 
-        threshold = max_distances[-n_clusters]
+            threshold = max_distances[-n_clusters]
 
-        return threshold
+            return threshold
 
     @property
     def num_obs(self):

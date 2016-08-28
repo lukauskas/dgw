@@ -89,7 +89,6 @@ def main():
     if args.cut:
         cut_xdata = args.cut
     elif args.n_clusters:
-        assert args.n_clusters > 0
         cut_xdata = hc.distance_threshold_for_n_clusters(args.n_clusters)
 
     hcv = dgw.cluster.visualisation.HierarchicalClusteringViewer(hc, output_directory=args.output,
