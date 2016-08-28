@@ -304,30 +304,49 @@ class DTWClusterNode(object, hierarchy.ClusterNode):
             finally:
                 f.close()
 
+
     def save_warpings_to_file(self, filename):
         data = self.data
         index = data.items
         regions = self.regions
-        bin_intervals = regions.ix[index].bins_to_intervals(data.resolution)
-        chromosomes = regions.chromosome
         warping_paths = self.warping_paths
 
-        f = gzip.open(filename, 'w')
-        f.write('#{0}\t{1}\t{2}\t{3}\t{4}\t{5}\n'.format('index', 'bin', 'chromosome', 'start', 'end', 'prototype_bin'))
-        try:
-            for ix, chromosome in chromosomes.iteritems():
-                path = warping_paths[ix]
-                bi = bin_intervals[ix]
+        if regions:
+            bin_intervals = regions.ix[index].bins_to_intervals(data.resolution)
+            chromosomes = regions.chromosome
 
-                for i in xrange(len(path[0])):
-                    p_a = path[0][i]
-                    p_b = path[1][i]
 
-                    current_bin = bi[p_a]
+            f = gzip.open(filename, 'w')
+            f.write('#{0}\t{1}\t{2}\t{3}\t{4}\t{5}\n'.format('index', 'bin', 'chromosome', 'start', 'end', 'prototype_bin'))
+            try:
+                for ix, chromosome in chromosomes.iteritems():
+                    path = warping_paths[ix]
+                    bi = bin_intervals[ix]
 
-                    f.write('{0}\t{1}\t{2}\t{3}\t{4}\t{5}\n'.format(ix, p_a, chromosome, current_bin[0], current_bin[1], p_b))
-        finally:
-            f.close()
+                    for i in xrange(len(path[0])):
+                        p_a = path[0][i]
+                        p_b = path[1][i]
+
+                        current_bin = bi[p_a]
+
+                        f.write('{0}\t{1}\t{2}\t{3}\t{4}\t{5}\n'.format(ix, p_a, chromosome,
+                                                                        current_bin[0], current_bin[1],
+                                                                        p_b))
+            finally:
+                f.close()
+        else:
+            f = gzip.open(filename, 'w')
+            try:
+                f.write('#{0}\t{1}\t{2}\n'.format('index', 'bin', 'prototype_bin'))
+
+                for ix, path in warping_paths.items():
+                    for i in xrange(len(path[0])):
+                        p_a = path[0][i]
+                        p_b = path[1][i]
+                        f.write('{0}\t{1}\t{2}\n'.format(ix, p_a, p_b))
+            finally:
+                f.close()
+
 
     def save_warping_conservation_data_to_file(self, filename):
         data = self.data

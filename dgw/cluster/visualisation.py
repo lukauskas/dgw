@@ -192,9 +192,6 @@ class ClusterPreviewer(object):
 
         print '> Saving warpings to directory {0}'.format(warpings_directory)
         for i, c in enumerate(self._clusters):
-            if not c.regions:
-                print('Nothing to save for cluster {}'.format(i+1))
-                continue
             filename_data = os.path.join(warpings_directory, 'cluster-{0}-warpings.tsv.gz'.format(i + 1))
 
             c.save_warpings_to_file(filename_data)
