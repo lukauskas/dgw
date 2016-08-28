@@ -206,7 +206,7 @@ class ClusterPreviewer(object):
         debug('Save clicked')
 
         directory = self.output_directory
-        self.save(directory)
+        self.save_clusters(directory)
 
     def add_button(self, text, callback):
         buttons_left = 0.03
