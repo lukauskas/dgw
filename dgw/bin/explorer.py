@@ -29,6 +29,10 @@ def argument_parser():
                            default=None,
                            help='Number of clusters to initialise the dendrogram cut to.')
 
+    parser.add_argument('--save-only', '-s',
+                        help='Do not start the interactive viewer, just save the output.'
+                             'Requires output directory and --cut or --n-clusters set',
+                        action='store_const', const=True, default=False)
     parser.add_argument('-v', '--verbose', action='store_const', const=True, default=False)
 
     return parser
@@ -85,18 +89,44 @@ def main():
     configuration_basename = os.path.basename(args.configuration_file.name)
 
     cut_xdata = 0
+    have_cut = False
     if args.cut:
         cut_xdata = args.cut
+        have_cut = True
     elif args.n_clusters:
         cut_xdata = hc.distance_threshold_for_n_clusters(args.n_clusters)
+        have_cut = True
 
     hcv = dgw.cluster.visualisation.HierarchicalClusteringViewer(hc, output_directory=args.output,
                                                                  configuration_file=configuration_basename,
                                                                  highlight_colours=highlight_colours,
                                                                  cut_xdata=cut_xdata)
+    if not args.save_only:
+        print "> Displaying explorer"
+        hcv.show()
+    else:
+        if not have_cut:
+            raise Exception('Please use specify either the cut distance, or number of clusters when using --save-only')
+        output_directory = args.output
+        if not output_directory:
+            raise Exception('Please specify output directory where the files should be saved')
 
-    print "> Displaying explorer"
-    hcv.show()
+        if not os.path.isdir(output_directory):
+            os.makedirs(output_directory)
+
+        print('> Saving to {}'.format(output_directory))
+        hcv.savefig(os.path.join(output_directory, 'clustering.pdf'))
+
+        cluster_previewer = hcv.cluster_previewer()
+        cluster_previewer.save_clusters(output_directory)
+
+        print('> Saving summaries')
+        cluster_previewer.save_previewer_windows(os.path.join(output_directory, 'summaries'))
+
+
+
+
+
 
 if __name__ == '__main__':
     main()

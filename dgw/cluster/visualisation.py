@@ -98,8 +98,26 @@ class ClusterPreviewer(object):
         self.change_cluster((self._current_cluster_id - 1) % len(self._clusters))
         self.draw()
 
-    def _callback_save(self, event):
-        debug('Save clicked')
+    def save_previewer_windows(self, output_directory):
+
+        if not os.path.isdir(output_directory):
+            os.makedirs(output_directory)
+
+        self.create_figure(interactive=False)
+
+        for i in range(len(self._clusters)):
+            if i > 0:
+                self.change_cluster((self._current_cluster_id + 1) % len(self._clusters))
+
+            cluster_id = self._current_cluster_id
+            filename = 'summary-{}.pdf'.format(cluster_id+1)
+
+            self.draw()
+            plt.savefig(os.path.join(output_directory, filename),
+                       create=False)
+
+
+    def save_clusters(self, directory):
 
         directory = self.output_directory
         if not os.path.exists(directory):
@@ -174,14 +192,24 @@ class ClusterPreviewer(object):
 
         print '> Saving warpings to directory {0}'.format(warpings_directory)
         for i, c in enumerate(self._clusters):
+            if not c.regions:
+                print('Nothing to save for cluster {}'.format(i+1))
+                continue
             filename_data = os.path.join(warpings_directory, 'cluster-{0}-warpings.tsv.gz'.format(i + 1))
+
             c.save_warpings_to_file(filename_data)
 
             filename_data_conservation = os.path.join(warpings_directory, 'cluster-{0}-warping-conservation.tsv.gz'.format(i+1))
             c.save_warping_conservation_data_to_file(filename_data_conservation)
 
+        print '> Finished saving clusters'
 
-        print '> Saved'
+
+    def _callback_save(self, event):
+        debug('Save clicked')
+
+        directory = self.output_directory
+        self.save(directory)
 
     def add_button(self, text, callback):
         buttons_left = 0.03
@@ -400,7 +428,7 @@ class ClusterPreviewer(object):
         # Finally issue a draw command for the plot
         plt.draw()
 
-    def draw_figure(self, figsize=(12, 10), interactive=True):
+    def create_figure(self, figsize=(12, 10), interactive=True):
         self._figure = plt.figure(num=None,
                                   figsize=figsize,
                                   facecolor='w', edgecolor='k')
@@ -413,7 +441,7 @@ class ClusterPreviewer(object):
         self.draw()
 
     def show(self):
-        self.draw_figure(interactive=True)
+        self.create_figure(interactive=True)
         plt.show()
 
 class HierarchicalClusteringViewer(object):
@@ -497,15 +525,21 @@ class HierarchicalClusteringViewer(object):
             self._sorted_index = hc.data.items[leaves]
 
 
-
-    def _callback_preview(self, event):
+    def cluster_previewer(self):
         if not self.clusters:
             return
 
-        # Else, if we have clusters
         pw = ClusterPreviewer(self.clusters, self.output_directory, self.configuration_file, self._cut_xdata,
                               highlight_colours=self.highlight_colours, dtw_function=self.hierarchical_clustering_object.dtw_function)
-        pw.show()
+
+        return pw
+
+    def _callback_preview(self, event):
+        pw = self.cluster_previewer()
+
+        # cluster_previewer() returns None if there are no clusters
+        if pw:
+            pw.show()
 
     def _callback_save(self, event):
         pass
@@ -536,9 +570,12 @@ class HierarchicalClusteringViewer(object):
                              scale_y_axis=DENDROGRAM_SCALE, highlighted_points=hc.data.points_of_interest, rasterized=True,
                              highlight_colours=self.highlight_colours)
 
-    def savefig(self, filename):
-        self.create_figure(interactive=False)
-        self.draw()
+    def savefig(self, filename, create=True):
+
+        if create:
+            self.create_figure(interactive=False)
+            self.draw()
+
         plt.tight_layout()
         plt.savefig(filename)
 
@@ -546,6 +583,7 @@ class HierarchicalClusteringViewer(object):
         self.create_figure(interactive=True)
         self.draw()
         plt.show()
+
 
     def _draw_cut_line(self):
         xdata = self._cut_xdata
