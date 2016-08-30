@@ -305,6 +305,10 @@ class DTWClusterNode(object, hierarchy.ClusterNode):
                 f.close()
 
     def save_pois_to_file(self, filename):
+        points_of_interest = self.points_of_interest
+        if not points_of_interest:
+            return
+
         with gzip.GzipFile(filename, 'w') as f:
             f.write('#region\tpoi_file\tbins\tprototype_bins\n')
 
