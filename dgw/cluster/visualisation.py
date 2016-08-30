@@ -148,6 +148,10 @@ class ClusterPreviewer(object):
         if not os.path.exists(warpings_directory):
             os.makedirs(warpings_directory)
 
+        pois_directory = os.path.join(directory, 'pois')
+        if not os.path.exists(pois_directory):
+            os.makedirs(pois_directory)
+
         print '> Saving regions to directory {0}'.format(bed_directory)
         for i, c in enumerate(self._clusters):
 
@@ -199,7 +203,14 @@ class ClusterPreviewer(object):
             filename_data_conservation = os.path.join(warpings_directory, 'cluster-{0}-warping-conservation.tsv.gz'.format(i+1))
             c.save_warping_conservation_data_to_file(filename_data_conservation)
 
+        print '> Saving POIs to directory {0}'.format(pois_directory)
+        for i, c in enumerate(self._clusters):
+            filename_data = os.path.join(pois_directory, 'cluster-{0}-pois.tsv.gz'.format(i + 1))
+            c.save_pois_to_file(filename_data)
+
         print '> Finished saving clusters'
+
+
 
 
     def _callback_save(self, event):

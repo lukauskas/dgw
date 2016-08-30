@@ -304,6 +304,24 @@ class DTWClusterNode(object, hierarchy.ClusterNode):
             finally:
                 f.close()
 
+    def save_pois_to_file(self, filename):
+        with gzip.GzipFile(filename, 'w') as f:
+            f.write('#region\tpoi_file\tbins\tprototype_bins\n')
+
+            points_of_interest = self.points_of_interest
+            warped_points_of_interest = self.tracked_points_of_interest
+
+            for region, poi_data in points_of_interest.iteritems():
+                warped_poi_data = warped_points_of_interest[region]
+
+                for poi_filename, pois in poi_data.iteritems():
+                    warped_pois = warped_poi_data[poi_filename]
+
+                    str_pois = ';'.join(map(str, pois))
+                    str_warped_pois = ';'.join(map(str, warped_pois))
+
+                    f.write('{}\t{}\t{}\t{}\n'.format(region, poi_filename, str_pois, str_warped_pois))
+
 
     def save_warpings_to_file(self, filename):
         data = self.data
