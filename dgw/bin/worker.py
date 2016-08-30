@@ -263,6 +263,10 @@ def main():
                                  ignore_non_overlaps=args.ignore_poi_non_overlaps,
                                  account_for_strand_information=configuration.use_strand_information)
 
+         if not poi:
+            raise Exception('POI file provided, but no POIs were parsed from {}. Try using dgw-overlaps2poi'.format(poi_file))
+
+
     else:
         poi = None
 
