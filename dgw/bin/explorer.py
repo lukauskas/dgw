@@ -54,7 +54,8 @@ def main():
     regions = configuration.load_regions()
     dataset = configuration.load_dataset()
 
-    standard_highlight_colours = ["w", "k"]
+    # Borrowed from colorbrewer's Dark2 color palette
+    standard_highlight_colours = ["#d95f02", "#e7298a"]
     highlight_colours = {}
     if args.points_of_interest:
         dataset.reset_poi()
