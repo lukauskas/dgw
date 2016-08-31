@@ -487,6 +487,12 @@ class DTWClusterNode(object, hierarchy.ClusterNode):
 
     @property
     def reversal_dictionary(self):
+        if self.is_leaf():
+            # If we are leaf node, there is no DTW projection onto prototype
+            # and therefore strand cannot be inferred.
+            # Just return None
+            return {ix: None for ix in self.index}
+
         warping_paths = self.warping_paths
         reversal_dict = {}
         for item in self.index:
