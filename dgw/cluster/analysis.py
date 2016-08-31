@@ -340,7 +340,7 @@ class DTWClusterNode(object, hierarchy.ClusterNode):
 
             assert len(data.items) == 1  # assumption for sanity
             first_ix = data.items[0]
-            data_len = len(data.ix[first_ix])
+            data_len = len(data.ix[first_ix].dropna())
             warping_paths = {first_ix: np.vstack([np.arange(data_len),
                                                   np.arange(data_len)])}
 
