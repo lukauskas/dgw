@@ -231,6 +231,7 @@ class DTWClusterNode(object, hierarchy.ClusterNode):
 
     def __compute_dtw_warping_paths(self):
         data = self.data
+        print(data)
         dtw_function = self._hierarchical_clustering_object.dtw_function
         prototype = self.prototype
 
@@ -331,7 +332,17 @@ class DTWClusterNode(object, hierarchy.ClusterNode):
         data = self.data
         index = data.items
         regions = self.regions
-        warping_paths = self.warping_paths
+        if not self.is_leaf():
+            warping_paths = self.warping_paths
+        else:
+            # if we're at a leaf node, there are no warping paths
+            # so we just create sample warping paths that just map each point in data to itself
+
+            assert len(data.items) == 1  # assumption for sanity
+            first_ix = data.items[0]
+            data_len = len(data.ix[first_ix])
+            warping_paths = {first_ix: np.vstack([np.arange(data_len),
+                                                  np.arange(data_len)])}
 
         if regions:
             bin_intervals = regions.ix[index].bins_to_intervals(data.resolution)
