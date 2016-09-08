@@ -9,6 +9,7 @@ from ..dtw.distance import dtw_std, dtw_path_is_reversed, warping_conservation_v
 from ..dtw import transformations, dtw_projection, no_nans_len
 from ..dtw.parallel import parallel_dtw_paths
 import gzip
+import scipy.stats
 
 from scipy.cluster._hierarchy import get_max_dist_for_each_cluster
 
@@ -304,6 +305,37 @@ class DTWClusterNode(object, hierarchy.ClusterNode):
                     f.write('{0}\n'.format(ix))
             finally:
                 f.close()
+
+    def save_poi_histograms_to_file(self, basename):
+        points_of_interest = self.points_of_interest
+        if not points_of_interest:
+            return
+
+        raw_filename = basename + '-raw.csv'
+        warped_filename = basename + '-warped.csv'
+
+        self.points_of_interest_histogram.to_csv(raw_filename)
+        self.tracked_points_histogram.to_csv(warped_filename)
+
+    def poi_entropies(self):
+        if not self.points_of_interest:
+            return None
+
+        untracked_hist = self.points_of_interest_histogram
+        tracked_hist = self.tracked_points_histogram
+
+        untracked_entropy = pd.Series(scipy.stats.entropy(untracked_hist),
+                                      index=untracked_hist.columns, name='raw')
+        tracked_entropy = pd.Series(scipy.stats.entropy(tracked_hist),
+                                    index=tracked_hist.columns, name='warped')
+
+        df = pd.DataFrame([untracked_entropy, tracked_entropy]).T
+        df.index.name = 'poi_file'
+
+        df['diff'] = df['raw'] - df['warped']
+        df['rel_diff'] = df['diff'] / df['raw']
+
+        return df
 
     def save_pois_to_file(self, filename):
         points_of_interest = self.points_of_interest

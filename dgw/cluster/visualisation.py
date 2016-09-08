@@ -7,6 +7,7 @@ from dgw.util.plotting import pyplot as plt
 import matplotlib.gridspec as gridspec
 from matplotlib.widgets import Button
 import numpy as np
+import pandas as pd
 
 from dgw.dtw.visualisation import visualise_dtw_mappings
 
@@ -152,6 +153,12 @@ class ClusterPreviewer(object):
         if not os.path.exists(pois_directory):
             os.makedirs(pois_directory)
 
+        poi_hists_directory = os.path.join(directory, 'poi_hists')
+        if not os.path.exists(poi_hists_directory):
+            os.makedirs(poi_hists_directory)
+
+        entropies_file = os.path.join(directory, 'entropies.csv')
+
         print '> Saving regions to directory {0}'.format(bed_directory)
         for i, c in enumerate(self._clusters):
 
@@ -208,10 +215,31 @@ class ClusterPreviewer(object):
             filename_data = os.path.join(pois_directory, 'cluster-{0}-pois.tsv.gz'.format(i + 1))
             c.save_pois_to_file(filename_data)
 
+        print '> Saving POI histograms to directory {0}'.format(poi_hists_directory)
+        for i, c in enumerate(self._clusters):
+            filename_data = os.path.join(poi_hists_directory, 'cluster-{0}-poi-hist'.format(i + 1))
+            c.save_poi_histograms_to_file(filename_data)
+
+        print '> Saving entropies to file: {0}'.format(entropies_file)
+        self.save_entropies(entropies_file)
+
         print '> Finished saving clusters'
 
+    def save_entropies(self, file_):
+        entropies = []
+        for i, c in enumerate(self._clusters):
+            cluster_entropies = c.poi_entropies()
+            if cluster_entropies is not None:
+                cluster_entropies = cluster_entropies
+                cluster_entropies['cluster'] = i+1
+                cluster_entropies['cluster_size'] = c.n_items
 
+                entropies.append(cluster_entropies)
 
+        if entropies:
+            entropies = pd.concat(entropies).reset_index().set_index(['poi_file', 'cluster'])
+            entropies.sort_index()
+            entropies.to_csv(file_)
 
     def _callback_save(self, event):
         debug('Save clicked')
