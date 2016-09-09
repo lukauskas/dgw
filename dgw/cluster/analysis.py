@@ -185,6 +185,7 @@ class DTWClusterNode(object, hierarchy.ClusterNode):
                     min_rescaled = int(floor(point * scaling_ratio))
                     max_rescaled = int(floor((point + 1) * scaling_ratio))
                     for rescaled_point in xrange(min_rescaled, max_rescaled):
+                        assert rescaled_point <= number_of_bins
                         current_histogram[rescaled_point] += 1
 
         return pd.DataFrame(histogram)
@@ -200,7 +201,7 @@ class DTWClusterNode(object, hierarchy.ClusterNode):
     def points_of_interest_histogram(self):
         if self._points_of_interest_histogram is None:
             self._points_of_interest_histogram = self._calculate_histogram(self.points_of_interest,
-                                                                           self.data.number_of_columns,
+                                                                           max(self.data.lengths),
                                                                            self.data.lengths)
         return self._points_of_interest_histogram
 
